@@ -1,94 +1,68 @@
 import MyCompileOptions._
-import sbt.Keys.resolvers
+
+lazy val supportedScalaVersions = List("2.13.0", "2.12.9")
+scalaVersion := supportedScalaVersions.head
 
 ThisBuild / organization := "com.odenzo"
-ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "0.0.1"
+ThisBuild / version := "0.3.0"
+ThisBuild / scalaVersion := supportedScalaVersions.head
+ThisBuild / name := "ripple-binary-codec"
 
-name := "ripple-binary-codec"
+Test / logBuffered := true
+Test / parallelExecution := false
 
-scalacOptions ++= Seq("-feature",
-                      "-deprecation",
-                      "-unchecked",
-                      "-language:postfixOps",
-                      "-language:higherKinds",
-                      "-Ypartial-unification")
+coverageMinimum := 70
+coverageFailOnMinimum := false
+coverageHighlighting := true
 
+publishArtifact in Test := false
 
-lazy val bincodec = (project in file("."))
-
+lazy val bincodec_root = (project in file("."))
+  .aggregate(bincodec)
   .settings(
-    commonSettings,
-    devSettings,
-    scalacOptions ++= opts ++ warnings ++ linters,
+    // crossScalaVersions must be set to Nil on the aggregating project
+    crossScalaVersions := Nil,
+    publish / skip := true
   )
 
+lazy val bincodec = (project in file("modules/core"))
+  .settings(
+    crossScalaVersions := supportedScalaVersions,
+    name := "ripple-binary-codec",
+    scalacOptions := (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n <= 12 => optsV12 ++ warningsV12 ++ lintersV12
+      case Some((2, n)) if n >= 13 => optsV13 ++ warningsV13 ++ lintersV13
+      case _                       => Seq("-Yno-adapted-args")
+    }),
+    commonSettings
+  )
 
 lazy val commonSettings = Seq(
-  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire 
+  coverageHighlighting := true,
+  libraryDependencies ++= libs,
   resolvers ++= Seq(
-    Resolver.bintrayIvyRepo("odenzo","ripple-binary-codec"),
-    Resolver.defaultLocal,                      // Usual I pulishLocal to Ivy not maven
-    Resolver.jcenterRepo,                       // This is JFrogs Maven Repository for reading
+    //Resolver.bintrayIvyRepo("odenzo", "ripple-binary-codec"),
+    Resolver.defaultLocal, // Usual I pulishLocal to Ivy not maven
+    Resolver.jcenterRepo // This is JFrogs Maven Repository for reading
   )
 )
-val devSettings = Seq(
-  Test / logBuffered := false,
-  Test / parallelExecution := false,
+
+val circeVersion      = "0.12.0-RC3"
+val catsVersion       = "2.0.0-RC1"
+val catsEffectVersion = "2.0.0-RC1"
+val spireVersion      = "0.17.0-M1"
+val scribeVersion     = "2.7.9"
+val scalaTestVersion  = "3.0.8"
+val scalaCheckVersion = "1.14.0"
+
+val libs = Seq(
+  "org.scalatest"  %% "scalatest"     % scalaTestVersion % Test,
+  "org.scalacheck" %% "scalacheck"    % scalaCheckVersion % Test,
+  "io.circe"       %% "circe-core"    % circeVersion,
+  "io.circe"       %% "circe-generic" % circeVersion,
+  "io.circe"       %% "circe-parser"  % circeVersion,
+  "org.typelevel"  %% "cats-core"     % catsVersion,
+  "org.typelevel"  %% "cats-effect"   % catsEffectVersion,
+  "org.typelevel"  %% "spire"         % spireVersion,
+  "com.outr"       %% "scribe"        % scribeVersion
 )
-
-/**
-  * Approach to the build, which was formerly a ScalaJS and Scala cross build.
-  * Have source library in Scala, with associated unit testing (ScalaTest)
-  * Have an integration testing module, uses Akka/AkkaHttp and a dummy Ripple Server.
-  * Integration testing scope is "it"
-  *
-  */
-//
-//import sbt.errorssummary.Plugin.autoImport._
-//reporterConfig := reporterConfig.value.withColors(true)
-//reporterConfig := reporterConfig.value.withShortenPaths(true)
-//reporterConfig := reporterConfig.value.withColumnNumbers(true)
-/** These are the base libraries used JVM
-  * In addition it needs to use the library provided by rippled-utils multiproject module.
-  * */
-val libs = {
-  Seq(
-    "org.scalatest"              %% "scalatest"      % "3.0.7" % Test,
-    "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
-    "com.typesafe"               % "config"          % "1.3.4", //  https://github.com/typesafehub/config
-    "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2",
-    "ch.qos.logback"             % "logback-classic" % "1.2.3",
-  )
-}
-
-/** JSON Libs == Circe and Associated Support Libs */
-val lib_circe = {
-  val circeVersion = "0.11.1"
-
-  Seq(
-    "io.circe" %% "circe-core"           % circeVersion,
-    "io.circe" %% "circe-generic"        % circeVersion,
-    "io.circe" %% "circe-java8"          % circeVersion,
-    "io.circe" %% "circe-parser"         % circeVersion,
-    "io.circe" %% "circe-generic-extras" % circeVersion,
-  )
-
-}
-
-
-val lib_cats = {
-  val catsVersion = "1.6.0"
-  Seq(
-    "org.typelevel" %% "cats-core"   % catsVersion, // Cats is pulled in via Circe for now
-    "org.typelevel" %% "cats-effect" % "1.3.1" withSources () withJavadoc ()
-  )
-}
-
-
-val lib_spire = {
-  Seq(
-       "org.typelevel" %% "spire" % "0.16.2",
-       )
-}
-
