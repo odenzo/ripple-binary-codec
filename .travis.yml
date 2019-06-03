@@ -3,8 +3,34 @@ scala:
   - 2.12.8
 
 jdk:
-  - oraclejdk8
+  - oraclejdk11
   - openjdk11
+
+
+# These directories are cached to a cloud storage provider "close" to the infrastructure the builds run on.
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
+
+
 # Standard Scala build and test targets
 
-script: sbt ++$TRAVIS_SCALA_VERSION test
+script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 test
+
+
+# Deployment to BinTray pending  https://docs.travis-ci.com/user/deployment/bintray/
+#  deploy:
+#    provider: bintray
+#    file: "Path to a descriptor file, containing information for the Bintray upload"
+#    user: "Bintray user"
+#    key: "Bintray API key"
+#    passphrase: "Optional. In case a passphrase is configured on Bintray and GPG signing is used"
+#    skip_cleanup: true # to upload artifacts created during the build
