@@ -17,3 +17,14 @@ Main use case is just signing transaction, but should handle more although not t
 
 External API is in RippleCodecAPI and returns encoded values now, and byte array form.
 
+
+## Status
+
+Working on PaymentTx and small set of test cases.
+
+Lots of dead code and non-optimized.
+
+
+## TODOs
+
+* Add more test cases, particularly of Ripple transactions
