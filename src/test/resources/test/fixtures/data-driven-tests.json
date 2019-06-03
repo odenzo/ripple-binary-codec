@@ -3538,7 +3538,7 @@
             "expected_hex": "81"
         },
         {
-            "test_json": "tecMASTER_DISABLED",
+            "test_json": "tecNO_ALTERNATIVE_KEY",
             "type_id": 16,
             "type_specialisation_field": "TransactionResult",
             "type": "UInt8",
@@ -3546,7 +3546,7 @@
         },
         {
             "test_json": 130,
-            "canonical_json": "tecMASTER_DISABLED",
+            "canonical_json": "tecNO_ALTERNATIVE_KEY",
             "type_id": 16,
             "type_specialisation_field": "TransactionResult",
             "type": "UInt8",

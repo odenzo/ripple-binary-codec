@@ -234,12 +234,8 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
       // TODO: Add this functionality for TransactionResult Codes. in TRANSACTION_RESULTS section of definitions
       case "TransactionResult" ⇒
         logger.debug(s"Testing Txn Result Codes: $testVal")
-        if (Json.fromString("tecMASTER_DISABLED") == testVal) {
-          logger.warn("Skipping tecMASTER_DISABLED")
-          true shouldEqual true
-        } else {
-          getOrLog(TypeSerializers.encodeTxnResultType(testVal))
-        }
+        getOrLog(TypeSerializers.encodeTxnResultType(testVal))
+
     }
 
     val gotHex = ByteUtils.ubytes2hex(gotBytes.ubytes)
