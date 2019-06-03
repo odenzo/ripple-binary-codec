@@ -1,5 +1,5 @@
 import MyCompileOptions._
-import sbt.Keys.resolvers
+
 
 ThisBuild / organization := "com.odenzo"
 ThisBuild / scalaVersion := "2.12.8"
@@ -16,7 +16,6 @@ scalacOptions ++= Seq("-feature",
 
 
 lazy val bincodec = (project in file("."))
-
   .settings(
     commonSettings,
     devSettings,
@@ -25,7 +24,8 @@ lazy val bincodec = (project in file("."))
 
 
 lazy val commonSettings = Seq(
-  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire 
+  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire ,
+
   resolvers ++= Seq(
     Resolver.bintrayIvyRepo("odenzo","ripple-binary-codec"),
     Resolver.defaultLocal,                      // Usual I pulishLocal to Ivy not maven

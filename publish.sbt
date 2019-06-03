@@ -52,5 +52,5 @@ publishArtifact in Test := false
 publishMavenStyle := false
 bintrayOrganization := Some("odenzoorg")
 bintrayRepository := "odenzooss"
-bintrayPackage := "rippled-signing"
+bintrayPackage := "ripple-binary-codec"
 bintrayReleaseOnPublish in ThisBuild := false

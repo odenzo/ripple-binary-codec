@@ -278,6 +278,6 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
 
   // This should be pre-baked of course.
   def txnResultType2Bin(entryType: String): Either[AppError, RawEncodedValue] = {
-    dd.getTransactionType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
+    dd.getTxnResultType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
   }
 }
