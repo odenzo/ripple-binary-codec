@@ -155,7 +155,6 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
         } else {
           // Shift and then check if there is scale that is non zero?
           // Why is there no bd.getMantissa?
-          logger.debug(s"Max Long ${Long.MaxValue} Max ULONG ${ULong.MaxValue}")
           val ul = if (bd.isValidLong) {
             ULong.fromLong(bd.longValue)
           } else {
@@ -209,7 +208,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
       //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
 
       // Well, what to do here.
-      logger.warn(s"Too Much Precision $amount was ${amount.precision} w/ Scale ${amount.scale}")
+      logger.debug(s"Too Much Precision $amount was ${amount.precision} w/ Scale ${amount.scale}")
       amount.asRight
     } else {
       amount.asRight

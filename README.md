@@ -1,6 +1,10 @@
 
 # ripple-binary-codec
 
+[![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
+
+
+## Overview
 This is essentially a remix of the Ripple Javascript code for binary-codec  in Scala 12.X
 
 Minimal amount of third party libraries, should allow cross-compiling to ScalaJS and maybe Scala Native.
