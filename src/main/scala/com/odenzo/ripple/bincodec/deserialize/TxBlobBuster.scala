@@ -8,7 +8,7 @@ import io.circe._
 import io.circe.syntax._
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.RippleLocalAPI
+import com.odenzo.ripple.bincodec.RippleCodecAPI
 import com.odenzo.ripple.bincodec.reference.HashPrefix
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.FieldEncoded
@@ -38,7 +38,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     var remainingBlob = txBlob
 
     // I think hash and TxnSignature are not in definitions...
-    val serialized: Either[AppError, BinarySerializer.NestedEncodedValues] = RippleLocalAPI.binarySerialize(txJson)
+    val serialized: Either[AppError, BinarySerializer.NestedEncodedValues] = RippleCodecAPI.binarySerialize(txJson)
 
     serialized.foreach{ fields =>
       fields.enclosed.foreach{

@@ -10,3 +10,6 @@ Best place to start on documentation is: https://developers.ripple.com/serializa
 Main use case is just signing transaction, but should handle more although not tested as much.
 
 
+
+External API is in RippleCodecAPI and returns encoded values now, and byte array form.
+

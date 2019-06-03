@@ -7,7 +7,7 @@ import io.circe.syntax._
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.AppError
 
-object RippleLocalAPI extends StrictLogging {
+object RippleCodecAPI extends StrictLogging {
 
 
   /**
@@ -34,7 +34,15 @@ object RippleLocalAPI extends StrictLogging {
   def binarySerializeForSigning(tx_json: JsonObject): Either[AppError, BinarySerializer.NestedEncodedValues] = {
     logger.trace("Serializing for Signing")
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
+  }
 
+
+  def serializedTxBlob(jsonObject: JsonObject): Either[AppError, Array[Byte]] = {
+    binarySerialize(jsonObject).map(_.rawBytes).map(v⇒ v.map(_.toByte)).map(_.toArray)
+  }
+
+  def signingTxBlob(jsonObject: JsonObject): Either[AppError, Array[Byte]] = {
+    binarySerializeForSigning(jsonObject).map(_.rawBytes).map(v ⇒ v.map(_.toByte)).map(_.toArray)
   }
 
 
