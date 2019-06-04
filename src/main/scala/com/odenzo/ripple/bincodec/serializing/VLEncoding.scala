@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
 
 trait VLEncoding extends StrictLogging {
 
@@ -41,7 +41,7 @@ trait VLEncoding extends StrictLogging {
               UByte(length & 0xff),
               ).asRight
 
-      case l => AppError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
+      case l => CodecError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
     }
 
     vl.map(RawEncodedValue)

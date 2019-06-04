@@ -8,9 +8,8 @@ import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.{EitherValues, Matchers}
 
 import com.odenzo.ripple.bincodec.utils.CirceUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError.dump
-import com.odenzo.ripple.bincodec.utils.caterrors.CatsTransformers.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, AppException}
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.{AppException, CodecError}
 
 trait OTestSpec extends StrictLogging with Matchers with EitherValues {
 
@@ -30,7 +29,7 @@ trait OTestSpec extends StrictLogging with Matchers with EitherValues {
 
   }
 
-  def loadJsonResource(path: String): Either[AppError, Json] = {
+  def loadJsonResource(path: String): Either[CodecError, Json] = {
     AppException.wrap(s"Getting Resource $path") {
       val resource: URL          = getClass.getResource(path)
       val source: BufferedSource = Source.fromURL(resource)
@@ -41,7 +40,7 @@ trait OTestSpec extends StrictLogging with Matchers with EitherValues {
 
   def getOrLog[T](ee: ErrorOr[T], msg: String = "Error: ", loggger: Logger = logger): T = {
     if (ee.isLeft) {
-      dump(ee) match {
+      CodecError.dump(ee) match {
         case None       ⇒ loggger.debug("No Errors Found")
         case Some(emsg) ⇒ loggger.error(s"$msg\t=> $emsg ")
       }

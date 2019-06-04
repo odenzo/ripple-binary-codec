@@ -7,7 +7,7 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleType}
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, CurrencyEncoders, TypeSerializers}
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils}
 import com.odenzo.ripple.models.utils.CirceCodecUtils
 
@@ -37,7 +37,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
   val json: Json = {
     val res = CirceUtils.parseAsJson(sample)
 
-    AppError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
+    CodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     res.right.value
   }
 
@@ -47,7 +47,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
     val req = TypeSerializers.singleFieldData(fieldName, data)
     req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
-    AppError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
+    CodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 

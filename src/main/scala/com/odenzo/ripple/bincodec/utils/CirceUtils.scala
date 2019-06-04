@@ -10,8 +10,8 @@ import io.circe._
 import io.circe.jawn.JawnParser
 import io.circe.syntax._
 
-import com.odenzo.ripple.bincodec.utils.caterrors.CatsTransformers.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, AppException, AppJsonDecodingError, AppJsonParsingError}
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.{AppException, AppJsonDecodingError, AppJsonParsingError, CodecError}
 
 /**
   *  Traits for working with Circe DOM [[io.circe.Json]]
@@ -63,7 +63,7 @@ trait CirceUtils extends StrictLogging {
   }
 
   def json2jsonObject(json: Json): ErrorOr[JsonObject] = {
-    Either.fromOption(json.asObject, AppError("JSON was not a JSonObject"))
+    Either.fromOption(json.asObject, CodecError("JSON was not a JSonObject"))
   }
 
   def parseAsJson(f: File): ErrorOr[Json] = {

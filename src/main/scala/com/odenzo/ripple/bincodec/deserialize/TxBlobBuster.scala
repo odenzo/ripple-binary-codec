@@ -13,7 +13,7 @@ import com.odenzo.ripple.bincodec.reference.HashPrefix
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.FieldEncoded
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 
 trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
@@ -38,7 +38,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     var remainingBlob = txBlob
 
     // I think hash and TxnSignature are not in definitions...
-    val serialized: Either[AppError, BinarySerializer.NestedEncodedValues] = RippleCodecAPI.binarySerialize(txJson)
+    val serialized: Either[CodecError, BinarySerializer.NestedEncodedValues] = RippleCodecAPI.binarySerialize(txJson)
 
     serialized.foreach{ fields =>
       fields.enclosed.foreach{
@@ -55,7 +55,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
     // Lets try hashing the TxBlob as is (which Txn Prefix)
     // Go thru the encoded and remove the TxnSignature (74) from txblob
-    val noTxSig: Either[AppError, List[BinarySerializer.Encoded]] = for {
+    val noTxSig: Either[CodecError, List[BinarySerializer.Encoded]] = for {
       encoded ← serialized
       filtered = encoded.enclosed.flatMap{
         case field: FieldEncoded if field.data.key == "TxnSignature" ⇒ None

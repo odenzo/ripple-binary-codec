@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.JsonObject
 import io.circe.syntax._
 
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 
 /**
   * User level interfaces to this package.
@@ -20,7 +20,7 @@ object BinarySerializerPublic extends StrictLogging {
     * @param jsonObject
     * @return Hex string representing the serialization in total.
     */
-  def binarySerialize(jsonObject: JsonObject): Either[AppError, BinarySerializer.NestedEncodedValues] = {
+  def binarySerialize(jsonObject: JsonObject): Either[CodecError, BinarySerializer.NestedEncodedValues] = {
      TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
@@ -32,7 +32,7 @@ object BinarySerializerPublic extends StrictLogging {
     *  level
     * @param tx_json
     */
-  def binarySerializeForSigning(tx_json: JsonObject): Either[AppError, BinarySerializer.NestedEncodedValues] = {
+  def binarySerializeForSigning(tx_json: JsonObject): Either[CodecError, BinarySerializer.NestedEncodedValues] = {
     logger.trace("Serializing for Signing")
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
 

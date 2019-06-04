@@ -5,14 +5,14 @@ import org.scalatest.FunSuite
 import spire.math.ULong
 
 import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 
 class CurrencyEncodersTest extends FunSuite with OTestSpec {
 
   test("Fiat Amount") {
     val amt = BigDecimal("1.234")
     val res = CurrencyEncoders.rippleEncodingOfFiatAmount(amt)
-    AppError.dump(res).foreach { e ⇒
+    CodecError.dump(res).foreach { e ⇒
       logger.error("Error: " + e)
     }
   }
@@ -81,8 +81,8 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
 
   test("Normalizing") {
 
-    val ans: Either[AppError, (ULong, Int)] = CurrencyEncoders.properNormalize(ULong(1L), 2)
-    AppError.dump(ans).foreach(msg ⇒ logger.error("Error: " + msg))
+    val ans: Either[CodecError, (ULong, Int)] = CurrencyEncoders.properNormalize(ULong(1L), 2)
+    CodecError.dump(ans).foreach(msg ⇒ logger.error("Error: " + msg))
 
   }
 

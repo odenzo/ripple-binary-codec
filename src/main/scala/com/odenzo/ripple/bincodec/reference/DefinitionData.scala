@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
 
 /**
   *
@@ -98,7 +98,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
     extends StrictLogging {
 
   private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OError, V] = {
-    Either.fromOption(map.get(key), AppError(s" $key not found in map"))
+    Either.fromOption(map.get(key), CodecError(s" $key not found in map"))
   }
 
   def getFieldInfo(name: String): Either[OError, FieldInfo] = getMapEntry(fieldsInfo, name)

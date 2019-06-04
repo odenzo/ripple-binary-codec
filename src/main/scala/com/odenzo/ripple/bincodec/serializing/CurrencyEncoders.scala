@@ -7,7 +7,7 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{NestedEncodedValues, RawEncodedValue}
 import com.odenzo.ripple.bincodec.serializing.TypeSerializers.encodeULong
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, AppException, AppJsonError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, AppException, AppJsonError, OError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 
 /**
@@ -38,7 +38,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *
     * @param json FieldData  representing an amount, either one line XRP of object with IOU/Fiat
     */
-  def encodeAmount(json: Json): Either[AppError, BinarySerializer.Encoded] = {
+  def encodeAmount(json: Json): Either[CodecError, BinarySerializer.Encoded] = {
     json.asObject match {
       case None      ⇒ encodeXrpAmount(json)
       case Some(obj) ⇒ encodeIOU(obj)
@@ -46,12 +46,12 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
   }
 
   /** In Progress, UInt64 encoding **/
-  def encodeXrpAmount(v: Json): Either[AppError, RawEncodedValue] = {
+  def encodeXrpAmount(v: Json): Either[CodecError, RawEncodedValue] = {
 
     val mask: ULong    = ULong.fromLong(0x4000000000000000L)
     val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
 
-    val value: Either[AppError, BigInt] = json2string(v).map(t ⇒ BigInt(t))
+    val value: Either[CodecError, BigInt] = json2string(v).map(t ⇒ BigInt(t))
 
     val answer: Either[AppJsonError, RawEncodedValue] = value match {
       case Left(err)                ⇒ AppJsonError("Could not decode as BigInt", v).asLeft
@@ -64,13 +64,13 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
 
   /** This actually returns an Amount, need to look at that encoding.
     * Probably this should be NestedAncodedAmount at the least. */
-  def encodeIOU(v: JsonObject): Either[AppError, NestedEncodedValues] = {
+  def encodeIOU(v: JsonObject): Either[CodecError, NestedEncodedValues] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned...
 
-    val attempt: Either[AppError, NestedEncodedValues] = for {
+    val attempt: Either[CodecError, NestedEncodedValues] = for {
       value    ← findField("value", v).flatMap(encodeFiatValue)
       currency ← findField("currency", v).flatMap(j ⇒ encodeCurrency(j))
       issuer   ← findField("issuer", v).flatMap(AccountIdCodecs.encodeAccountNoVL)
@@ -84,15 +84,15 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *  Currency must be three ASCII characters. could pad left if short I guess
     *  Note that "00000000000..." is used for currency XRP in some places.
     **/
-  def encodeCurrency(json: Json): Either[AppError, RawEncodedValue] = {
+  def encodeCurrency(json: Json): Either[CodecError, RawEncodedValue] = {
     // This should alwqays be 160 bits long
 
     val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
     val bit40Zero: List[UByte] = List.fill(5)(UByte(0))
 
-    val iso: Either[AppError, List[UByte]] = Either
-      .fromOption(json.asString, AppError("Currency Not a String"))
-      .flatMap { s ⇒
+    val iso: Either[CodecError, List[UByte]] = Either
+                                               .fromOption(json.asString, CodecError("Currency Not a String"))
+                                               .flatMap { s ⇒
         if (isRippleAscii(s) && s.length == 3) {
           s.getBytes("UTF-8").map(UByte(_)).toList.asRight
         } else if (s.length == 40) {
@@ -100,7 +100,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
           ByteUtils.hex2ubytes(s)
           // "0158415500000000C1F76FF6ECB0BAC600000000"
         } else {
-          AppError(s"Currency Code $s not three ascii").asLeft
+          CodecError(s"Currency Code $s not three ascii").asLeft
         }
       }
 
@@ -118,7 +118,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *
     * @param json
     */
-  def encodeFiatValue(json: Json): Either[AppError, RawEncodedValue] = {
+  def encodeFiatValue(json: Json): Either[CodecError, RawEncodedValue] = {
     json2string(json)
     .map(BigDecimal(_))
     .flatMap(rippleEncodingOfFiatAmount)
@@ -200,7 +200,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
       logger.info(s"$amount less than min - underflow to ZERO")
       BigDecimal(0).asRight
     } else if (amount > maxVal) {
-      AppError(s"Overflow FiatAmount $amount < $maxVal").asLeft
+      CodecError(s"Overflow FiatAmount $amount < $maxVal").asLeft
 
     } else if (amount.precision > maxPrecision) {
       // Too much precision, some will be ignored. But if close to zero make zero?
@@ -216,7 +216,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
 
   }
 
-  def normalizeAmount2MantissaAndExp(bd: BigDecimal): Either[AppError, (ULong, Int)] = {
+  def normalizeAmount2MantissaAndExp(bd: BigDecimal): Either[CodecError, (ULong, Int)] = {
     /* Trouble with this,
      *
      * - Final value has to shift mantissa to range "1000000000000000"  "9999999999999999"
@@ -234,12 +234,12 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
      */
     val (amount: ULong, exp: Int) = normalizeToIntegral(bd.abs)
     logger.info(s"Pre Normalized Mantissa $amount  Exponent $exp ")
-    val normalized: Either[AppError, (ULong, Int)] = properNormalize(amount, exp)
+    val normalized: Either[CodecError, (ULong, Int)] = properNormalize(amount, exp)
     logger.info("Ripple Normalized: " + normalized)
     normalized
   }
 
-  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[AppError, RawEncodedValue] = {
+  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[CodecError, RawEncodedValue] = {
 
     /*
     Minimum nonzero absolute value: 1000000000000000e-96
@@ -263,7 +263,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
         val top2Bits        = signBits << 62
 
         // The top 3 nibbles are screwed
-        val res: Either[AppError, ULong] = for {
+        val res: Either[CodecError, ULong] = for {
           normalized     ← normalizeAmount2MantissaAndExp(amt)
           _              = logger.info(s"Normalized $normalized")
           (nman, nexp)   = normalized
@@ -272,7 +272,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
           full           = top10 | nman
         } yield full
 
-        val asBytes: Either[AppError, RawEncodedValue] = res.flatMap(encodeULong(_, "UInt64"))
+        val asBytes: Either[CodecError, RawEncodedValue] = res.flatMap(encodeULong(_, "UInt64"))
         asBytes
       }
     }
@@ -337,7 +337,7 @@ IOUAmount::normalize ()
     * @return tuple, normalized mantissa, exponent  - if underflow both fields set to 0
     *         Overflow returned as Error
     */
-  def properNormalize(mantissa: ULong, exponent: Int): Either[AppError, (ULong, Int)] = {
+  def properNormalize(mantissa: ULong, exponent: Int): Either[CodecError, (ULong, Int)] = {
     // Okay, we have a mantissa and and exp. We want (generally) to increate the mantissa until 10000000L which means
     // the exponent has to decrease
     // A quick literal translation
@@ -380,7 +380,7 @@ IOUAmount::normalize ()
     val minMantissa: ULong = ULong("1000000000000000")
     val maxMantissa: ULong = ULong("9999999999999999")
     if (mantissa < minMantissa || mantissa > maxMantissa) {
-      AppError(s"$mantissa has to be in range $minMantissa - $maxMantissa").asLeft
+      CodecError(s"$mantissa has to be in range $minMantissa - $maxMantissa").asLeft
     } else {
       mantissa.asRight
     }
@@ -392,7 +392,7 @@ IOUAmount::normalize ()
     val minExponent: Int = -96
     val maxExponent: Int = 80
     if (exp < minExponent || exp > maxExponent) {
-      AppError(s"$exp has to be in range $minExponent to $maxExponent inclusive ").asLeft
+      CodecError(s"$exp has to be in range $minExponent to $maxExponent inclusive ").asLeft
     } else {
       exp.asRight
     }

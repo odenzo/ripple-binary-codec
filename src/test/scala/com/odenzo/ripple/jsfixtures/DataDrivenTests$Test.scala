@@ -15,8 +15,8 @@ import spire.math.{UByte, ULong}
 import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, ContainerFields, CurrencyEncoders, TypeSerializers}
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
-import com.odenzo.ripple.bincodec.utils.caterrors.CatsTransformers.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils, FixtureUtils}
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
 import com.odenzo.ripple.models.utils.CirceCodecUtils
@@ -197,12 +197,12 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
   def testFiat(b: BaseValueTest, v: FiatAmountTest): Assertion = {
     logger.info(s"Testing Fiat $v")
-    val manual: Either[AppError, (ULong, Int)] = TypeSerializers
-      .json2object(b.test_json)
-      .flatMap(findField("value", _))
-      .flatMap(TypeSerializers.json2string)
-      .map(BigDecimal(_))
-      .flatMap(CurrencyEncoders.normalizeAmount2MantissaAndExp)
+    val manual: Either[CodecError, (ULong, Int)] = TypeSerializers
+                                                   .json2object(b.test_json)
+                                                   .flatMap(findField("value", _))
+                                                   .flatMap(TypeSerializers.json2string)
+                                                   .map(BigDecimal(_))
+                                                   .flatMap(CurrencyEncoders.normalizeAmount2MantissaAndExp)
 
     logger.debug(s"Man / Exponent $manual")
     val (mantissa: ULong, exp: Int) = manual.right.value

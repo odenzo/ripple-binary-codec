@@ -6,7 +6,7 @@ import org.scalatest.FunSuite
 import spire.math._
 
 import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 
 class ByteUtilsTest extends FunSuite with OTestSpec {
 
@@ -31,7 +31,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
      (0 to 255). foreach{ n ⇒
         val byte: UByte = UByte(n.toByte)
         val hex: String = ByteUtils.ubyte2hex(byte)
-        val back: Either[AppError, UByte] = ByteUtils.hex2ubyte(hex)
+        val back: Either[CodecError, UByte] = ByteUtils.hex2ubyte(hex)
 
         logger.debug(s"$byte <-> $hex <-> $back")
         back.right.value shouldEqual byte

@@ -6,7 +6,7 @@ import scala.io.{BufferedSource, Source}
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 import com.odenzo.ripple.bincodec.utils.{CirceUtils, JsonUtils}
 
 /** Definitions are loading from the definitions.js file supplied by Ripple from their C++ for the JavaScript library.
@@ -41,12 +41,12 @@ object Definitions extends StrictLogging with JsonUtils {
   /** Loads the default data
     * @return
     */
-  def loadDefaultData(): Either[AppError, DefinitionData] = {
+  def loadDefaultData(): Either[CodecError, DefinitionData] = {
     val resourceName = "/enums/definitions.json"
     logger.info(s"Loading Default Data from ${resourceName}")
 
     val rippleDefsUrl: InputStream = this.getClass.getResourceAsStream(resourceName)
-    if (rippleDefsUrl == null) { AppError(s"Couldn't Find Definitions Resource ${resourceName}").asLeft}
+    if (rippleDefsUrl == null) {CodecError(s"Couldn't Find Definitions Resource ${resourceName}").asLeft}
     else {
 
     val localSrc: BufferedSource   = Source.fromInputStream(rippleDefsUrl, "UTF-8")

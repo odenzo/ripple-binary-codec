@@ -9,8 +9,8 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, RippleType}
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{Encoded, FieldData, FieldEncoded, NestedEncodedValues, RawEncodedValue, RippleTypeEncoded}
-import com.odenzo.ripple.bincodec.utils.caterrors.CatsTransformers.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, AppException, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.{AppException, CodecError, OError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils, JsonUtils}
 
 /**
@@ -19,7 +19,7 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils, JsonUtils}
   */
 object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils {
 
-  def encodeTopLevel(json: Json, isSigning: Boolean): Either[AppError, NestedEncodedValues] = {
+  def encodeTopLevel(json: Json, isSigning: Boolean): Either[CodecError, NestedEncodedValues] = {
 
     ContainerFields.encodeSTObject(json, isNested = false, isSigning = isSigning)
   }
@@ -49,13 +49,13 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
     */
   def encodeFieldAndValue(fieldData: FieldData,
                           isNestedObject: Boolean,
-                          signingModeOn: Boolean): Either[AppError, FieldEncoded] = {
+                          signingModeOn: Boolean): Either[CodecError, FieldEncoded] = {
     val fieldName: String = fieldData.key
     val fieldValue: Json  = fieldData.v
 
     logger.debug(s"Encoding FieldValue: $fieldData")
 
-    val valueBytes: Either[AppError, Encoded] = fieldData.fi.fieldTypeName match {
+    val valueBytes: Either[CodecError, Encoded] = fieldData.fi.fieldTypeName match {
       case "UInt16" if fieldName === "LedgerEntryType" ⇒ encodeLedgerEntryType(fieldValue)
       case "UInt16" if fieldName === "TransactionType" ⇒ encodeTransactionType(fieldValue)
       case "UInt8"                                     ⇒ encodeUIntN(fieldValue, "UInt8")
@@ -77,22 +77,22 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
       case "AccountID" ⇒
         if (isNestedObject) AccountIdCodecs.encodeAccountNoVL(fieldValue)
         else AccountIdCodecs.encodeAccount(fieldValue)
-      case other ⇒ AppError(s"Not handling Field Type $other").asLeft
+      case other ⇒ CodecError(s"Not handling Field Type $other").asLeft
 
     }
 
     // Lets drag some baggage along!
-    val full: Either[AppError, FieldEncoded] = valueBytes.map(FieldEncoded(_, fieldData))
+    val full: Either[CodecError, FieldEncoded] = valueBytes.map(FieldEncoded(_, fieldData))
     full
 
   }
 
   /** These is really a container. Inside is a list of  datasteps and delimeters **/
-  def encodePathSet(data: FieldData): Either[AppError, NestedEncodedValues] = {
+  def encodePathSet(data: FieldData): Either[CodecError, NestedEncodedValues] = {
 
     // Another array of arrays. List of PathSet, each PathSet has Paths, each Path has  PathSteps
 
-    val pathList: Either[AppError, List[Json]] = json2array(data.v)
+    val pathList: Either[CodecError, List[Json]] = json2array(data.v)
 
 
     val another =  DefinitionData.pathSetAnother
@@ -117,7 +117,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
   }
 
   /** @json The array surrounding the object **/
-  def encodePathStep(json: Json): Either[AppError, RawEncodedValue] = {
+  def encodePathStep(json: Json): Either[CodecError, RawEncodedValue] = {
     /*
       account by itself
       currency by itself
@@ -126,7 +126,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
      */
     logger.debug(s"Encoding Path Step\n ${json.spaces2}")
     // Another array of arrays
-    val arr: Either[AppError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
+    val arr: Either[CodecError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
 
     // In a step the following fields are serialized in the order below
     // FIXME: Move to reference data
@@ -170,7 +170,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
   }
 
   /** Encodes the hex including the Variable Length info */
-  def encodeBlob(json: Json): Either[AppError, RawEncodedValue] = {
+  def encodeBlob(json: Json): Either[CodecError, RawEncodedValue] = {
     for {
       str    <- CirceUtils.decode(json, Decoder[String])
       ubytes ← ByteUtils.hex2ubytes(str)
@@ -179,10 +179,10 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
 
   }
 
-  def encodeHash(json: Json, byteLen: Int): Either[AppError, RawEncodedValue] = {
+  def encodeHash(json: Json, byteLen: Int): Either[CodecError, RawEncodedValue] = {
     // This looks like Hex Already... in fact just round tripping
-    val str: ErrorOr[String] = CirceUtils.decode(json, Decoder[String])
-    val ans: Either[AppError, List[UByte]] = str.flatMap { v ⇒
+    val str = CirceUtils.decode(json, Decoder[String])
+    val ans: Either[CodecError, List[UByte]] = str.flatMap { v ⇒
       ByteUtils.hex2ubytes(v)
     }
     val checked = ans.flatMap(ByteUtils.ensureMaxLength(_, byteLen))
@@ -190,38 +190,38 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
     ans.fmap(RawEncodedValue)
   }
 
-  def encodeHash160(json: Json): Either[AppError, RippleTypeEncoded] = {
+  def encodeHash160(json: Json): Either[CodecError, RippleTypeEncoded] = {
     val rtype: Either[OError, RippleType]          = dd.getTypeObj("Hash160")
-    val encoded: Either[AppError, RawEncodedValue] = encodeHash(json, 20)
+    val encoded: Either[CodecError, RawEncodedValue] = encodeHash(json, 20)
 
     (encoded, rtype).mapN(RippleTypeEncoded)
   }
 
-  def encodeHash256(json: Json): Either[AppError, RippleTypeEncoded] = {
+  def encodeHash256(json: Json): Either[CodecError, RippleTypeEncoded] = {
     val rtype: Either[OError, RippleType]          = dd.getTypeObj("Hash256")
-    val encoded: Either[AppError, RawEncodedValue] = encodeHash(json, 32)
+    val encoded: Either[CodecError, RawEncodedValue] = encodeHash(json, 32)
 
     (encoded, rtype).mapN(RippleTypeEncoded(_, _))
   }
 
-  def encodeTransactionType(json: Json): Either[AppError, RawEncodedValue] = {
-    val res: Either[AppError, RawEncodedValue] = CirceUtils.decode(json, Decoder[String]).flatMap(v ⇒ txnType2Bin(v))
+  def encodeTransactionType(json: Json): Either[CodecError, RawEncodedValue] = {
+    val res: Either[CodecError, RawEncodedValue] = CirceUtils.decode(json, Decoder[String]).flatMap(v ⇒ txnType2Bin(v))
     res
   }
 
-  def encodeLedgerEntryType(json: Json): Either[AppError, RawEncodedValue] = {
-    val res: Either[AppError, RawEncodedValue] = CirceUtils.decode(json, Decoder[String]).flatMap(v ⇒ ledgerType2Bin(v))
+  def encodeLedgerEntryType(json: Json): Either[CodecError, RawEncodedValue] = {
+    val res: Either[CodecError, RawEncodedValue] = CirceUtils.decode(json, Decoder[String]).flatMap(v ⇒ ledgerType2Bin(v))
     res
   }
 
-  def encodeTxnResultType(json:Json): Either[AppError, RawEncodedValue] = {
+  def encodeTxnResultType(json:Json): Either[CodecError, RawEncodedValue] = {
     json2string(json).flatMap(txnResultType2Bin)
   }
 
   /** Adapted from the Javascript
     * Redo with one UInt Decoder and a function for each type.
     * */
-  def encodeUIntN(v: Json, dataType: String): Either[AppError, RawEncodedValue] = {
+  def encodeUIntN(v: Json, dataType: String): Either[CodecError, RawEncodedValue] = {
     AppException.wrap(s"Binary Encoding JSON # $v") {
 
       val number: Option[ULong] = for {
@@ -229,7 +229,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
         ulong   <- numeric.toLong.map(ULong(_))
       } yield ulong
 
-      val unsigned = Either.fromOption(number, AppError(s"JSON ${v.spaces2} was not a Unisgned Long Number"))
+      val unsigned = Either.fromOption(number, CodecError(s"JSON ${v.spaces2} was not a Unisgned Long Number"))
 
       val ans: Either[OError, RawEncodedValue] = unsigned.flatMap(v ⇒ encodeULong(v, dataType))
       ans
@@ -238,7 +238,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
 
 
 
-  def encodeUInt64(json: Json): Either[AppError, RawEncodedValue] = {
+  def encodeUInt64(json: Json): Either[CodecError, RawEncodedValue] = {
     parseUInt64(json).flatMap(encodeULong(_, "UInt64"))
   }
 
@@ -267,17 +267,17 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
   /** Given a transaction type name, an enumeration basically, return its value. -1 invalid until 101 Error if not
     * found. I think these are always UInt16 incoded.
     * */
-  def txnType2Bin(txnName: String): Either[AppError, RawEncodedValue] = {
+  def txnType2Bin(txnName: String): Either[CodecError, RawEncodedValue] = {
     dd.getTransactionType(txnName).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
 
   }
 
-  def ledgerType2Bin(entryType: String): Either[AppError, RawEncodedValue] = {
+  def ledgerType2Bin(entryType: String): Either[CodecError, RawEncodedValue] = {
     dd.getLedgerEntryType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
   }
 
   // This should be pre-baked of course.
-  def txnResultType2Bin(entryType: String): Either[AppError, RawEncodedValue] = {
+  def txnResultType2Bin(entryType: String): Either[CodecError, RawEncodedValue] = {
     dd.getTxnResultType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
   }
 }

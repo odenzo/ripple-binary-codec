@@ -4,31 +4,31 @@ import cats.implicits._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 
 trait JsonUtils extends CirceUtils {
 
 
-  def findField(name: String, json: JsonObject): Either[AppError, Json] = {
-    Either.fromOption(json(name), AppError(s"Field $name not found ", json.asJson))
+  def findField(name: String, json: JsonObject): Either[CodecError, Json] = {
+    Either.fromOption(json(name), CodecError(s"Field $name not found ", json.asJson))
   }
 
 
-  def findFieldAsObject(name: String, json: JsonObject): Either[AppError, JsonObject] = {
+  def findFieldAsObject(name: String, json: JsonObject): Either[CodecError, JsonObject] = {
     findField(name,json).flatMap(json2object)
   }
 
   
-  def json2object(json: Json): Either[AppError, JsonObject] = {
-    Either.fromOption(json.asObject, AppError("Expected JSON Object", json))
+  def json2object(json: Json): Either[CodecError, JsonObject] = {
+    Either.fromOption(json.asObject, CodecError("Expected JSON Object", json))
   }
 
-  def json2array(json: Json): Either[AppError, List[Json]] = {
-    Either.fromOption(json.asArray.map(_.toList), AppError("Expected JSON Array", json))
+  def json2array(json: Json): Either[CodecError, List[Json]] = {
+    Either.fromOption(json.asArray.map(_.toList), CodecError("Expected JSON Array", json))
   }
 
-  def json2string(json: Json): Either[AppError, String] = {
-    Either.fromOption(json.asString, AppError("Expected JSON String", json))
+  def json2string(json: Json): Either[CodecError, String] = {
+    Either.fromOption(json.asString, CodecError("Expected JSON String", json))
   }
 
 }

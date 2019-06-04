@@ -7,7 +7,7 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
 import com.odenzo.ripple.bincodec.utils.RippleBase58
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
 
 /**
   * Accounts a little special and also I want to create, encode, and decode later.
@@ -74,7 +74,7 @@ object AccountIdCodecs extends StrictLogging {
       Includes a 4-byte checksum so that the probability of generating a valid address from random characters is approximately 1 in 2^32
 
      */
-    val account: Either[OError, String] = Either.fromOption(json.asString, AppError("Account JSON Not String"))
+    val account: Either[OError, String] = Either.fromOption(json.asString, CodecError("Account JSON Not String"))
     val asBytes: Either[OError, List[UByte]] = account.map { s ⇒
       val allBytes: List[UByte] = RippleBase58.decode(s).map(UByte(_)).toList
       val padded = if (allBytes.length < 24) {

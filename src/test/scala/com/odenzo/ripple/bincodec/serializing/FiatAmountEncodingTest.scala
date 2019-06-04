@@ -8,7 +8,7 @@ import org.scalatest.{Assertion, FunSuite}
 import spire.math._
 
 import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
-import com.odenzo.ripple.bincodec.utils.caterrors.AppError
+import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils}
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
 
@@ -88,12 +88,12 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     case class TData(bin: String, mant: String, exp: Int, value: String)
 
-    val td: Either[AppError, List[TData]] =
+    val td: Either[CodecError, List[TData]] =
       CirceUtils
         .parseAsJson(fixture)
         .flatMap(j ⇒ CirceUtils.decode(j, Decoder[List[TData]]))
 
-    AppError.log(td, "Error Parsing Test Data: ")
+    CodecError.log(td, "Error Parsing Test Data: ")
     val testData: List[TData] = td.right.value
 
     testData.foreach { fix: TData ⇒
@@ -102,7 +102,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
       logger.debug(s"Step 1 $step1")
 
       val res = CurrencyEncoders.normalizeAmount2MantissaAndExp(bd)
-      AppError.log(res)
+      CodecError.log(res)
       val (mant, exp) = res.right.value
       logger.info(s"Fully Normalized: $mant -> $exp")
 

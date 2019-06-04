@@ -5,8 +5,8 @@ import cats.data._
 import cats.implicits._
 import io.circe.{ACursor, Json, JsonObject}
 
-import com.odenzo.ripple.bincodec.utils.caterrors.CatsTransformers.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
 
 trait CirceEncoderUtils {
 
@@ -142,7 +142,7 @@ trait CirceCodecUtils extends CirceEncoderUtils with CirceDecoderUtils {
   }
 
   def extractFieldFromObject(jobj: JsonObject, fieldName: String): Either[OError, Json] = {
-    Either.fromOption(jobj.apply(fieldName), AppError(s"Could not Find $fieldName in JSonObject "))
+    Either.fromOption(jobj.apply(fieldName), CodecError(s"Could not Find $fieldName in JSonObject "))
   }
 
   /**
@@ -152,7 +152,7 @@ trait CirceCodecUtils extends CirceEncoderUtils with CirceDecoderUtils {
     * @param json
     */
   def extractAsKeyValueList(json: Json): ErrorOr[List[(String, Json)]] = {
-    val obj: Either[OError, JsonObject]           = json.asObject.toRight(AppError("JSON Fragment was not a JSON Object"))
+    val obj: Either[OError, JsonObject]           = json.asObject.toRight(CodecError("JSON Fragment was not a JSON Object"))
     val ans: Either[OError, List[(String, Json)]] = obj.map(_.toList)
     ans
   }
@@ -166,7 +166,7 @@ trait CirceCodecUtils extends CirceEncoderUtils with CirceDecoderUtils {
     *
     * @return
     */
-  def parseKeyValuesList[T](json: Json, fn: (String, Json) ⇒ Either[AppError, T]): ErrorOr[List[T]] = {
+  def parseKeyValuesList[T](json: Json, fn: (String, Json) ⇒ Either[CodecError, T]): ErrorOr[List[T]] = {
     val kvs: ErrorOr[List[(String, Json)]] = extractAsKeyValueList(json)
     kvs.flatMap { theList ⇒
       theList.traverse((tup: (String, Json)) ⇒ fn(tup._1, tup._2))
