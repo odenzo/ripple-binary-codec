@@ -1,4 +1,4 @@
-package com.odenzo.ripple.jsfixtures
+package com.odenzo.ripple.bincodec.jsfixtures
 
 import cats._
 import cats.data._
@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, ContainerFields}
-import com.odenzo.ripple.bincodec.utils.CirceUtils
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils, TestFixData}
 
 class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
@@ -22,9 +22,9 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
     val accountState: Json = dobj("accountState").get
     val transactions: Json = dobj("transactions").get
     val ledgerData         = dobj("ledgerData").get
-    val accounts           = CirceUtils.decode(accountState, Decoder[List[TestFixData]])
-    val txn                = CirceUtils.decode(transactions, Decoder[List[TestFixData]])
-    val ledger             = CirceUtils.decode(ledgerData, Decoder[List[TestFixData]])
+    val accounts           = JsonUtils.decode(accountState, Decoder[List[TestFixData]])
+    val txn                = JsonUtils.decode(transactions, Decoder[List[TestFixData]])
+    val ledger             = JsonUtils.decode(ledgerData, Decoder[List[TestFixData]])
 
     val letsGo: List[TestFixData] = accounts.right.value ::: txn.right.value ::: ledger.right.value
 

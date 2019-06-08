@@ -7,9 +7,8 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleType}
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, CurrencyEncoders, TypeSerializers}
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils}
-import com.odenzo.ripple.models.utils.CirceCodecUtils
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 
 class TypeSerializersTest extends FunSuite with OTestSpec {
 
@@ -35,9 +34,9 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
     """.stripMargin
 
   val json: Json = {
-    val res = CirceUtils.parseAsJson(sample)
+    val res = JsonUtils.parseAsJson(sample)
 
-    CodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
+    RippleCodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     res.right.value
   }
 
@@ -47,7 +46,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
     val req = TypeSerializers.singleFieldData(fieldName, data)
     req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
-    CodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
+    RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 
@@ -60,7 +59,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
 
   test("UInt32") {
     val sequence: Int                 = 25
-    val v                             = Json.fromLong(sequence)
+    val v                             = Json.fromInt(sequence)
     val res: BinarySerializer.Encoded = getOrLog(TypeSerializers.encodeUIntN(v, "UInt32"))
     val hex                           = res.toHex
     logger.info(s"Result: $hex")

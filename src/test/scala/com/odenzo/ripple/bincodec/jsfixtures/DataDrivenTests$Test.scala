@@ -1,4 +1,4 @@
-package com.odenzo.ripple.jsfixtures
+package com.odenzo.ripple.bincodec.jsfixtures
 
 import scala.collection.immutable
 
@@ -15,11 +15,10 @@ import spire.math.{UByte, ULong}
 import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, ContainerFields, CurrencyEncoders, TypeSerializers}
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils, FixtureUtils}
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
-import com.odenzo.ripple.models.utils.CirceCodecUtils
 
 class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with FixtureUtils {
 
@@ -85,7 +84,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
     val dobj: JsonObject                 = codec_fixtures.asObject.get
     val fieldsTests: Json                = dobj("fields_tests").get
-    val fields: ErrorOr[List[FieldTest]] = CirceUtils.decode(fieldsTests, Decoder[List[FieldTest]])
+    val fields: ErrorOr[List[FieldTest]] = JsonUtils.decode(fieldsTests, Decoder[List[FieldTest]])
 
     fields.map { lf ⇒
       logger.info(s"TOTAL Number of Fixtures ${lf.length}")
@@ -112,7 +111,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     val dobj: JsonObject = fixtures.asObject.get
     val allTests: Json   = dobj("whole_objects").get
 
-    val eachTest: ErrorOr[List[JsonObject]] = CirceUtils.decode(allTests, Decoder[List[JsonObject]])
+    val eachTest: ErrorOr[List[JsonObject]] = JsonUtils.decode(allTests, Decoder[List[JsonObject]])
 
     val targets: Seq[(JsonObject, Seq[(String, ExpectedField)], String)] = eachTest.zipWithIndex
       .map {
@@ -197,12 +196,12 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
   def testFiat(b: BaseValueTest, v: FiatAmountTest): Assertion = {
     logger.info(s"Testing Fiat $v")
-    val manual: Either[CodecError, (ULong, Int)] = TypeSerializers
-                                                   .json2object(b.test_json)
-                                                   .flatMap(findField("value", _))
-                                                   .flatMap(TypeSerializers.json2string)
-                                                   .map(BigDecimal(_))
-                                                   .flatMap(CurrencyEncoders.normalizeAmount2MantissaAndExp)
+    val manual: Either[RippleCodecError, (ULong, Int)] = TypeSerializers
+                                                         .json2object(b.test_json)
+                                                         .flatMap(findField("value", _))
+                                                         .flatMap(TypeSerializers.json2string)
+                                                         .map(BigDecimal(_))
+                                                         .flatMap(CurrencyEncoders.normalizeAmount2MantissaAndExp)
 
     logger.debug(s"Man / Exponent $manual")
     val (mantissa: ULong, exp: Int) = manual.right.value
@@ -254,7 +253,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
     val dobj: JsonObject            = codec_fixtures.asObject.get
     val fieldsTests: Json           = dobj("values_tests").get
-    val allFields: List[JsonObject] = getOrLog(CirceUtils.decode(fieldsTests, Decoder[List[JsonObject]]))
+    val allFields: List[JsonObject] = getOrLog(JsonUtils.decode(fieldsTests, Decoder[List[JsonObject]]))
 
     val indexed: List[(JsonObject, Int)] = allFields.zipWithIndex
     logger.debug(s"Number of Fields ${indexed.length}")
@@ -278,12 +277,12 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
         logger.debug(s"\n\n *** DOING INDEX $indx *****\n\n")
         val json = obj.asJson
         logger.debug("Decoding \n" + json.spaces2)
-        val base: BaseValueTest = CirceUtils.decode(obj.asJson, Decoder[BaseValueTest]).right.value
+        val base: BaseValueTest = JsonUtils.decode(obj.asJson, Decoder[BaseValueTest]).right.value
         logger.info(s"Base: $base")
 
-        val xrp: ErrorOr[XrpAmountTest]              = CirceUtils.decode(json, Decoder[XrpAmountTest])
-        val fiat: ErrorOr[FiatAmountTest]            = CirceUtils.decode(json, Decoder[FiatAmountTest])
-        val special: ErrorOr[TypeSpecializationTest] = CirceUtils.decode(json, Decoder[TypeSpecializationTest])
+        val xrp: ErrorOr[XrpAmountTest]              = JsonUtils.decode(json, Decoder[XrpAmountTest])
+        val fiat: ErrorOr[FiatAmountTest]            = JsonUtils.decode(json, Decoder[FiatAmountTest])
+        val special: ErrorOr[TypeSpecializationTest] = JsonUtils.decode(json, Decoder[TypeSpecializationTest])
 
         // HACK Note: fiat matches XRP too so have to order fiat before it
         val allTestType = Seq(fiat, xrp, special)

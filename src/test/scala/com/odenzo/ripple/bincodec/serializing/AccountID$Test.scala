@@ -7,9 +7,8 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.OTestSpec
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils}
-import com.odenzo.ripple.models.utils.CirceCodecUtils
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 
 class AccountID$Test extends FunSuite with OTestSpec {
 
@@ -35,20 +34,20 @@ class AccountID$Test extends FunSuite with OTestSpec {
     """.stripMargin
 
   val json: Json = {
-    val res = CirceUtils.parseAsJson(sample)
+    val res = JsonUtils.parseAsJson(sample)
 
-    CodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
+    RippleCodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     res.right.value
   }
 
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
   /** Pack up Data and go through more of the pipeline */
-  def encodeSingle(fieldName: String, data: Json, isNested:Boolean): Either[CodecError, BinarySerializer.FieldEncoded] = {
+  def encodeSingle(fieldName: String, data: Json, isNested:Boolean): Either[RippleCodecError, BinarySerializer.FieldEncoded] = {
     val req = TypeSerializers.singleFieldData(fieldName, data)
     req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_,isNested,false))
-    CodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
+    RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 

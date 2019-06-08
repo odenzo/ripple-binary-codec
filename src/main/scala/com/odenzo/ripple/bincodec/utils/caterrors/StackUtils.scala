@@ -3,7 +3,7 @@ package com.odenzo.ripple.bincodec.utils.caterrors
 /**
   * What to have some nice chopping to for nested stack traces.
   */
-trait StackUtils {
+private[bincodec] trait StackUtils {
 
   def stackAsString(err: Throwable): String = {
     import java.io.{PrintWriter, StringWriter}
@@ -20,4 +20,4 @@ trait StackUtils {
 }
 
 
-object StackUtils extends StackUtils
+private[bincodec] object StackUtils extends StackUtils

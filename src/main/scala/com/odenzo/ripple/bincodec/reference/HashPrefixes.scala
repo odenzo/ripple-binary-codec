@@ -8,6 +8,10 @@ import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
+/**
+* Ripple Hash Prefixes
+  * @param v
+  */
 case class HashPrefix(v: List[UByte]) {
 
   val asHex: String       = ByteUtils.ubytes2hex(v)

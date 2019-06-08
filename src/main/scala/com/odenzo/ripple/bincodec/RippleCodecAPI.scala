@@ -5,10 +5,9 @@ import io.circe.JsonObject
 import io.circe.syntax._
 
 import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, TypeSerializers}
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 object RippleCodecAPI extends StrictLogging {
-
 
   /**
     * Expects a top level JsonObject representing a JSON document
@@ -18,7 +17,7 @@ object RippleCodecAPI extends StrictLogging {
     *
     * @return Hex string representing the serialization in total.
     */
-  def binarySerialize(jsonObject: JsonObject): Either[CodecError, BinarySerializer.NestedEncodedValues] = {
+  def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, BinarySerializer.NestedEncodedValues] = {
     TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
@@ -31,19 +30,30 @@ object RippleCodecAPI extends StrictLogging {
     *
     * @param tx_json
     */
-  def binarySerializeForSigning(tx_json: JsonObject): Either[CodecError, BinarySerializer.NestedEncodedValues] = {
+  def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, BinarySerializer.NestedEncodedValues] = {
     logger.trace("Serializing for Signing")
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
   }
 
-
-  def serializedTxBlob(jsonObject: JsonObject): Either[CodecError, Array[Byte]] = {
-    binarySerialize(jsonObject).map(_.rawBytes).map(v⇒ v.map(_.toByte)).map(_.toArray)
+  /**
+    * Binary Serialize the tx_json with all fields marked "isSerialized" per Ripple Spec
+    *
+    * @param jsonObject The tx_json object, with auto-fillable fields filled
+    * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
+    */
+  def serializedTxBlob(jsonObject: JsonObject): Either[RippleCodecError, Array[Byte]] = {
+    binarySerialize(jsonObject).map(_.rawBytes).map(v ⇒ v.map(_.toByte)).map(_.toArray)
   }
 
-  def signingTxBlob(jsonObject: JsonObject): Either[CodecError, Array[Byte]] = {
-    binarySerializeForSigning(jsonObject).map(_.rawBytes).map(v ⇒ v.map(_.toByte)).map(_.toArray)
+  /**
+    * Binary Serialize the tx_json with all fields marked "isSigningField" per Ripple Spec
+    *
+    * @param jsonObject The tx_json object, with auto-fillable fields filled
+    *
+    * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
+    */
+  def signingTxBlob(jsonObject: JsonObject): Either[RippleCodecError, Array[Byte]] = {
+    binarySerializeForSigning(jsonObject).map(v⇒ v.toBytes)
   }
-
 
 }

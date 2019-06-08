@@ -48,7 +48,7 @@ trait FixtureUtils extends JsonUtils with OTestSpec {
   def loadTransactions(resource: String = "/test/Signing/secptxn.json"): List[(JsonObject, JsonObject)] = {
 
     val txnfixture: Json          = getOrLog(loadJsonResource(resource))
-    val fixObjs: List[JsonObject] = getOrLog(CirceUtils.decode(txnfixture, Decoder[List[JsonObject]]))
+    val fixObjs: List[JsonObject] = getOrLog(JsonUtils.decode(txnfixture, Decoder[List[JsonObject]]))
 
     fixObjs.map { obj ⇒
       val req = findRequiredObject("Request", obj)

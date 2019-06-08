@@ -9,25 +9,19 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.implicits._
 import spire.math.{UByte, UInt, ULong}
 
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, AppException, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
 
-/**
-  * Hex representation of binary value. May be odd length.
-  *
-  * @param v Hex string, without 0x prefix.
-  */
-case class Hex(v: String)
 
 
 /** Helpers since I seldom use bits/bytes directly and Scala/Java sucks. Don't know a good lib
   * SDtarting to use Spire, and making sure these all work -- but more convenience than speed at this point
   * */
-trait ByteUtils extends StrictLogging {
+private[bincodec] trait ByteUtils extends StrictLogging {
 
   val bytezero: Byte = 0.toByte
-  
-  def hex2Bytes(hex: String): Either[CodecError, List[Byte]] = Nested(hex2ubytes(hex)).map(_.toByte).value
+
+  def hex2Bytes(hex: String): Either[RippleCodecError, List[Byte]] = Nested(hex2ubytes(hex)).map(_.toByte).value
 
   
 
@@ -51,7 +45,7 @@ trait ByteUtils extends StrictLogging {
     * Takes an arbitrary length string and returns an listed of unsigned bytes
     * If the number of hex digits is odd, is padded with zero on left.
     */
-  def hex2ubytes(v: String): Either[CodecError, List[UByte]] = {
+  def hex2ubytes(v: String): Either[RippleCodecError, List[UByte]] = {
     zeroEvenPadHex(v).sliding(2, 2).toList.traverse(hex2ubyte)
   }
 
@@ -68,14 +62,14 @@ trait ByteUtils extends StrictLogging {
     }
   }
 
-  def hex2bitStr(v: String): Either[CodecError, String] = hex2ubyte(v).map(ubyte2bitStr).map(_.mkString)
+  def hex2bitStr(v: String): Either[RippleCodecError, String] = hex2ubyte(v).map(ubyte2bitStr).map(_.mkString)
 
   /**
     *   Note for speed
     * @param v Must be a one or two character hex string not enforced
     * @return
     */
-  def hex2ubyte(v: String): Either[CodecError, UByte] = {
+  def hex2ubyte(v: String): Either[RippleCodecError, UByte] = {
     hex2byte(v).map(UByte(_))
   }
 
@@ -86,8 +80,8 @@ trait ByteUtils extends StrictLogging {
     *
     * @return
     */
-  def hex2byte(v: String): Either[CodecError, Byte] = {
-    AppException.wrap(s"$v hex to Byte") {
+  def hex2byte(v: String): Either[RippleCodecError, Byte] = {
+    BinCodecExeption.wrap(s"$v hex to Byte") {
       java.lang.Long.parseLong(v, 16).toByte.asRight
     }
   }
@@ -123,8 +117,8 @@ trait ByteUtils extends StrictLogging {
   }
 
   /** List of four unsigned bytes representing unsigned long get converted */
-  def ubytes2ulong(bytes: Seq[UByte]): Either[OError, ULong] = {
-    if (bytes.length != 8) CodecError("ulong requires exactly 4 ubytes").asLeft
+  def ubytes2ulong(bytes: Seq[UByte]): Either[OErrorRipple, ULong] = {
+    if (bytes.length != 8) RippleCodecError("ulong requires exactly 4 ubytes").asLeft
     else {
       val ul: List[ULong]      = bytes.map(ub ⇒ ULong(ub.toLong)).toList.reverse
       val shifted: List[ULong] = ul.mapWithIndex((v: ULong, i: Int) ⇒ v << (i * 8))
@@ -141,15 +135,15 @@ trait ByteUtils extends StrictLogging {
   def uLong2hex(v: ULong): String = v.toHexString()
 
   /** Quicky to take 16 hex chars and turn into ULong. Hex prefixed with 0x if missing */
-  def hex2ulong(hex: String): Either[CodecError, ULong] = {
-    AppException.wrap(s"Parsing ULong from $hex") {
+  def hex2ulong(hex: String): Either[RippleCodecError, ULong] = {
+    BinCodecExeption.wrap(s"Parsing ULong from $hex") {
       val bi = BigInt(hex, 16)
       ULong.fromBigInt(bi).asRight
     }
   }
 
   /** If there are 8 bytes then return as ULong otherwise error. */
-  def longBytesToULong(bytes: List[UByte]): Either[OError, ULong] = {
+  def longBytesToULong(bytes: List[UByte]): Either[OErrorRipple, ULong] = {
 
     if (bytes.length == 8) {
       // Convert to ULong 64
@@ -162,7 +156,7 @@ trait ByteUtils extends StrictLogging {
       val ulong: ULong = shifted.foldLeft(ULong(0))(_ | _)
       ulong.asRight
     } else {
-      CodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
+      RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
     }
   }
 
@@ -176,8 +170,8 @@ trait ByteUtils extends StrictLogging {
     s"Hex: ${a.toHexString} or  ${a.toBinaryString}"
   }
 
-  def ensureMaxLength(l: List[UByte], len: Int): Either[CodecError, List[UByte]] = {
-    if (l.length > len) CodecError(s"Byte List length ${l.length} > $len").asLeft
+  def ensureMaxLength(l: List[UByte], len: Int): Either[RippleCodecError, List[UByte]] = {
+    if (l.length > len) RippleCodecError(s"Byte List length ${l.length} > $len").asLeft
     else l.asRight
   }
 

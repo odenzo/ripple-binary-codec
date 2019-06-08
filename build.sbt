@@ -78,7 +78,7 @@ val lib_circe = {
 
 
 val lib_cats = {
-  val catsVersion = "1.6.0"
+  val catsVersion = "1.6.1"
   Seq(
     "org.typelevel" %% "cats-core"   % catsVersion, // Cats is pulled in via Circe for now
     "org.typelevel" %% "cats-effect" % "1.3.1" withSources () withJavadoc ()

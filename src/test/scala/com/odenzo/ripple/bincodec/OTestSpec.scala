@@ -7,9 +7,9 @@ import com.typesafe.scalalogging.{Logger, StrictLogging}
 import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.{EitherValues, Matchers}
 
-import com.odenzo.ripple.bincodec.utils.CirceUtils
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppException, CodecError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
 
 trait OTestSpec extends StrictLogging with Matchers with EitherValues {
 
@@ -29,18 +29,18 @@ trait OTestSpec extends StrictLogging with Matchers with EitherValues {
 
   }
 
-  def loadJsonResource(path: String): Either[CodecError, Json] = {
-    AppException.wrap(s"Getting Resource $path") {
+  def loadJsonResource(path: String): Either[RippleCodecError, Json] = {
+    BinCodecExeption.wrap(s"Getting Resource $path") {
       val resource: URL          = getClass.getResource(path)
       val source: BufferedSource = Source.fromURL(resource)
       val data: String           = source.getLines().mkString("\n")
-      CirceUtils.parseAsJson(data)
+      JsonUtils.parseAsJson(data)
     }
   }
 
   def getOrLog[T](ee: ErrorOr[T], msg: String = "Error: ", loggger: Logger = logger): T = {
     if (ee.isLeft) {
-      CodecError.dump(ee) match {
+      RippleCodecError.dump(ee) match {
         case None       ⇒ loggger.debug("No Errors Found")
         case Some(emsg) ⇒ loggger.error(s"$msg\t=> $emsg ")
       }

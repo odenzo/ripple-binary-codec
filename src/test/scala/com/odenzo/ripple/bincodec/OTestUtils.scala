@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 trait OTestUtils extends StrictLogging {
 
@@ -17,24 +17,24 @@ trait OTestUtils extends StrictLogging {
     */
   def analyzeAmount(got: String, expected: String) = {
 
-    val isXRP: Either[CodecError, Boolean] = ByteUtils
-                                             .hex2ubyte("0" + got.drop(2).head)
-                                             .map(b ⇒ (b | UByte(8)) === UByte(0))
+    val isXRP: Either[RippleCodecError, Boolean] = ByteUtils
+                                                   .hex2ubyte("0" + got.drop(2).head)
+                                                   .map(b ⇒ (b | UByte(8)) === UByte(0))
 
     isXRP.map {
       case true => logger.info("XRP Value Deal With IT")
       case false ⇒
         logger.info("Analyzing Suspected Fiat Amount")
-        val gotFields: Either[CodecError, (List[UByte], List[UByte], List[UByte])]      = breakFiat(got)
-        val expectedFields: Either[CodecError, (List[UByte], List[UByte], List[UByte])] = breakFiat(expected)
+        val gotFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])]      = breakFiat(got)
+        val expectedFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])] = breakFiat(expected)
     }
 
   }
 
   /** Breaks down to UBytes for the amount, currency amd issuer */
-  def breakFiat(hex: String): Either[CodecError, (List[UByte], List[UByte], List[UByte])] = {
+  def breakFiat(hex: String): Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])] = {
 
-    val all: Either[CodecError, List[UByte]] = ByteUtils.hex2ubytes(hex)
+    val all: Either[RippleCodecError, List[UByte]] = ByteUtils.hex2ubytes(hex)
     val amount                             = all.map(_.take(8)) // Top 64 is amount in sign and flag
     val currency                           = all.map(_.slice(8, 28)) // 160 bits
     val issuer                             = all.map(_.slice(32, 52)) // another 160 bits

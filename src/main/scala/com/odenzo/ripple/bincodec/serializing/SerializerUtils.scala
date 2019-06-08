@@ -11,7 +11,7 @@ import spire.math.ULong
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions}
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.FieldData
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, AppException, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
 /**
  * Better dealing with definitions data ?
@@ -20,7 +20,7 @@ trait SerializerUtils extends StrictLogging {
 
   val dd: DefinitionData = Definitions.fieldData
 
-  def singleFieldData(fieldName: String, fieldValue: Json): Either[CodecError, FieldData] = {
+  def singleFieldData(fieldName: String, fieldValue: Json): Either[RippleCodecError, FieldData] = {
     dd.getFieldInfo(fieldName).flatMap { fi ⇒
       FieldData(fieldName, fieldValue, fi).asRight
     }
@@ -28,24 +28,27 @@ trait SerializerUtils extends StrictLogging {
 
 
   /** WARNING: This doesn't check range problems */
-  def bigInt2ulong(bi: BigInt): Either[OError, ULong] = {
-    if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt)) CodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
+  def bigInt2ulong(bi: BigInt): Either[OErrorRipple, ULong] = {
+    if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt)) RippleCodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
     else ULong.fromBigInt(bi).asRight
   }
 
-  def parseUInt64(json: Json): Either[CodecError, ULong] = {
-    AppException.wrap(s"Decoding JSON as UInt64"){
 
-      val raw: Either[OError, String] = Either.fromOption(json.asString, CodecError(s"$json wasnt a string"))
+  /** Not sure what the Ripple spec, but we should assume all numbers are Base 10 in ""
+    * for UInt64. This is as opposed to BigInt for some other numbers in quotes (e.g. Drops) */
+  def parseUInt64(json: Json): Either[RippleCodecError, ULong] = {
+    BinCodecExeption.wrap(s"Decoding JSON as UInt64"){
 
-      val longer: Either[CodecError, ULong] = raw.flatMap{ v ⇒
+      val raw: Either[OErrorRipple, String] = Either.fromOption(json.asString, RippleCodecError(s"$json wasnt a string"))
+
+      val longer: Either[RippleCodecError, ULong] = raw.flatMap{ v ⇒
         Try{
           BigInt(v, 10)
         }.recover{
           case e: java.lang.NumberFormatException ⇒ BigInt(v, 16)
         }
         .toEither
-        .leftMap((t: Throwable) ⇒ AppException(t))
+        .leftMap((t: Throwable) ⇒ BinCodecExeption(t))
         .flatMap(bigInt2ulong)
 
       }

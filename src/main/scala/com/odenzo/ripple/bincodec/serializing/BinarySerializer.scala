@@ -8,7 +8,15 @@ import io.circe._
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleType}
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{EmptyValue, Encoded, FieldEncoded, NestedEncodedValues, RawEncodedValue, RippleTypeEncoded, VLEncodedValue}
+import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{
+  EmptyValue,
+  Encoded,
+  FieldEncoded,
+  NestedEncodedValues,
+  RawEncodedValue,
+  RippleTypeEncoded,
+  VLEncodedValue
+}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, Formatter}
 
 object BinarySerializer extends StrictLogging {
@@ -37,7 +45,8 @@ object BinarySerializer extends StrictLogging {
       * @return Linearized bytes from this and all nested objects rolled up
       */
     lazy val rawBytes: List[UByte] = encoded.flatMap(_.ubytes)
-    lazy val toHex: String         = ByteUtils.ubytes2hex(rawBytes)
+    def toHex: String              = ByteUtils.ubytes2hex(rawBytes)
+    def toBytes: Array[Byte]       = rawBytes.map(_.toByte).toArray
   }
 
   case class FieldEncoded(fieldValue: Encoded, data: FieldData) extends Encoded {

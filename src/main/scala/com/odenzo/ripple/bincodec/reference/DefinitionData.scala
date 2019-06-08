@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 /**
   *
@@ -60,14 +60,7 @@ object FieldInfo extends StrictLogging {
       case (false, true)  ⇒ fieldCode :: typeCode :: Nil
       case (true, true)   ⇒ UByte(0) :: typeCode :: fieldCode :: Nil
     }
-
-    // tipe should always be one half byte. maybe two in extreme?
-    // if name is 2  1/2 bytes do we add another 0 in front?
-
-   // logger.debug(s"FieldHeader Name $fName and Type $fType Bytes: " + ByteUtils.ubytes2hex(packed))
-
     packed
-
   }
 }
 
@@ -97,24 +90,23 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
                           txnResultTypes: Map[String, Long])
     extends StrictLogging {
 
-  private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OError, V] = {
-    Either.fromOption(map.get(key), CodecError(s" $key not found in map"))
+  private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OErrorRipple, V] = {
+    Either.fromOption(map.get(key), RippleCodecError(s" $key not found in map"))
   }
 
-  def getFieldInfo(name: String): Either[OError, FieldInfo] = getMapEntry(fieldsInfo, name)
+  def getFieldInfo(name: String): Either[OErrorRipple, FieldInfo] = getMapEntry(fieldsInfo, name)
 
-  def getTypeObj(name: String): Either[OError, RippleType] = getType(name).map(RippleType(name, _)) // Optimize
+  def getTypeObj(name: String): Either[OErrorRipple, RippleType] = getType(name).map(RippleType(name, _)) // Optimize
 
-  def getType(name: String): Either[OError, Long]          = getMapEntry(types, name)
-
-  // We should map these to UInt16 bytes as they are always encoded that way
-  def getTransactionType(txn: String): Either[OError, Long] = getMapEntry(txnTypes, txn)
+  def getType(name: String): Either[OErrorRipple, Long] = getMapEntry(types, name)
 
   // We should map these to UInt16 bytes as they are always encoded that way
-  def getLedgerEntryType(lt: String): Either[OError, Long] = getMapEntry(ledgerTypes, lt)
+  def getTransactionType(txn: String): Either[OErrorRipple, Long] = getMapEntry(txnTypes, txn)
 
-  def getTxnResultType(lt: String): Either[OError, Long] = getMapEntry(txnResultTypes, lt)
+  // We should map these to UInt16 bytes as they are always encoded that way
+  def getLedgerEntryType(lt: String): Either[OErrorRipple, Long] = getMapEntry(ledgerTypes, lt)
 
+  def getTxnResultType(lt: String): Either[OErrorRipple, Long] = getMapEntry(txnResultTypes, lt)
 
   def rangeOfNth: (FieldType, FieldType) = {
     val min: FieldType = fieldsData.values.minBy(_.nth)
@@ -124,7 +116,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
   }
 
   /** Each field has a marker, for debugging I find the fieldinfo from that */
-  def findByFieldMarker(hex:String) = {
+  def findByFieldMarker(hex: String): Option[(String, FieldInfo)] = {
     val ms = fieldsInfo.toList.filter(_._2.fieldID.toHex == hex).toList
     ms.foreach(ms => logger.info(s" Field Info $hex: $ms"))
     ms.headOption
@@ -132,11 +124,9 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
 }
 
 object DefinitionData {
-
-  // FIXME: Move to reference data
-  val pathSetAnother = RawEncodedValue(List(UByte(0xFF))) //  FF indicates another path follows
-  val pathSetEnd     = RawEncodedValue(List(UByte(0x00)))   // 00 indicates the end of the PathSet
-  val objectEndMarker =  RawEncodedValue( List(UByte(0xE1)))  // 0xE1, this is STObject not blob
-  val arrayEndMarker = RawEncodedValue(List(UByte(0xF1)))
+  val pathSetAnother  = RawEncodedValue(List(UByte(0xFF))) //  FF indicates another path follows
+  val pathSetEnd      = RawEncodedValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
+  val objectEndMarker = RawEncodedValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
+  val arrayEndMarker  = RawEncodedValue(List(UByte(0xF1)))
 
 }

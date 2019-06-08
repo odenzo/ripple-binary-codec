@@ -7,7 +7,7 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
 import com.odenzo.ripple.bincodec.utils.RippleBase58
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 /**
   * Accounts a little special and also I want to create, encode, and decode later.
@@ -40,7 +40,7 @@ object AccountIdCodecs extends StrictLogging {
     *
     * @return
     */
-  def encodeAccount(json: Json): Either[OError, RawEncodedValue] = {
+  def encodeAccount(json: Json): Either[OErrorRipple, RawEncodedValue] = {
     // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
     // Spec is 160bits for account, but VLEncoded of length
     // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
@@ -60,7 +60,7 @@ object AccountIdCodecs extends StrictLogging {
     * the AccountID is 160 bits but is not VL encoded.
     * This is special case so stick with raw encoded value
     */
-  def encodeAccountNoVL(json: Json): Either[OError, RawEncodedValue] = {
+  def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawEncodedValue] = {
     // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
     // Spec is 160bits for account, but VLEncoded of length
     // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
@@ -74,16 +74,16 @@ object AccountIdCodecs extends StrictLogging {
       Includes a 4-byte checksum so that the probability of generating a valid address from random characters is approximately 1 in 2^32
 
      */
-    val account: Either[OError, String] = Either.fromOption(json.asString, CodecError("Account JSON Not String"))
-    val asBytes: Either[OError, List[UByte]] = account.map { s ⇒
+    val account: Either[OErrorRipple, String] =
+      Either.fromOption(json.asString, RippleCodecError("Account JSON Not String"))
+
+    val asBytes: Either[OErrorRipple, List[UByte]] = account.map { s ⇒
       val allBytes: List[UByte] = RippleBase58.decode(s).map(UByte(_)).toList
       val padded = if (allBytes.length < 24) {
         List.fill(24 - allBytes.length)(UByte(0)) ::: allBytes
       } else allBytes
 
-      logger.debug(s"Encoding $s produced ${allBytes.length}")
       val ans: List[UByte] = padded.take(160 / 8)
-      assert(ans.length == 20, s"Account Encoded No VL Must be Exactly 20 bytes ${json.spaces2}")
       ans
     }
     asBytes.map(v ⇒ RawEncodedValue(v.toSeq))

@@ -2,7 +2,7 @@ package com.odenzo.ripple.bincodec.utils
 
 import com.typesafe.scalalogging.StrictLogging
 
-object Formatter extends StrictLogging {
+private[bincodec] object Formatter extends StrictLogging {
 
   /**
     * Pretty prints a Scala value similar to its source represention.

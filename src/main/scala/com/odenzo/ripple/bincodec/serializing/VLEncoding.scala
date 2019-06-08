@@ -7,13 +7,13 @@ import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 trait VLEncoding extends StrictLogging {
 
 
-  def prependVL(bytes: List[UByte]): Either[OError, RawEncodedValue] = {
-    val vl: Either[OError, RawEncodedValue] = encodeVL(bytes.length)
+  def prependVL(bytes: List[UByte]): Either[OErrorRipple, RawEncodedValue] = {
+    val vl: Either[OErrorRipple, RawEncodedValue] = encodeVL(bytes.length)
     val concatBytes = vl.map(rev ⇒ rev.ubytes ++ bytes)
     concatBytes.map(RawEncodedValue)
   }
@@ -26,7 +26,7 @@ trait VLEncoding extends StrictLogging {
     *
     * @return The encodedVL, which 1, 2, or 3 bytes. There is no RiplpleType for this
     */
-  def encodeVL(lengthToEnc: Int): Either[OError, RawEncodedValue] = {
+  def encodeVL(lengthToEnc: Int): Either[OErrorRipple, RawEncodedValue] = {
     val vl = lengthToEnc match {
 
       case l if Range(1, 192).inclusive.contains(l)        => (UByte(l) :: Nil).asRight
@@ -41,7 +41,7 @@ trait VLEncoding extends StrictLogging {
               UByte(length & 0xff),
               ).asRight
 
-      case l => CodecError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
+      case l => RippleCodecError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
     }
 
     vl.map(RawEncodedValue)

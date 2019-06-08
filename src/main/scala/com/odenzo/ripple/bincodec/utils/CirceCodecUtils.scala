@@ -1,15 +1,14 @@
-package com.odenzo.ripple.models.utils
+package com.odenzo.ripple.bincodec.utils
 
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{ACursor, Json, JsonObject}
+import io.circe.{ACursor, JsonObject}
 
-import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.{CodecError, OError}
 
-trait CirceEncoderUtils {
+private[bincodec] trait CirceCodecUtils {
 
+  type KeyTransformer = String => String
 
   /**
     * Generic lifter being applied just to ledger default encoding for now. The default encoder will
@@ -23,28 +22,17 @@ trait CirceEncoderUtils {
     * @return
     */
   def liftLedgerFields(parent: JsonObject, subfield: String): JsonObject = {
-    import com.odenzo.ripple.bincodec.utils.CirceUtils._
-    val updatedObj: Option[JsonObject] = parent(subfield).flatMap { ov⇒ov.asObject
-       match {
-       case None ⇒ None
-       case Some(obj) ⇒ Some( obj |+| parent.remove(subfield))
-     }
+    import JsonUtils.jsonObjectMonoid
+    val updatedObj: Option[JsonObject] = parent(subfield).flatMap{ ov ⇒
+      ov.asObject
+      match {
+        case None      ⇒ None
+        case Some(obj) ⇒ Some(obj |+| parent.remove(subfield))
+      }
     }
-     updatedObj.getOrElse(parent)
+    updatedObj.getOrElse(parent)
   }
-
-}
-
-trait CirceDecoderUtils {
-
-}
-
-object CirceDecoderUtils extends CirceDecoderUtils
-
-trait CirceCodecUtils extends CirceEncoderUtils with CirceDecoderUtils {
-
-  type KeyTransformer = String => String
-
+  
   /** This is the transforms from io.circe.generic.extras */
   val snakeCaseTransformation: KeyTransformer =
     _.replaceAll("([A-Z]+)([A-Z][a-z])", "$1_$2").replaceAll("([a-z\\d])([A-Z])", "$1_$2").toLowerCase
@@ -141,37 +129,7 @@ trait CirceCodecUtils extends CirceEncoderUtils with CirceDecoderUtils {
     in.withFocus(json ⇒ json.mapObject(jobj ⇒ fn(jobj)))
   }
 
-  def extractFieldFromObject(jobj: JsonObject, fieldName: String): Either[OError, Json] = {
-    Either.fromOption(jobj.apply(fieldName), CodecError(s"Could not Find $fieldName in JSonObject "))
-  }
 
-  /**
-    * Little utility for common case where an JsonObject just has "key": value
-    * WHere value may be heterogenous?
-    *
-    * @param json
-    */
-  def extractAsKeyValueList(json: Json): ErrorOr[List[(String, Json)]] = {
-    val obj: Either[OError, JsonObject]           = json.asObject.toRight(CodecError("JSON Fragment was not a JSON Object"))
-    val ans: Either[OError, List[(String, Json)]] = obj.map(_.toList)
-    ans
-  }
-
-  /**
-    * Parses the list of json key  value pairs until it hits first error (not-accumulating parsing).
-    *
-    * @param json
-    * @param fn
-    * @tparam T
-    *
-    * @return
-    */
-  def parseKeyValuesList[T](json: Json, fn: (String, Json) ⇒ Either[CodecError, T]): ErrorOr[List[T]] = {
-    val kvs: ErrorOr[List[(String, Json)]] = extractAsKeyValueList(json)
-    kvs.flatMap { theList ⇒
-      theList.traverse((tup: (String, Json)) ⇒ fn(tup._1, tup._2))
-    }
-  }
 }
 
-object CirceCodecUtils extends CirceCodecUtils
+private [bincodec] object CirceCodecUtils extends CirceCodecUtils

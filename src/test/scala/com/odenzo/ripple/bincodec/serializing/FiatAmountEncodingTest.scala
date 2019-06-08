@@ -8,8 +8,8 @@ import org.scalatest.{Assertion, FunSuite}
 import spire.math._
 
 import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
-import com.odenzo.ripple.bincodec.utils.caterrors.CodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceUtils}
+import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
 
 /**
@@ -49,8 +49,8 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
   case class ByField(topBits: ULong, exp: ULong, mantissa: ULong)
   case class AmountFixture(value: Json, bin: String, passed: Option[Boolean] = None)
 
-  val parsed: Json               = getOrLog(CirceUtils.parseAsJson(fixture))
-  val fixes: List[AmountFixture] = getOrLog(CirceUtils.decode(parsed, Decoder[List[AmountFixture]]))
+  val parsed: Json               = getOrLog(JsonUtils.parseAsJson(fixture))
+  val fixes: List[AmountFixture] = getOrLog(JsonUtils.decode(parsed, Decoder[List[AmountFixture]]))
 
   test("All") {
 
@@ -88,12 +88,12 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     case class TData(bin: String, mant: String, exp: Int, value: String)
 
-    val td: Either[CodecError, List[TData]] =
-      CirceUtils
+    val td: Either[RippleCodecError, List[TData]] =
+      JsonUtils
         .parseAsJson(fixture)
-        .flatMap(j ⇒ CirceUtils.decode(j, Decoder[List[TData]]))
+        .flatMap(j ⇒ JsonUtils.decode(j, Decoder[List[TData]]))
 
-    CodecError.log(td, "Error Parsing Test Data: ")
+    RippleCodecError.log(td, "Error Parsing Test Data: ")
     val testData: List[TData] = td.right.value
 
     testData.foreach { fix: TData ⇒
@@ -102,7 +102,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
       logger.debug(s"Step 1 $step1")
 
       val res = CurrencyEncoders.normalizeAmount2MantissaAndExp(bd)
-      CodecError.log(res)
+      RippleCodecError.log(res)
       val (mant, exp) = res.right.value
       logger.info(s"Fully Normalized: $mant -> $exp")
 
