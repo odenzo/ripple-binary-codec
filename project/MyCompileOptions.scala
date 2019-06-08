@@ -15,8 +15,9 @@ val opts: Seq[String] =
        "-unchecked", // Enable additional warnings where generated code depends on assumptions.
        "-Xcheckinit", // Wrap field accessors to throw an exception on uninitialized access.
     //   "-Xfatal-warnings", // Fail the compilation if there are any warnings.
-       "-Xfuture", // Turn on future language features.
-       "-Yno-adapted-args", // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
+    //   "-Xfuture", // Turn on future language features.
+     //13   "-Yno-adapted-args", // Do not adapt an argument list (either by inserting () or creating a tuple) to match 
+     // the receiver.
        "-Ypartial-unification", // Enable partial unification in type constructor inference
        )
 val warnings: Seq[String] =

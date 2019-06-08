@@ -8,7 +8,14 @@ import io.circe.syntax._
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, RippleType}
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{Encoded, FieldData, FieldEncoded, NestedEncodedValues, RawEncodedValue, RippleTypeEncoded}
+import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{
+  Encoded,
+  FieldData,
+  FieldEncoded,
+  NestedEncodedValues,
+  RawEncodedValue,
+  RippleTypeEncoded
+}
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 
@@ -57,25 +64,22 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
     val valueBytes: Either[RippleCodecError, Encoded] = fieldData.fi.fieldTypeName match {
       case "UInt16" if fieldName === "LedgerEntryType" ⇒ encodeLedgerEntryType(fieldValue)
       case "UInt16" if fieldName === "TransactionType" ⇒ encodeTransactionType(fieldValue)
-      case "UInt8"                                     ⇒ encodeUIntN(fieldValue, "UInt8")
-      case "UInt16"                                    ⇒ encodeUIntN(fieldValue, "UInt16")
-      case "UInt32"                                    ⇒ encodeUIntN(fieldValue, "UInt32")
-      case "UInt64"                                    ⇒ encodeUInt64(fieldValue)
+      case "AccountID" if isNestedObject               ⇒ AccountIdCodecs.encodeAccountNoVL(fieldValue)
+      case "AccountID" if !isNestedObject              ⇒ AccountIdCodecs.encodeAccount(fieldValue)
 
-      case "Hash160" ⇒ encodeHash160(fieldValue)
-      case "Hash256" ⇒ encodeHash256(fieldValue)
-      case "Blob"    ⇒ encodeBlob(fieldValue)
-
-      case "Amount" ⇒ CurrencyEncoders.encodeAmount(fieldValue)
-
+      case "UInt8"     ⇒ encodeUIntN(fieldValue, "UInt8")
+      case "UInt16"    ⇒ encodeUIntN(fieldValue, "UInt16")
+      case "UInt32"    ⇒ encodeUIntN(fieldValue, "UInt32")
+      case "UInt64"    ⇒ encodeUInt64(fieldValue)
+      case "Hash160"   ⇒ encodeHash160(fieldValue)
+      case "Hash256"   ⇒ encodeHash256(fieldValue)
+      case "Blob"      ⇒ encodeBlob(fieldValue)
+      case "Amount"    ⇒ CurrencyEncoders.encodeAmount(fieldValue)
       case "PathSet"   ⇒ encodePathSet(fieldData)
       case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
       case "STArray"   ⇒ ContainerFields.encodeSTArray(fieldData, signingModeOn)
       case "STObject"  ⇒ ContainerFields.encodeSTObject(fieldValue, isNestedObject, signingModeOn)
 
-      case "AccountID" ⇒
-        if (isNestedObject) AccountIdCodecs.encodeAccountNoVL(fieldValue)
-        else AccountIdCodecs.encodeAccount(fieldValue)
       case other ⇒ RippleCodecError(s"Not handling Field Type $other").asLeft
 
     }
@@ -93,8 +97,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
 
     val pathList: Either[RippleCodecError, List[Json]] = json2array(data.v)
 
-
-    val another =  DefinitionData.pathSetAnother
+    val another = DefinitionData.pathSetAnother
     val end     = DefinitionData.pathSetEnd
 
     val encodedPaths = pathList.flatMap { path: List[Json] ⇒
@@ -138,7 +141,6 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
       RawEncodedValue(amtType +: amt.ubytes)
     }
 
-    /** Can we make these more speficic. Issuer is AccountID, any type is Amount **/
     def combine3(amtType: UByte, curr: RawEncodedValue, issuer: RawEncodedValue): RawEncodedValue = {
       RawEncodedValue(amtType +: (curr.ubytes ++ issuer.ubytes))
     }
@@ -190,31 +192,32 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
   }
 
   def encodeHash160(json: Json): Either[RippleCodecError, RippleTypeEncoded] = {
-    val rtype: Either[OErrorRipple, RippleType]          = dd.getTypeObj("Hash160")
+    val rtype: Either[OErrorRipple, RippleType]            = dd.getTypeObj("Hash160")
     val encoded: Either[RippleCodecError, RawEncodedValue] = encodeHash(json, 20)
 
     (encoded, rtype).mapN(RippleTypeEncoded)
   }
 
   def encodeHash256(json: Json): Either[RippleCodecError, RippleTypeEncoded] = {
-    val rtype: Either[OErrorRipple, RippleType]          = dd.getTypeObj("Hash256")
+    val rtype: Either[OErrorRipple, RippleType]            = dd.getTypeObj("Hash256")
     val encoded: Either[RippleCodecError, RawEncodedValue] = encodeHash(json, 32)
 
     (encoded, rtype).mapN(RippleTypeEncoded(_, _))
   }
 
   def encodeTransactionType(json: Json): Either[RippleCodecError, RawEncodedValue] = {
-    val res: Either[RippleCodecError, RawEncodedValue] = JsonUtils.decode(json, Decoder[String]).flatMap(v ⇒ txnType2Bin(v))
+    val res: Either[RippleCodecError, RawEncodedValue] =
+      JsonUtils.decode(json, Decoder[String]).flatMap(v ⇒ txnType2Bin(v))
     res
   }
 
   def encodeLedgerEntryType(json: Json): Either[RippleCodecError, RawEncodedValue] = {
-    val res: Either[RippleCodecError, RawEncodedValue] = JsonUtils.decode(json, Decoder[String]).flatMap(v ⇒
-                                                                                                             ledgerType2Bin(v))
+    val res: Either[RippleCodecError, RawEncodedValue] =
+      JsonUtils.decode(json, Decoder[String]).flatMap(v ⇒ ledgerType2Bin(v))
     res
   }
 
-  def encodeTxnResultType(json:Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeTxnResultType(json: Json): Either[RippleCodecError, RawEncodedValue] = {
     json2string(json).flatMap(txnResultType2Bin)
   }
 
@@ -235,8 +238,6 @@ object TypeSerializers extends StrictLogging with JsonUtils with SerializerUtils
       ans
     }
   }
-
-
 
   def encodeUInt64(json: Json): Either[RippleCodecError, RawEncodedValue] = {
     parseUInt64(json).flatMap(encodeULong(_, "UInt64"))
