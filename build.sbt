@@ -36,32 +36,18 @@ lazy val commonSettings = Seq(
   )
 )
 val devSettings = Seq(
-  Test / logBuffered := false,
+  Test / logBuffered := true,
   Test / parallelExecution := false
 )
 
-/**
-  * Approach to the build, which was formerly a ScalaJS and Scala cross build.
-  * Have source library in Scala, with associated unit testing (ScalaTest)
-  * Have an integration testing module, uses Akka/AkkaHttp and a dummy Ripple Server.
-  * Integration testing scope is "it"
-  *
-  */
-//
-//import sbt.errorssummary.Plugin.autoImport._
-//reporterConfig := reporterConfig.value.withColors(true)
-//reporterConfig := reporterConfig.value.withShortenPaths(true)
-//reporterConfig := reporterConfig.value.withColumnNumbers(true)
-/** These are the base libraries used JVM
-  * In addition it needs to use the library provided by rippled-utils multiproject module.
-  * */
+
 val libs = {
   Seq(
     "org.scalatest"              %% "scalatest"      % "3.0.7" % Test,
     "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
-    "com.typesafe"               % "config"          % "1.3.4", //  https://github.com/typesafehub/config
-    "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2",
-    "ch.qos.logback"             % "logback-classic" % "1.2.3"
+
+    "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2", // Java Only
+    "ch.qos.logback"             % "logback-classic" % "1.2.3"  // Java Only
   )
 }
 
@@ -81,8 +67,8 @@ val lib_circe = {
 val lib_cats = {
   val catsVersion = "1.6.1"
   Seq(
-    "org.typelevel" %% "cats-core"   % catsVersion, // Cats is pulled in via Circe for now
-    "org.typelevel" %% "cats-effect" % "1.3.1" withSources () withJavadoc ()
+    "org.typelevel" %% "cats-core"   % catsVersion, 
+    "org.typelevel" %% "cats-effect" % "1.3.1" 
   )
 }
 

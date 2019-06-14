@@ -29,6 +29,7 @@ trait VLEncoding extends StrictLogging {
   def encodeVL(lengthToEnc: Int): Either[OErrorRipple, RawEncodedValue] = {
     val vl = lengthToEnc match {
 
+        // Is this really inclusive 192 = 11000000
       case l if Range(1, 192).inclusive.contains(l)        => (UByte(l) :: Nil).asRight
       case l if Range(193, 12480).inclusive.contains(l)    ⇒
         val l2: Int = l - 193
@@ -47,6 +48,23 @@ trait VLEncoding extends StrictLogging {
     vl.map(RawEncodedValue)
   }
 
+
+  def decodeVL(data:List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
+         // If top two bits are zero its one byte
+
+    val headInt: Int = data.head.toInt
+
+    if ( headInt  <= 192) {
+      ( headInt, data.drop(1)).asRight
+   } else if (Range(193,240).inclusive.contains(headInt)) {
+      (0,data.drop(2)).asRight
+    } else if (Range(241,254).inclusive.contains(headInt)) {
+      (0.toInt,data.drop(3)).asRight
+    } else {
+      RippleCodecError(s"Illegal VL Encoding").asLeft
+    }
+
+  }
 }
 
 object VLEncoding extends VLEncoding

@@ -27,8 +27,25 @@ object BinarySerializer extends StrictLogging {
   val objDel: List[UByte] = List(UByte(15))
 
   val arrDel: List[UByte] = List(UByte(14))
-  // FIXME: key is redundant
-  case class FieldData(key: String, v: Json, fi: FieldInfo)
+
+  /**
+  *
+    * @param key The name of the field (?)
+    * @param v   Value of the field in Json format
+    * @param fi  Metadata about the field and its type
+    */
+  case class FieldData(key: String, v: Json, fi: FieldInfo)  {
+
+  }
+
+  case class FieldHex(value: String, fi: FieldInfo)
+
+  type Hex = String
+
+  trait FieldDecoded
+  case class FieldDecodedUBytes(fi: FieldInfo, value: List[UByte]) extends FieldDecoded
+  case class FieldDecodedNested(fi:FieldInfo, nested:List[FieldDecoded]) extends FieldDecoded
+  case class DecodedUBytes(value:List[UByte]) extends FieldDecoded
 
   sealed trait Encoded {
     // Returns the Encoded value for a field or data type, including FieldType
