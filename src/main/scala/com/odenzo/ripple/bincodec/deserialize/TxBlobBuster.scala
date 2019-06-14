@@ -19,7 +19,7 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
   /** Go through and break apart in encoded fields. Not a blob or STObject for top (double check) */
-  def decode(txBlob: List[UByte]) = {
+  def decode(txBlob: List[UByte], nested:Boolean) = {
     // Take Field Marker
 
   }
