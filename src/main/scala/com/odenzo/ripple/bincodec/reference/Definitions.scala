@@ -15,15 +15,14 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
   * @param data
   */
 class Definitions(data: DefinitionData) {
-//
-//  val objectEndMarkerByte: Either[AppError, Byte] = data.findTypeForField(objectMarkerEndName).map(_.value.toByte)
-//
-//  val arrayEndMarkerByte: Either[AppError, Byte] = data.findTypeForField(arrayMarkerEndName).map(_.value.toByte)
+
 
 }
 
 /** Little module to wrap around the Ripple definitions.json for Binary Serialization for Signign */
 object Definitions extends StrictLogging with JsonUtils {
+
+
 
 
   /** We insist on this succeeding or failing the whole shebang via exception */

@@ -68,25 +68,15 @@ private[bincodec] object RippleBase58 extends StrictLogging {
   }
 
 
-  /** This handles Base28 Keys, like Seed and Public Key.
-    * It does the normal decoding and drops the first marker byte and the last four checksum bytes (?)
-    *
-    * @param b58
-    */
-  def base58Key2bytesTrimmed(b58: String): List[UByte] = {
-    // No Combination here gives us correct answer
-   val asBytes: List[UByte] = base58Key2bytes(b58)
-   logger.info(s"As Bytes ${ByteUtils.ubytes2hex(asBytes)}  len= ${asBytes.length}")
-    asBytes.drop(1)     // The first marker 33, this is used to determine key type and part of checksum
-    .dropRight(4)       // The Checksum which we don't use
-
+  def base58CheckToBytes(b58check:String) = {
+    base58ToBytes(b58check).drop(1).dropRight(4)
   }
 
-  def base58Key2bytes(b28: String): List[UByte] = {
-    RippleBase58.decode(b28).map(ByteUtils.byte2ubyte).toList
+  def base58ToBytes(b58: String): List[UByte] = {
+    RippleBase58.decode(b58).map(ByteUtils.byte2ubyte).toList
   }
 
-  def base58ToHex(b28: String): String = {
-    ByteUtils.ubytes2hex(base58Key2bytes(b28))
+  def base58ToHex(b58: String): String = {
+    ByteUtils.ubytes2hex(base58ToBytes(b58))
   }
 }

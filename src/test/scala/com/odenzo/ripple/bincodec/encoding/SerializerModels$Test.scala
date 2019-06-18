@@ -1,11 +1,10 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.encoding
 
 import cats.implicits._
 import org.scalatest.{Assertion, FunSuite}
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{Encoded, RawEncodedValue}
+import com.odenzo.ripple.bincodec.{Encoded, OTestSpec, RawValue}
 
 /**
   * Test the core model classes here to avoid lots of duplication
@@ -13,9 +12,9 @@ import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{Encoded, RawEnco
   */
 class SerializerModels$Test extends FunSuite with OTestSpec {
 
-  val someBytes: List[UByte]    = (0.toInt to 255).map(UByte(_)).toList
-  val bigVal: RawEncodedValue   = RawEncodedValue(someBytes)
-  val emptyVal: RawEncodedValue = RawEncodedValue(List.empty[UByte])
+  val someBytes: List[UByte] = (0.toInt to 255).map(UByte(_)).toList
+  val bigVal: RawValue       = RawValue(someBytes)
+  val emptyVal: RawValue     = RawValue(List.empty[UByte])
 
   def testConsistentWithBase[T<:Encoded](sub:T): Assertion = {
     val encoded :Encoded = sub

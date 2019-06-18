@@ -1,35 +1,38 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.codecs
 
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Json, JsonObject}
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{NestedEncodedValues, RawEncodedValue}
-import com.odenzo.ripple.bincodec.serializing.TypeSerializers.encodeULong
+import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonError, BinCodecExeption, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, RawValue}
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
   * IMportant -- some objects may not have an amount ... I guess replace with amount ZERO
+  * This needs some cleanup for sure.
   */
-object CurrencyEncoders extends StrictLogging with JsonUtils {
+trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
 
   /* The range for the mantissa when normalized */
   private val minMantissa: ULong = ULong("1000000000000000")
   private val maxMantissa: ULong = ULong("9999999999999999")
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
-  private val minExponent: Int  = -96
-  private val maxExponent: Int  = 80
-  private val maxPrecision: Int = 16
+  private val minExponent: Int = -96
+  private val maxExponent: Int = 80
 
-  /**  0x8000000000000000000000000000000000000000 to represent special case encoding of 0 fiat amoutn */
+  private val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
+
+  /**  0x8000000000000000000000000000000000000000 to represent special case encoding of 0 fiat amount xrp */
   private val zeroFiatAmount: List[UByte] = UByte(0x80) :: List.fill(19)(UByte(0))
+
+  /** Valid currency characters */
   private val rippleAscii: String =
-    "abcdefghijklmnopqrstuvwxyz" +
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
       "0123456789" +
       "<>(){}[]|?!@#$%^&*"
 
@@ -38,7 +41,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *
     * @param json FieldData  representing an amount, either one line XRP of object with IOU/Fiat
     */
-  def encodeAmount(json: Json): Either[RippleCodecError, BinarySerializer.Encoded] = {
+  def encodeAmount(json: Json): Either[RippleCodecError, Encoded] = {
     json.asObject match {
       case None      ⇒ encodeXrpAmount(json)
       case Some(obj) ⇒ encodeIOU(obj)
@@ -46,66 +49,59 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
   }
 
   /** In Progress, UInt64 encoding **/
-  def encodeXrpAmount(v: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeXrpAmount(v: Json): Either[RippleCodecError, RawValue] = {
 
-    val mask: ULong    = ULong.fromLong(0x4000000000000000L)
-    val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
+    val mask: ULong = ULong.fromLong(0x4000000000000000L)
 
-    val value: Either[RippleCodecError, BigInt] = json2string(v).map(t ⇒ BigInt(t))
-
-    val answer: Either[AppJsonError, RawEncodedValue] = value match {
-      case Left(err)                ⇒ AppJsonError("Could not decode as BigInt", v).asLeft
+    json2string(v).map(t ⇒ BigInt(t)) match {
+      case Left(err)                ⇒ AppJsonError("Could not decode as Xrp Amount BigInt", v).asLeft
       case Right(bi) if bi < 0      ⇒ AppJsonError(s"XRP Cant Be <0  $bi", v).asLeft
       case Right(bi) if bi > maxXRP ⇒ AppJsonError(s"XRP > $maxXRP  $bi", v).asLeft
       case Right(bi)                ⇒ encodeULong(ULong(bi.toLong) | mask, "UInt64")
     }
-    answer
+
   }
 
-  /** This actually returns an Amount, need to look at that encoding.
-    * Probably this should be NestedAncodedAmount at the least. */
-  def encodeIOU(v: JsonObject): Either[RippleCodecError, NestedEncodedValues] = {
+  def encodeIOU(v: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
-    // If the amount is zero a special amount if returned...
+    // If the amount is zero a special amount if returned... TODO: Check if correct
 
-    val attempt: Either[RippleCodecError, NestedEncodedValues] = for {
+    for {
       value    ← findField("value", v).flatMap(encodeFiatValue)
-      currency ← findField("currency", v).flatMap(j ⇒ encodeCurrency(j))
+      currency ← findField("currency", v).flatMap(encodeCurrency)
       issuer   ← findField("issuer", v).flatMap(AccountIdCodecs.encodeAccountNoVL)
-    } yield NestedEncodedValues(List(value, currency, issuer))
-
-    attempt
+    } yield EncodedNestedVals(List(value, currency, issuer))
   }
 
   /**
     *  Encodes non-XRP currency.
     *  Currency must be three ASCII characters. could pad left if short I guess
     *  Note that "00000000000..." is used for currency XRP in some places.
+    *  TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
     **/
-  def encodeCurrency(json: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeCurrency(json: Json): Either[RippleCodecError, RawValue] = {
     // This should alwqays be 160 bits long
 
     val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
     val bit40Zero: List[UByte] = List.fill(5)(UByte(0))
 
-    val iso: Either[RippleCodecError, List[UByte]] = Either
-                                                     .fromOption(json.asString, RippleCodecError("Currency Not a String"))
-                                                     .flatMap { s ⇒
-        if (isRippleAscii(s) && s.length == 3) {
-          s.getBytes("UTF-8").map(UByte(_)).toList.asRight
-        } else if (s.length == 40) {
-          // It should be a 160 bit hex string
-          ByteUtils.hex2ubytes(s)
-          // "0158415500000000C1F76FF6ECB0BAC600000000"
-        } else {
-          RippleCodecError(s"Currency Code $s not three ascii").asLeft
+    val iso: Either[RippleCodecError, List[UByte]] =
+      json2string(json)
+        .flatMap { s ⇒
+          if (isRippleAscii(s) && s.length == 3) {
+            s.getBytes("UTF-8").map(UByte(_)).toList.asRight
+          } else if (s.length == 40) {
+            // It should be a 160 bit hex string but can't be XRP
+            ByteUtils.hex2ubytes(s)
+            // "0158415500000000C1F76FF6ECB0BAC600000000"
+          } else {
+            RippleCodecError(s"Currency Code $s not three ascii").asLeft
+          }
         }
-      }
 
-    val ok = iso.map(c ⇒ bit90Zero ::: c ::: bit40Zero)
-    ok.fmap(RawEncodedValue)
+    iso.map(c ⇒ bit90Zero ::: c ::: bit40Zero).fmap(RawValue)
   }
 
   /**
@@ -114,14 +110,13 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     * small (e.g.
     * 0.0000004)
     * Adapted from docs and IOUAmount.cpp in rippled code.
-    * NOTE: THIS IS BADLY BROKEN
     *
     * @param json
     */
-  def encodeFiatValue(json: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeFiatValue(json: Json): Either[RippleCodecError, RawValue] = {
     json2string(json)
-    .map(BigDecimal(_))
-    .flatMap(rippleEncodingOfFiatAmount)
+      .map(BigDecimal(_))
+      .flatMap(rippleEncodingOfFiatAmount)
 
   }
 
@@ -239,7 +234,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     normalized
   }
 
-  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[RippleCodecError, RawEncodedValue] = {
+  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[RippleCodecError, RawValue] = {
 
     /*
     Minimum nonzero absolute value: 1000000000000000e-96
@@ -249,7 +244,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
 
      */
     validateFiatAmount(bd).flatMap { amt: BigDecimal ⇒
-      if (amt == 0) {
+      if (amt == 0) { // TODO: Review thisand add test cases
         // 0x8000000000000000000000000000000000000000 say doc as 64 bit, which makes no sense
         val zero = ULong(1) << 63
         encodeULong(zero, "UInt64") // This is 8 bytes.
@@ -272,65 +267,12 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
           full           = top10 | nman
         } yield full
 
-        val asBytes: Either[RippleCodecError, RawEncodedValue] = res.flatMap(encodeULong(_, "UInt64"))
+        val asBytes: Either[RippleCodecError, RawValue] = res.flatMap(encodeULong(_, "UInt64"))
         asBytes
       }
     }
   }
 
-  /**
-    * Used to check if ISO currency codes are ok.
-    *
-    * @param s
-    *
-    * @return  true is valid
-    */
-  def isRippleAscii(s: String): Boolean = { s.forall(c ⇒ rippleAscii.contains(c)) }
-
-  /*
-
-void
-IOUAmount::normalize ()
-{
-    if (mantissa_ == 0)
-    {
-   *this = beast::zero;
-        return;
-    }
-
-    bool const negative = (mantissa_ < 0);
-
-    if (negative)
-        mantissa_ = -mantissa_;
-
-    while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
-    {
-        mantissa_ *= 10;
-        --exponent_;
-    }
-
-    while (mantissa_ > maxMantissa)
-    {
-        if (exponent_ >= maxExponent)
-            Throw<std::overflow_error> ("IOUAmount::normalize");
-
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
-    {
-   *this = beast::zero;
-        return;
-    }
-
-    if (exponent_ > maxExponent)
-        Throw<std::overflow_error> ("value overflow");
-
-    if (negative)
-        mantissa_ = -mantissa_;
-}
-   */
   /**
     * @param mantissa
     * @param exponent
@@ -375,10 +317,17 @@ IOUAmount::normalize ()
     }
   }
 
-  def checkMantissaBounds(mantissa: ULong): Either[OErrorRipple, ULong] = {
-    /* The range for the mantissa when normalized */
-    val minMantissa: ULong = ULong("1000000000000000")
-    val maxMantissa: ULong = ULong("9999999999999999")
+  /**
+    * Used to check if ISO currency codes are ok.
+    *
+    * @param s
+    *
+    * @return true is valid
+    */
+  protected def isRippleAscii(s: String): Boolean = { s.forall(c ⇒ rippleAscii.contains(c)) }
+
+  /** Check the bounds after amount in normalized */
+  protected def checkMantissaBounds(mantissa: ULong): Either[OErrorRipple, ULong] = {
     if (mantissa < minMantissa || mantissa > maxMantissa) {
       RippleCodecError(s"$mantissa has to be in range $minMantissa - $maxMantissa").asLeft
     } else {
@@ -387,10 +336,8 @@ IOUAmount::normalize ()
 
   }
 
-  def checkExponentBounds(exp: Int): Either[OErrorRipple, Int] = {
-    /* The range for the exponent when normalized */
-    val minExponent: Int = -96
-    val maxExponent: Int = 80
+  /** Check the bounds after amount in normalized */
+  protected def checkExponentBounds(exp: Int): Either[OErrorRipple, Int] = {
     if (exp < minExponent || exp > maxExponent) {
       RippleCodecError(s"$exp has to be in range $minExponent to $maxExponent inclusive ").asLeft
     } else {
@@ -400,3 +347,5 @@ IOUAmount::normalize ()
   }
 
 }
+
+object MoneyCodecs extends MoneyCodecs

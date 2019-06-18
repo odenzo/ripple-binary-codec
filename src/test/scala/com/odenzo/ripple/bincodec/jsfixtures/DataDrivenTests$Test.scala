@@ -12,13 +12,14 @@ import io.circe.syntax._
 import org.scalatest.{Assertion, FunSuite}
 import spire.math.{UByte, ULong}
 
+import com.odenzo.ripple.bincodec.codecs.{ContainerFields, MoneyCodecs}
 import com.odenzo.ripple.bincodec.reference.FieldInfo
-import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
-import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, ContainerFields, CurrencyEncoders, TypeSerializers}
+import com.odenzo.ripple.bincodec.syntax.debugging._
+import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, OTestSpec, OTestUtils, RawValue}
 
 class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with FixtureUtils {
 
@@ -139,8 +140,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
         logger.info("Expected: " + fields.map(v ⇒ v._1 + v._2.toString).mkString("\n\t", "\n\t", "\n\n"))
 
         // Then we do the whole thing for fun.
-        val res: BinarySerializer.NestedEncodedValues =
-          getOrLog(ContainerFields.encodeSTObject(json.asJson, true, false))
+        val res: EncodedNestedVals = getOrLog(ContainerFields.encodeSTObject(json.asJson, true, false))
 
         logger.info(s"Full Hexz: ${res.toHex}")
         logger.info(s"Full Dump ${res.show}")
@@ -188,7 +188,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     if (b.error.isDefined) {
       logger.info("This is a negative test")
     } else {
-      val res: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.encodeAmount(b.test_json))
+      val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
       val hex                           = res.toHex
       b.expected_hex.map(hex shouldEqual _)
     }
@@ -201,12 +201,12 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
                                                          .flatMap(findField("value", _))
                                                          .flatMap(TypeSerializers.json2string)
                                                          .map(BigDecimal(_))
-                                                         .flatMap(CurrencyEncoders.normalizeAmount2MantissaAndExp)
+                                                         .flatMap(MoneyCodecs.normalizeAmount2MantissaAndExp)
 
     logger.debug(s"Man / Exponent $manual")
     val (mantissa: ULong, exp: Int) = manual.right.value
 
-    val res: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.encodeAmount(b.test_json))
+    val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
 
     val hex = res.toHex
 
@@ -223,7 +223,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
       if (b.test_json.isString) b.test_json
       else v.canonical_json.get
 
-    val gotBytes: BinarySerializer.RawEncodedValue = v.type_specialisation_field match {
+    val gotBytes: RawValue = v.type_specialisation_field match {
       case "LedgerEntryType" ⇒
         getOrLog(TypeSerializers.encodeLedgerEntryType(testVal))
 
@@ -301,9 +301,9 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   }
 
   /** This does no checking, just a manual JSON Object encoding for later verification */
-  def oneFixtureByField(json: JsonObject): BinarySerializer.NestedEncodedValues = {
+  def oneFixtureByField(json: JsonObject): EncodedNestedVals = {
     logger.info(s"OneFixture: \n ${json.asJson.spaces4}")
-    val bound: BinarySerializer.NestedEncodedValues = getOrLog(
+    val bound: EncodedNestedVals = getOrLog(
       ContainerFields.encodeSTObject(json.asJson, false, false)
     )
     logger.info("Field Order: " + bound.fieldsInOrder.mkString("\n\t", "\n\t", "\n"))

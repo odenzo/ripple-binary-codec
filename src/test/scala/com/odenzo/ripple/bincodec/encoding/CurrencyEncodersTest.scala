@@ -1,17 +1,25 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.encoding
 
 import io.circe.Json
+import io.circe.syntax._
 import org.scalatest.FunSuite
 import spire.math.ULong
+import cats._
+import cats.data._
+import cats.implicits._
 
 import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 class CurrencyEncodersTest extends FunSuite with OTestSpec {
 
+  import com.odenzo.ripple.bincodec.syntax.debugging._
+
   test("Fiat Amount") {
     val amt = BigDecimal("1.234")
-    val res = CurrencyEncoders.rippleEncodingOfFiatAmount(amt)
+    val res = MoneyCodecs.rippleEncodingOfFiatAmount(amt)
     RippleCodecError.dump(res).foreach { e ⇒
       logger.error("Error: " + e)
     }
@@ -40,10 +48,27 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
   }
 
   val justAmount = """{
-                    |  "currency" : "USD",
-                    |  "value" : "10",
-                    |  "issuer" : "rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui"
-                    |}"""
+                     |  "currency" : "USD",
+                     |  "value" : "10",
+                     |  "issuer" : "rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui"
+                     |}""".stripMargin
+
+  val nzAmount =
+    """{
+      |
+      |  "value" : "555.666",
+      |  "currency" : "NZD",
+      |  "issuer" : "rwjH4461qQTa4fksY8doTLRdqKxDyd5nsi"
+      |}
+    """.stripMargin
+
+  test("NZ Amount") {
+    val iou    = getOrLog(JsonUtils.parseAsJsonObject(nzAmount))
+    val iouEnc = MoneyCodecs.encodeIOU(iou)
+    val amtEnc = MoneyCodecs.encodeAmount(iou.asJson)
+    logger.info(s"Encoded IOU: ${iouEnc.show}")
+    iouEnc shouldEqual amtEnc
+  }
 
   test("Fiat Package") {
 
@@ -60,13 +85,13 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     val issuerExpected   = "E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
 
     val currency = "USD"
-    val res      = getOrLog(CurrencyEncoders.encodeCurrency(Json.fromString(currency)))
+    val res      = getOrLog(MoneyCodecs.encodeCurrency(Json.fromString(currency)))
     val hex      = res.toHex
     logger.debug(s"$currency => $hex")
 
-    val amount: Json             = Json.fromString("10")
-    val amountBytes: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.encodeFiatValue(amount))
-    val amountHex: String        = amountBytes.toHex
+    val amount: Json      = Json.fromString("10")
+    val amountBytes       = getOrLog(MoneyCodecs.encodeFiatValue(amount))
+    val amountHex: String = amountBytes.toHex
     logger.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
 
     val issuer: Json = Json.fromString(issuerStr)
@@ -81,7 +106,7 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
 
   test("Normalizing") {
 
-    val ans: Either[RippleCodecError, (ULong, Int)] = CurrencyEncoders.properNormalize(ULong(1L), 2)
+    val ans: Either[RippleCodecError, (ULong, Int)] = MoneyCodecs.properNormalize(ULong(1L), 2)
     RippleCodecError.dump(ans).foreach(msg ⇒ logger.error("Error: " + msg))
 
   }

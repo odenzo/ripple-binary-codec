@@ -1,4 +1,4 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.encoding
 
 import cats._
 import cats.data._
@@ -7,7 +7,8 @@ import io.circe.{Decoder, Json}
 import org.scalatest.{Assertion, FunSuite}
 import spire.math._
 
-import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
+import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
+import com.odenzo.ripple.bincodec.syntax.debugging._
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
@@ -30,7 +31,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     fixture.foreach(oneOff)
     def oneOff(amt: BigDecimal): Unit = {
-      val res = getOrLog(CurrencyEncoders.rippleEncodingOfFiatAmount(amt))
+      val res = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(amt))
       logger.info(s"Res: $amt => ${res.toHex}")
     }
   }
@@ -59,11 +60,11 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
       logger.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
-      val res: BinarySerializer.RawEncodedValue = getOrLog(CurrencyEncoders.encodeFiatValue(v.value))
+      val res = getOrLog(MoneyCodecs.encodeFiatValue(v.value))
       logger.info(s"Res: ${res.show}")
       assert(res.ubytes.length == 8)
       logger.info(s"Got Res: ${res.toHex}")
-      val hex   = res.toHex
+      val hex = res.toHex
 
       v.bin shouldEqual hex
 
@@ -98,23 +99,23 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     testData.foreach { fix: TData ⇒
       val bd                  = BigDecimal(fix.value)
-      val step1: (ULong, Int) = CurrencyEncoders.normalizeToIntegral(bd)
+      val step1: (ULong, Int) = MoneyCodecs.normalizeToIntegral(bd)
       logger.debug(s"Step 1 $step1")
 
-      val res = CurrencyEncoders.normalizeAmount2MantissaAndExp(bd)
+      val res = MoneyCodecs.normalizeAmount2MantissaAndExp(bd)
       RippleCodecError.log(res)
       val (mant, exp) = res.right.value
       logger.info(s"Fully Normalized: $mant -> $exp")
 
-      val fiatAmount                       = BigDecimal(fix.value)
-      val amtRes: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.rippleEncodingOfFiatAmount(fiatAmount))
+      val fiatAmount = BigDecimal(fix.value)
+      val amtRes     = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(fiatAmount))
       amtRes.toHex shouldEqual fix.bin
 
     }
   }
   def testOne(v: Json, expected: Json): Assertion = {
-    val expectedHex                             = expected.asString.get
-    val bytes: BinarySerializer.RawEncodedValue = getOrLog(CurrencyEncoders.encodeFiatValue(v))
+    val expectedHex = expected.asString.get
+    val bytes       = getOrLog(MoneyCodecs.encodeFiatValue(v))
     bytes.toHex shouldEqual expectedHex
   }
 

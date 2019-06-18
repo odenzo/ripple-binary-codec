@@ -1,11 +1,12 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.encoding
 
 import io.circe.Decoder.Result
 import io.circe.Json
 import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, RawValue}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
@@ -43,8 +44,8 @@ class AccountID$Test extends FunSuite with OTestSpec {
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
   /** Pack up Data and go through more of the pipeline */
-  def encodeSingle(fieldName: String, data: Json, isNested:Boolean): Either[RippleCodecError, BinarySerializer.FieldEncoded] = {
-    val req = TypeSerializers.singleFieldData(fieldName, data)
+  def encodeSingle(fieldName: String, data: Json, isNested:Boolean): Either[RippleCodecError, EncodedField] = {
+    val req = defdata.getFieldData(fieldName, data)
     req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_,isNested,false))
     RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
@@ -83,13 +84,13 @@ class AccountID$Test extends FunSuite with OTestSpec {
 
     val ok                 = "14EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA" // This seems to be the repeated account But get 1 19 1A 1B ED
     val account            = Json.fromString("r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2")
-    val rev: BinarySerializer.RawEncodedValue = getOrLog(AccountIdCodecs.encodeAccount(account))
+    val rev: RawValue = getOrLog(AccountIdCodecs.encodeAccount(account))
     logger.info(s"Valid Result: $ok \n Length ${rev.rawBytes.length * 4} bites")
     logger.info(s"Results Byte Len: ${rev.rawBytes.length}")
     logger.info(s"Account Btes: ${rev.toHex}")
     // C++ code says null account is empty, other serialize to 160bits.
     // Account is VLEncoded apparently, thus 0x14 may be length
-    val lenEncoded: BinarySerializer.RawEncodedValue = getOrLog(VLEncoding.encodeVL(160 / 8))
+    val lenEncoded: RawValue = getOrLog(VLEncoding.encodeVL(160 / 8))
     logger.info(s"VL Encoded ${lenEncoded.toHex}")
     // Yes it is.
 
@@ -142,7 +143,7 @@ class AccountID$Test extends FunSuite with OTestSpec {
   }
 
   test("Fiat Amount") {
-    CurrencyEncoders.rippleEncodingOfFiatAmount(BigDecimal("0.00000000000001234500"))
+    MoneyCodecs.rippleEncodingOfFiatAmount(BigDecimal("0.00000000000001234500"))
   }
 
   test("XRP") {
@@ -159,7 +160,7 @@ class AccountID$Test extends FunSuite with OTestSpec {
       val jsonV: String = v.toString()
       val json: Json    = Json.fromString(jsonV)
       logger.info(s"From $v Sending JSON: ${json.noSpaces}")
-      val res: BinarySerializer.RawEncodedValue = getOrLog(CurrencyEncoders.encodeXrpAmount(json))
+      val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
       val hex                                = res.toHex
       logger.debug(s"$v  => $hex")
       hex
@@ -170,7 +171,7 @@ class AccountID$Test extends FunSuite with OTestSpec {
 
   test("XRP Encode") {
     val xrp: Json                          = Json.fromString("10000")
-    val res: BinarySerializer.RawEncodedValue = getOrLog(CurrencyEncoders.encodeXrpAmount(xrp))
+    val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
 
 
     logger.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
