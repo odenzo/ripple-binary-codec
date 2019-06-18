@@ -21,15 +21,9 @@ import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
   */
 sealed trait RippleCodecError extends Throwable {
   def msg: String
-
   def cause: Option[RippleCodecError]
 }
 
-/** SHould move to sealed module level hierarchies? */
-/** The general error handling class, use instead of Throwables in EitherT etc .
-  * Preferred method is to use the helper functions in StdContext.
-  * These claseses may be made private in the future.
-  */
 class OErrorRipple(val msg: String = "No Message", val cause: Option[RippleCodecError] = None) extends RippleCodecError
 
 /** This should be terminal node only */
@@ -40,8 +34,7 @@ class BinCodecExeption(val msg: String = "Wrapping Root Exception", val err: Thr
 /**
   * Wraps an error that occurs on
   */
-class AppJsonError(val msg: String, val json: Json, val cause: Option[RippleCodecError] = None)
-    extends RippleCodecError {}
+class AppJsonError(val msg: String, val json: Json, val cause: Option[RippleCodecError] = None) extends RippleCodecError
 
 class AppJsonParsingError(val msg: String, val raw: String, val parser: ParsingFailure) extends RippleCodecError {
   val cause: Option[RippleCodecError] = new BinCodecExeption(parser.message, parser).some
@@ -55,7 +48,7 @@ class AppJsonParsingError(val msg: String, val raw: String, val parser: ParsingF
   * @param note Informational message to enhance the exception, provides context.
   */
 class AppJsonDecodingError(val json: Json, val err: DecodingFailure, note: String = "") extends RippleCodecError {
-  val msg: String                     = note + ":" + err.message
+  val msg: String                     = note + ": " + err.message
   val base: String                    = s"\n OR: ${err.show}"
   val cause: Option[RippleCodecError] = None
 
@@ -69,6 +62,8 @@ object RippleCodecError extends StrictLogging {
 
   type MonadAppError[F[_]] = MonadError[F, RippleCodecError]
 
+  val NOT_IMPLEMENTED_ERROR: Either[OErrorRipple, Nothing] = RippleCodecError("Not Implemented").asLeft
+
   lazy implicit val show: Show[RippleCodecError] = Show.show[RippleCodecError] { failure: RippleCodecError =>
     nonImplShow(failure)
   }
@@ -77,9 +72,11 @@ object RippleCodecError extends StrictLogging {
     * Also not the generic restriction/assumption for now that Throwable is bottom oh error stack.
     * */
   lazy implicit val showThrowables: Show[Throwable] = Show.show[Throwable] { t =>
-    s"Showing Throwable ${t.getMessage}" + Option(t.getCause).map((v: Throwable) => v.toString).getOrElse("<No Cause>")
+    s"Showing Throwable ${t.getMessage} :" + Option(t.getCause)
+      .map(_.toString)
+      .getOrElse( "<No Cause>")
   }
-  val NOT_IMPLEMENTED_ERROR: Either[OErrorRipple, Nothing] = RippleCodecError("Not Implemented").asLeft
+  
 
   def dump[A](err: Either[RippleCodecError, A]): Option[String] = {
     err match {
@@ -144,7 +141,7 @@ object OErrorRipple {
   lazy implicit val showOError: Show[OErrorRipple] = Show.show[OErrorRipple] { (failure: OErrorRipple) =>
     val top = s"OError -> ${failure.msg}"
     val sub = failure.cause.map((x: RippleCodecError) ⇒ x.show)
-    top + sub
+    top + " Cause: " + sub
   }
 
   def catchNonFatal[A](f: => A): Either[RippleCodecError, A] = {
@@ -232,6 +229,6 @@ object ShowHack {
     case err: AppJsonDecodingError => err.show
     case err: BinCodecExeption     => err.show
     case err: OErrorRipple         => "\n --- " + err.show
-    case other                     => "\n ****** Unknown Error" + other.toString
+    case other                     => "\n ****** Unknown Error " + other.toString
   }
 }

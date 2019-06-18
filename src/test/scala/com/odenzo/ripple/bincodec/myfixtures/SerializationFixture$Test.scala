@@ -8,11 +8,9 @@ import io.circe.syntax._
 import org.scalatest.FunSuite
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.reference.Definitions
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{FieldEncoded, NestedEncodedValues}
-import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, TypeSerializers}
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils, RippleBase58}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, OTestSpec}
 
 /** This test is designed to process Transaction Request and Response files */
 class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils with FixtureUtils {
@@ -42,13 +40,12 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     // We need to sign the response tx_json filled in.
     // BinarySerializerPublic.sign
 
-    val encoded: NestedEncodedValues = getOrLog(TypeSerializers.encodeTopLevel(txjson.asJson, isSigning = false))
-    val genTxBlob = encoded.toHex
+    val encoded: EncodedNestedVals = getOrLog(TypeSerializers.encodeTopLevel(txjson.asJson, isSigning = false))
+    val genTxBlob                    = encoded.toHex
 
-    Definitions.fieldData.findByFieldMarker("74")
     // Lets go check and see that all the encoded fields are actually in TxBlob, won't be complete though
     encoded.enclosed.foreach {
-      case fe@FieldEncoded(fieldValue: BinarySerializer.Encoded, data) =>
+      case fe @ EncodedField(fieldValue: Encoded, data) =>
         logger.info(s"Examinging Field ${data.key}")
         val hex = fe.toHex
         logger.info(s"${txblob.contains(hex)} : $hex")
@@ -61,7 +58,6 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
 
     val ubytes: List[UByte] = encoded.encoded.map(_.rawBytes).foldLeft(List.empty[UByte])(_ ::: _)
     val bytes               = ubytes.map(_.toByte)
-   
 
     encoded.asRight
   }
@@ -70,20 +66,19 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     val done =
       txnFixt.traverse(v ⇒ testJustSigningSerialization(v._1, v._2))
 
-    val ok: List[BinarySerializer.NestedEncodedValues] = getOrLog(done)
+    val ok: List[EncodedNestedVals] = getOrLog(done)
 
   }
 
-  def dumpNestedFieldsInfo(nested: NestedEncodedValues): Unit = {
-    import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
+  def dumpNestedFieldsInfo(nested: EncodedNestedVals): Unit = {
+    import com.odenzo.ripple.bincodec.syntax.debugging._
     logger.info(s"The tree: ${nested.show}")
   }
 
-  test("First Couple") {
-    Definitions.fieldData.findByFieldMarker("F9F1")
-    Definitions.fieldData.findByFieldMarker("F9")
+  test("Specific Cases") {
     txnFixt
-      .take(2)
+      .drop(1)
+      .take(1)
       .traverse(v ⇒ testJustSigningSerialization(v._1, v._2))
   }
 

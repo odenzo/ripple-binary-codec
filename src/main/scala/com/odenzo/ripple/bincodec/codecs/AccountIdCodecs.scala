@@ -1,11 +1,11 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.codecs
 
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
+import com.odenzo.ripple.bincodec.RawValue
 import com.odenzo.ripple.bincodec.utils.RippleBase58
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
@@ -40,7 +40,7 @@ object AccountIdCodecs extends StrictLogging {
     *
     * @return
     */
-  def encodeAccount(json: Json): Either[OErrorRipple, RawEncodedValue] = {
+  def encodeAccount(json: Json): Either[OErrorRipple, RawValue] = {
     // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
     // Spec is 160bits for account, but VLEncoded of length
     // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
@@ -51,7 +51,7 @@ object AccountIdCodecs extends StrictLogging {
     for {
       bits160 ← encodeAccountNoVL(json)
       vl      ← VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
-      fused   = RawEncodedValue(vl.ubytes ++ bits160.ubytes)
+      fused   = RawValue(vl.ubytes ++ bits160.ubytes)
     } yield fused
 
   }
@@ -60,7 +60,7 @@ object AccountIdCodecs extends StrictLogging {
     * the AccountID is 160 bits but is not VL encoded.
     * This is special case so stick with raw encoded value
     */
-  def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawEncodedValue] = {
+  def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawValue] = {
     // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
     // Spec is 160bits for account, but VLEncoded of length
     // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
@@ -86,7 +86,7 @@ object AccountIdCodecs extends StrictLogging {
       val ans: List[UByte] = padded.take(160 / 8)
       ans
     }
-    asBytes.map(v ⇒ RawEncodedValue(v.toSeq))
+    asBytes.map(v ⇒ RawValue(v.toSeq))
   }
 
 }

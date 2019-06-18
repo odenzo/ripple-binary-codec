@@ -1,36 +1,52 @@
 package com.odenzo.ripple.bincodec.reference
 
+import cats._
+import cats.data._
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.Json
 import spire.math.{UByte, UInt}
 
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.RawEncodedValue
+import com.odenzo.ripple.bincodec.RawValue
+import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 /**
   *
+  * Holds information about the datatype
   *
   * @param name  Name of the "type" of the field
   * @param value used as ordinal in javascript to order the fields in an object
   */
-case class RippleType(name: String, value: Long)
-
-object RippleType {}
+case class RippleDataType(name: String, value: Long)
 
 /** Note that tipe is a String matching kv */
 case class FieldType(nth: Long, isVLEncoded: Boolean, isSerialized: Boolean, isSigningField: Boolean, tipe: String)
 
-case class FieldInfo(nth: Long,
+/** FeildType merged with RippleDataType */
+case class FieldInfo(name: String,
+                     nth: Long,
                      isVLEncoded: Boolean,
                      isSerialized: Boolean,
                      isSigningField: Boolean,
-                     fieldType: RippleType) {
+                     datatype: RippleDataType) {
 
-  def fieldTypeName: String    = fieldType.name
-  val fieldID: RawEncodedValue = RawEncodedValue(FieldInfo.encodeFieldID(nth.toInt, fieldType.value.toInt))
-  val sortKey: UInt            = UInt(fieldType.value) << 16 | UInt(nth)
+  def fieldTypeName: String = datatype.name
+  val fieldID: RawValue     = RawValue(FieldInfo.encodeFieldID(nth.toInt, datatype.value.toInt))
+  val sortKey: UInt         = UInt(datatype.value) << 16 | UInt(nth)
 
 }
+
+/**
+  *
+  * @param fieldName The name of the field (?)
+  * @param v         Value of the field in Json format
+  * @param fi        Metadata about the field and its type
+  */
+case class FieldData(fieldName: String, v: Json, fi: FieldInfo) 
+
+case class FieldHex(value: String, fi: FieldInfo)
+
 
 object FieldInfo extends StrictLogging {
 
@@ -64,33 +80,6 @@ object FieldInfo extends StrictLogging {
     packed
   }
 
-  def decodeFieldId(ubytes: List[UByte]) = {
-    // This can be one two or three bytes.
-    val ZERO             = UByte.MinValue
-    val TOP_FOUR_MASK    = UByte(0xF0)
-    val BOTTOM_FOUR_MASK = UByte(0x0F)
-
-    if (ubytes.head === ZERO) {
-      // case true true from encoding
-      val typecode  = ubytes(1)
-      val fieldcode = ubytes(2)
-      (typecode, fieldcode)
-
-    } else if ((ubytes.head & TOP_FOUR_MASK) === ZERO) {
-      val fielcode = ubytes.head
-      val typecode = ubytes(1)
-    } else if ((ubytes.head & BOTTOM_FOUR_MASK) === ZERO) {
-      // Typecode in top 4 bits
-      // Field Code in second byte
-      val typecode  = ubytes.head >> 4
-      val fieldcode = ubytes(1)
-
-    } else {
-      // One byte, top 4 is type, bottom 4 field code
-      val fieldcode = ubytes.head & BOTTOM_FOUR_MASK
-      val typecode  = (ubytes.head & TOP_FOUR_MASK) >> 4
-    }
-  }
 }
 
 object FieldType {
@@ -123,40 +112,67 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
     Either.fromOption(map.get(key), RippleCodecError(s" $key not found in map"))
   }
 
+  /** Tries to find the fieldnInfo for the fieldName. This may not exist (e.g. hash)
+    * because the field is not (isSerialized or isSigning)
+    *
+    * @param fieldName
+    * @param fieldValue
+    *
+    * @return
+    */
+  def optFieldData(fieldName: String, fieldValue: Json): Option[FieldData] = {
+    findFieldInfo(fieldName).map { fi ⇒
+      FieldData(fieldName, fieldValue, fi)
+    }
+  }
+
+  def getFieldData(fieldName: String, fieldValue: Json): Either[OErrorRipple, FieldData] = {
+    Either.fromOption(optFieldData(fieldName, fieldValue), RippleCodecError(s"$fieldName not found"))
+  }
+
   def getFieldInfo(name: String): Either[OErrorRipple, FieldInfo] = getMapEntry(fieldsInfo, name)
 
-  def getTypeObj(name: String): Either[OErrorRipple, RippleType] = getType(name).map(RippleType(name, _)) // Optimize
+
+  def findFieldInfo(fieldName: String): Option[FieldInfo] = fieldsInfo.get(fieldName)
+
+  def getTypeObj(name: String): Either[OErrorRipple, RippleDataType] =
+    getType(name).map(RippleDataType(name, _)) // Optimize
 
   def getType(name: String): Either[OErrorRipple, Long] = getMapEntry(types, name)
 
-  // We should map these to UInt16 bytes as they are always encoded that way
+  // Optimize We should map these to UInt16 bytes as they are always encoded that way
   def getTransactionType(txn: String): Either[OErrorRipple, Long] = getMapEntry(txnTypes, txn)
 
-  // We should map these to UInt16 bytes as they are always encoded that way
+  // Optimize We should map these to UInt16 bytes as they are always encoded that way
   def getLedgerEntryType(lt: String): Either[OErrorRipple, Long] = getMapEntry(ledgerTypes, lt)
 
   def getTxnResultType(lt: String): Either[OErrorRipple, Long] = getMapEntry(txnResultTypes, lt)
 
-  def rangeOfNth: (FieldType, FieldType) = {
-    val min: FieldType = fieldsData.values.minBy(_.nth)
-    val max            = fieldsData.values.maxBy(_.nth)
-    logger.debug(s"Range of Nth: \n $min \n $max")
-    (min, max)
-  }
-
   /** Each field has a marker, for debugging I find the fieldinfo from that
     * Meh, easier to do this via bytes*/
-  def findByFieldMarker(hex: String): Option[(String, FieldInfo)] = {
-    val ms = fieldsInfo.toList.filter(_._2.fieldID.toHex == hex).toList
-    ms.foreach(ms => logger.info(s" Field Info $hex: $ms"))
+  def findByFieldMarker(ub: Seq[UByte]): Option[(String, FieldInfo)] = {
+    val ms = fieldsInfo.filter((v: (String, FieldInfo)) ⇒ v._2.fieldID.ubytes == ub)
+    ms.foreach(ms => logger.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
     ms.headOption
   }
+
 }
 
 object DefinitionData {
-  val pathSetAnother  = RawEncodedValue(List(UByte(0xFF))) //  FF indicates another path follows
-  val pathSetEnd      = RawEncodedValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
-  val objectEndMarker = RawEncodedValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
-  val arrayEndMarker  = RawEncodedValue(List(UByte(0xF1)))
+  val pathSetAnother  = RawValue(List(UByte(0xFF))) //  FF indicates another path follows
+  val pathSetEnd      = RawValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
+  val objectEndMarker = RawValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
+  val arrayEndMarker  = RawValue(List(UByte(0xF1)))
 
+  implicit val showFieldInfo: Show[FieldInfo] = Show[FieldInfo] { fi ⇒
+    s"${fi.fieldID.toHex} : ${fi.name} ${fi.datatype.name} : VL ${fi.isVLEncoded} " +
+      s" Serialized/Signing ${fi.isSerialized}/${fi.isSigningField} "
+  }
+  implicit val show: Show[DefinitionData] = Show[DefinitionData] { dd ⇒
+    val sortedFields: List[(String, FieldInfo)] =
+      dd.fieldsInfo.toList.sortBy(e ⇒ (e._2.fieldID.toHex.length, e._2.fieldID.toHex))
+
+    sortedFields.map((v: (String, FieldInfo)) ⇒ v._2.show).mkString("\n")
+
+  }
 }

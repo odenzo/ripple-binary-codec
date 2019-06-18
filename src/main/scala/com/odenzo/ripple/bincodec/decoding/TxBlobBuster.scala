@@ -1,58 +1,66 @@
-package com.odenzo.ripple.bincodec.deserialize
+package com.odenzo.ripple.bincodec.decoding
 
 import cats._
 import cats.data._
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe._
-import io.circe.syntax._
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.RippleCodecAPI
+import com.odenzo.ripple.bincodec.codecs.VLEncoding
 import com.odenzo.ripple.bincodec.reference.{Definitions, FieldInfo}
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer._
-import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, VLEncoding}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, DecodedUBytes}
 
 /** Development helper, not completed */
 trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
-  /** Go through and break apart in encoded fields. Not a blob or STObject for top (double check) */
-  def decode(txBlob: List[UByte], nested:Boolean) = {
-    // Take Field Marker
-
+  def bust(txBlob: String): Either[RippleCodecError, List[Decoded]] = {
+    val ubytes: Either[RippleCodecError, List[UByte]] = hex2ubytes(txBlob)
+    ubytes.flatMap(decode(_, false))
   }
 
-  def decodeNextField(blob: List[UByte]): Either[OErrorRipple, (FieldDecoded, List[UByte])] = {
-    val fieldId: Either[OErrorRipple, (FieldInfo, List[UByte])] = decodeNextFieldId(blob)
+  /** Go through and break apart in encoded fields. Not a blob or STObject for top (double check) */
+  def decode(blob: List[UByte], nested: Boolean): Either[RippleCodecError, List[Decoded]] = {
+    // Take Field Marker
 
-    fieldId.flatMap{ case (info,ub) ⇒
-      decodeField(info,ub)
+    def loop(blob: List[UByte], acc: List[Decoded]): Either[RippleCodecError, List[Decoded]] = {
+      if (blob.isEmpty) acc.reverse.asRight
+      else {
+        decodeNextField(blob) match {
+          case Left(err)                  ⇒ err.asLeft
+          case Right((fd: Decoded, togo)) ⇒ loop(togo, fd :: acc)
+        }
+      }
     }
 
+    loop(blob, List.empty[DecodedField])
+  }
+
+  def decodeNextField(blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
+    decodeNextFieldId(blob).flatMap {
+      case (info, ub) ⇒
+        decodeField(info, ub)
+    }
   }
 
   /** First cut just do to hex */
-  def decodeField(info: FieldInfo, blob: List[UByte]): Either[OErrorRipple, (FieldDecoded, List[UByte])] = {
+  def decodeField(info: FieldInfo, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
     if (info.isVLEncoded) { // TODO: Special case for AccountID, not nested then vl encoded else not
       // Decode the VL then just leave it as hex for now.
       //   case "Blob"   ⇒ encodeBlob(fieldValue) is VL Encoded
       val vled = VLEncoding.decodeVL(blob).flatMap { case (len, data) ⇒ decodeToUBytes(len, data, info) }
-            vled
+      vled
     } else {
-      info.fieldType.name match {
+      info.datatype.name match {
 
         case "AccountID" ⇒ decodeToUBytes(20, blob, info)
-
-        case "UInt8"  ⇒ decodeToUBytes(1, blob, info)
-        case "UInt16" ⇒ decodeToUBytes(2, blob, info)
-        case "UInt32" ⇒ decodeToUBytes(4, blob, info)
-        case "UInt64" ⇒ decodeToUBytes(8, blob, info)
-
-        case "Hash160" ⇒ decodeToUBytes(20, blob, info)
-        case "Hash256" ⇒ decodeToUBytes(32, blob, info)
-
+        case "UInt8"     ⇒ decodeToUBytes(1, blob, info)
+        case "UInt16"    ⇒ decodeToUBytes(2, blob, info)
+        case "UInt32"    ⇒ decodeToUBytes(4, blob, info)
+        case "UInt64"    ⇒ decodeToUBytes(8, blob, info)
+        case "Hash160"   ⇒ decodeToUBytes(20, blob, info)
+        case "Hash256"   ⇒ decodeToUBytes(32, blob, info)
         // Below here are container fields, in the case of amount sometimes
         case "Amount"   ⇒ decodeAmount(blob, info)
         case "STArray"  ⇒ decodeSTArray(blob, info)
@@ -60,60 +68,60 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
         case "PathSet"  ⇒ decodePathSet(blob, info)
 //        case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
 
-        case other ⇒ RippleCodecError(s"Not Decoding Field Type $other").asLeft
+        case other ⇒
+          logger.error(s"Not Decoding Field Type $other")
+          RippleCodecError(s"Not Decoding Field Type $other").asLeft
 
       }
-
-      //    case "UInt16" if fieldName === "LedgerEntryType" ⇒ encodeLedgerEntryType(fieldValue)
-      //        case "UInt16" if fieldName === "TransactionType" ⇒ encodeTransactionType(fieldValue)
-      //
     }
 
   }
 
-  def decodeSTArray(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (FieldDecodedNested, List[UByte])] = {
-
+  def decodeSTArray(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
     val endOfFieldsMarker = UByte(0xF1)
     // info is for the top level array
-    def subfields(ub: List[UByte], acc: List[FieldDecoded]): Either[OErrorRipple, (List[FieldDecoded], List[UByte])] = {
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
       if (ub.head === endOfFieldsMarker) {
         (acc.reverse, ub.drop(1)).asRight
       } else {
-        val next: Either[OErrorRipple, (FieldDecoded, List[UByte])] = decodeNextField(v)
-        next.flatMap {
-          case (field, tail) ⇒
-            subfields(tail, field :: acc)
+        val next: Either[OErrorRipple, (Decoded, List[UByte])] = decodeNextField(ub)
+        logger.debug(s"Next: $next")
+        next match {
+          case Left(err)            ⇒ err.asLeft
+          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
         }
       }
     }
-    subfields(v, List.empty[FieldDecoded]).map {
+    subfields(v, List.empty[DecodedField]).map {
       case (fields, rest) ⇒
-        (FieldDecodedNested(info, fields), rest)
+        (DecodedNestedField(info, fields), rest)
     }
   }
 
-  def decodeSTObject(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (FieldDecodedNested, List[UByte])] = {
+  def decodeSTObject(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
     val endOfSTObjectMarker = UByte(0xE1)
     // info is for the top level array
-    def subfields(ub: List[UByte], acc: List[FieldDecoded]): Either[OErrorRipple, (List[FieldDecoded], List[UByte])] = {
+    @scala.annotation.tailrec
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
       if (ub.head === endOfSTObjectMarker) {
         (acc.reverse, ub.drop(1)).asRight
       } else {
-        val next: Either[OErrorRipple, (FieldDecoded, List[UByte])] = decodeNextField(v)
-        next.flatMap {
-          case (field, tail) ⇒
-            subfields(tail, field :: acc)
+        val next: Either[OErrorRipple, (Decoded, List[UByte])] = decodeNextField(ub)
+        logger.debug(s"STObject Next: $next")
+        next match {
+          case Left(err)            ⇒ err.asLeft
+          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
         }
       }
     }
 
-    subfields(v, List.empty[FieldDecoded]).map {
+    subfields(v, List.empty[Decoded]).fmap {
       case (fields, rest) ⇒
-        (FieldDecodedNested(info, fields), rest)
+        (DecodedNestedField(info, fields), rest)
     }
   }
 
-  def decodePathSet(v: List[UByte], info: FieldInfo): Either[Nothing, (FieldDecodedNested, List[UByte])] = {
+  def decodePathSet(v: List[UByte], info: FieldInfo): Either[Nothing, (DecodedNestedField, List[UByte])] = {
     // Array of Arrays
 
     def loop(v: List[UByte], acc: List[List[DecodedUBytes]]): (List[List[DecodedUBytes]], List[UByte]) = {
@@ -126,7 +134,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     }
     val (lld: List[List[DecodedUBytes]], tail) = loop(v, List.empty[List[DecodedUBytes]])
     val flat: List[DecodedUBytes]              = lld.flatten // Not ideal for no Nested w/o Field yet
-    (FieldDecodedNested(info, flat), tail).asRight
+    (com.odenzo.ripple.bincodec.DecodedNestedField(info, flat), tail).asRight
   }
 
   /**
@@ -173,7 +181,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     (DecodedUBytes(decoded), tail)
   }
 
-  def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (FieldDecodedUBytes, List[UByte])] = {
+  def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
     val TOP_BIT_MASK: UByte = UByte(128)
     if ((v.head & TOP_BIT_MASK) == UByte(0)) { //XRP
       decodeToUBytes(8, v, info)
@@ -185,11 +193,11 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
   /** Decodes field bytes to hex with no padding */
   def decodeToUBytes(numBytes: Int,
                      v: List[UByte],
-                     info: FieldInfo): Either[OErrorRipple, (FieldDecodedUBytes, List[UByte])] = {
+                     info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
     if (numBytes > v.length) RippleCodecError(s"$numBytes exceeded length ${v.length} decoding").asLeft
     else {
       val (taken: List[UByte], remaining) = v.splitAt(numBytes)
-      (FieldDecodedUBytes(info, taken), remaining).asRight
+      (DecodedField(info, taken), remaining).asRight
     }
   }
 
@@ -199,7 +207,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     * @return FieldInfomation and the remaining UBytes that were not fieldid
     */
   def decodeNextFieldId(blob: List[UByte]): Either[OErrorRipple, (FieldInfo, List[UByte])] = {
-
+    logger.info(s"Decoding Field ID from ${blob.take(6)}...")
     val ZERO             = UByte.MinValue
     val TOP_FOUR_MASK    = UByte(0xF0)
     val BOTTOM_FOUR_MASK = UByte(0x0F)
@@ -207,11 +215,10 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     val top    = blob.head & BOTTOM_FOUR_MASK
     val bottom = blob.head & TOP_FOUR_MASK
 
-    // One Byte Case
     val (fCode, tCode, blobRemaining) = (top === ZERO, bottom === ZERO) match {
       case (false, false) ⇒ // One Byte
-        val fieldcode = blob.head & BOTTOM_FOUR_MASK
-        val typecode  = (blob.head & TOP_FOUR_MASK) >> 4
+        val fieldcode = top
+        val typecode  = bottom >> 4
         (fieldcode, typecode, blob.drop(1))
 
       case (false, true) ⇒ // 2 byte typecode top
@@ -228,66 +235,14 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
         val fieldcode = blob(2)
         (fieldcode, typecode, blob.drop(3))
     }
-    val fieldMarker = ByteUtils.ubyte2hex(fCode)
-    val fieldData   = Definitions.fieldData.findByFieldMarker(fieldMarker)
 
-    fieldData match {
+    val fieldMarker = FieldInfo.encodeFieldID(fCode.toInt, tCode.toInt)
+    Definitions.fieldData.findByFieldMarker(fieldMarker) match {
       case None     ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft
       case Some(fd) ⇒ (fd._2, blobRemaining).asRight
     }
   }
 
-  def decomposeTxBlob(txJson: JsonObject, txBlob: String) = {
-
-    logger.info(s"txJson IN: ${txJson.asJson.spaces4}")
-    // Note the hash is not included in the TxBlob, but *after* signing the TxnSignature is.
-
-    // Testing utility really. Serializing the transaction, and then start removing
-    // all serialized fields to see what it left.
-    // It is my assumption to test that the payload signed is TxBlob - TxnSignature
-    // Also to check if I am missing some mandatory fields.
-    var remainingBlob = txBlob
-
-    // I think hash and TxnSignature are not in definitions...
-    val serialized: Either[RippleCodecError, BinarySerializer.NestedEncodedValues] =
-      RippleCodecAPI.binarySerialize(txJson)
-
-    serialized.foreach { fields =>
-      fields.enclosed.foreach {
-        case x: FieldEncoded => logger.info(s" Field: ${x.data.fi.fieldID.toHex} " + x.data.key)
-        case other           => logger.info(s"OTHER: ${other.toHex}")
-      }
-
-      fields.encoded.foreach { rev =>
-        val enc = rev.toHex
-        remainingBlob = excise(remainingBlob, enc)
-      }
-    }
-    logger.info(s"Remaining Blob: $remainingBlob")
-
-    // Lets try hashing the TxBlob as is (which Txn Prefix)
-    // Go thru the encoded and remove the TxnSignature (74) from txblob
-    val noTxSig: Either[RippleCodecError, List[BinarySerializer.Encoded]] = for {
-      encoded ← serialized
-      filtered = encoded.enclosed.flatMap {
-        case field: FieldEncoded if field.data.key == "TxnSignature" ⇒ None
-        case other                                                   ⇒ Some(other)
-      }
-    } yield filtered
-
-    val rawBytes   = noTxSig.map(list ⇒ list.foldLeft(List.empty[UByte])(_ ::: _.rawBytes))
-    val updateBlob = rawBytes.map(ubytes2hex)
-    updateBlob.foreach { ub ⇒
-      logger.info(s"Blob with no TxnSignature:\n $ub \n $txBlob")
-      logger.info(s"Len ${ub.length} vs ${txBlob.length}")
-    }
-
-  }
-
-  def excise(data: String, toCut: String) = {
-    logger.debug(s"Cutting $toCut from $data")
-    val res = data.replaceFirst(toCut, "")
-    if (res == data) throw new IllegalStateException(s"$toCut not found in $data")
-    res
-  }
 }
+
+object TxBlobBuster extends TxBlobBuster

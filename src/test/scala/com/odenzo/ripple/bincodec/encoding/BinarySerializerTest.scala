@@ -1,4 +1,4 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.encoding
 
 import cats.implicits._
 import io.circe.Decoder.Result
@@ -7,6 +7,7 @@ import org.scalatest.FunSuite
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.codecs.VLEncoding
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonDecodingError, RippleCodecError}

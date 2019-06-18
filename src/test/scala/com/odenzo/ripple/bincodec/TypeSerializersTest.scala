@@ -5,12 +5,13 @@ import io.circe.Json
 import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleType}
-import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, CurrencyEncoders, TypeSerializers}
+import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleDataType}
+import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 
-class TypeSerializersTest extends FunSuite with OTestSpec {
+class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
 
   val defdata: DefinitionData = Definitions.fieldData
 
@@ -43,7 +44,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
   def encodeSingle(fieldName: String, data: Json) = {
-    val req = TypeSerializers.singleFieldData(fieldName, data)
+    val req = dd.getFieldData(fieldName, data)
     req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
     RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
@@ -60,14 +61,14 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
   test("UInt32") {
     val sequence: Int                 = 25
     val v                             = Json.fromInt(sequence)
-    val res: BinarySerializer.Encoded = getOrLog(TypeSerializers.encodeUIntN(v, "UInt32"))
+    val res: Encoded = getOrLog(TypeSerializers.encodeUIntN(v, "UInt32"))
     val hex                           = res.toHex
     logger.info(s"Result: $hex")
   }
 
   def encodeField(name: String) = {
     val fi: FieldInfo                     = getOrLog(defdata.getFieldInfo(name))
-    val fieldId: BinarySerializer.Encoded = fi.fieldID
+    val fieldId: Encoded = fi.fieldID
     logger.debug(s"$name => ${fieldId.toHex}")
   }
 
@@ -112,7 +113,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
 
   test("Full Range of Field / Type Encoding") {
     defdata.fieldsData.values.foreach { ft ⇒
-      val rt: RippleType = getOrLog(defdata.getTypeObj(ft.tipe))
+      val rt: RippleDataType = getOrLog(defdata.getTypeObj(ft.tipe))
 
       logger.debug(s"Field Type: $ft")
       logger.debug(s"Type      : $rt")
@@ -127,7 +128,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
   }
 
   test("Fiat Amount") {
-    CurrencyEncoders.rippleEncodingOfFiatAmount(BigDecimal("0.00000000000001234500"))
+    MoneyCodecs.rippleEncodingOfFiatAmount(BigDecimal("0.00000000000001234500"))
   }
 
   test("XRP") {
@@ -144,7 +145,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
       val jsonV: String = v.toString()
       val json: Json    = Json.fromString(jsonV)
       logger.info(s"From $v Sending JSON: ${json.noSpaces}")
-      val res: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.encodeXrpAmount(json))
+      val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(json))
       val hex                           = res.toHex
       logger.debug(s"$v  => $hex")
       hex
@@ -153,7 +154,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec {
 
   test("XRP Encode") {
     val xrp: Json                     = Json.fromString("10000")
-    val res: BinarySerializer.Encoded = getOrLog(CurrencyEncoders.encodeXrpAmount(xrp))
+    val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
     logger.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 }

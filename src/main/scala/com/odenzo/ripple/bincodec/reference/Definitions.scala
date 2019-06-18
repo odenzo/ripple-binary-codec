@@ -26,6 +26,8 @@ class Definitions(data: DefinitionData) {
 object Definitions extends StrictLogging with JsonUtils {
 
 
+
+
   /** We insist on this succeeding or failing the whole shebang via exception */
   val fieldData: DefinitionData = loadDefaultData() match {
     case Left(err) ⇒ throw new IllegalStateException(s"Startup Phase Failed loading FieldData ${err.show}")

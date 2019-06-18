@@ -7,10 +7,10 @@ import io.circe._
 import io.circe.syntax._
 import org.scalatest.FunSuite
 
-import com.odenzo.ripple.bincodec.serializing.DebuggingShows._
-import com.odenzo.ripple.bincodec.serializing.{BinarySerializer, ContainerFields}
+import com.odenzo.ripple.bincodec.codecs.ContainerFields
+import com.odenzo.ripple.bincodec.encoding.BinarySerializer
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils, TestFixData}
+import com.odenzo.ripple.bincodec.{EncodedNestedVals, OTestSpec, OTestUtils, TestFixData}
 
 class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
 
@@ -45,39 +45,14 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
       }
 
   }
+  import com.odenzo.ripple.bincodec.syntax.compact._
 
   def oneFixture(json: JsonObject, expected: String): Unit = {
     logger.info(s"OneFixture: \n ${json.asJson.spaces4}")
     logger.info(s"Expecting: $expected")
-    val fields: BinarySerializer.NestedEncodedValues =
-      getOrLog(ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true))
+    val fields: EncodedNestedVals =    getOrLog(ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true))
 
     logger.info(s"Field Order: ${fields.show}")
-//
-//
-//    val dump = byField.map { case (fd, hex) ⇒ "Field: %s \nGot: %s".format(fd, hex) }.mkString("\n\t", "\n\t", "\n\n")
-//    logger.info(s"All Fields SUmmary: $dump")
-//
-//    // Now we have computed ok -- lets check each field is correct
-//    var offset = 0 // cough...
-//    byField.zipWithIndex.foreach {
-//      case ((fd, hex), indx) ⇒
-//        logger.info(s"Checking FIeld Inex $indx $fd")
-//        val fieldExpected = expected.slice(offset, offset + hex.length)
-//        offset += hex.length
-//        logger.debug(s"Field Expected vs Got: \n $fieldExpected \n $hex")
-//        hex shouldEqual fieldExpected
-//    }
-//
-//    // Now we can check the concatenation just for the hell of it
-//    val fullHex: String = byField.map(_._2).mkString
-//    fullHex shouldEqual expected
-//
-//    // But really should run through TopLevel
-//    val stobjHex =
-//      getOrLog(TypeSerializers.encodeSTObject(json.asJson, isNested = false,false).map(ByteUtils.ubytes2Hex),
-//               "STObject")
-//    stobjHex shouldEqual expected
 
   }
 }

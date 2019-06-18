@@ -1,20 +1,21 @@
-package com.odenzo.ripple.bincodec.serializing
+package com.odenzo.ripple.bincodec.codecs
 
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Json, JsonObject}
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.serializing.BinarySerializer.{NestedEncodedValues, RawEncodedValue}
-import com.odenzo.ripple.bincodec.serializing.TypeSerializers.encodeULong
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers.encodeULong
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonError, BinCodecExeption, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, RawValue}
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
   * IMportant -- some objects may not have an amount ... I guess replace with amount ZERO
+  * This needs some cleanup for sure.
   */
-object CurrencyEncoders extends StrictLogging with JsonUtils {
+object MoneyCodecs extends StrictLogging with JsonUtils {
 
   /* The range for the mantissa when normalized */
   private val minMantissa: ULong = ULong("1000000000000000")
@@ -38,7 +39,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *
     * @param json FieldData  representing an amount, either one line XRP of object with IOU/Fiat
     */
-  def encodeAmount(json: Json): Either[RippleCodecError, BinarySerializer.Encoded] = {
+  def encodeAmount(json: Json): Either[RippleCodecError, Encoded] = {
     json.asObject match {
       case None      ⇒ encodeXrpAmount(json)
       case Some(obj) ⇒ encodeIOU(obj)
@@ -46,14 +47,14 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
   }
 
   /** In Progress, UInt64 encoding **/
-  def encodeXrpAmount(v: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeXrpAmount(v: Json): Either[RippleCodecError, RawValue] = {
 
     val mask: ULong    = ULong.fromLong(0x4000000000000000L)
     val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
 
     val value: Either[RippleCodecError, BigInt] = json2string(v).map(t ⇒ BigInt(t))
 
-    val answer: Either[AppJsonError, RawEncodedValue] = value match {
+    val answer: Either[AppJsonError, RawValue] = value match {
       case Left(err)                ⇒ AppJsonError("Could not decode as BigInt", v).asLeft
       case Right(bi) if bi < 0      ⇒ AppJsonError(s"XRP Cant Be <0  $bi", v).asLeft
       case Right(bi) if bi > maxXRP ⇒ AppJsonError(s"XRP > $maxXRP  $bi", v).asLeft
@@ -64,17 +65,17 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
 
   /** This actually returns an Amount, need to look at that encoding.
     * Probably this should be NestedAncodedAmount at the least. */
-  def encodeIOU(v: JsonObject): Either[RippleCodecError, NestedEncodedValues] = {
+  def encodeIOU(v: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned...
 
-    val attempt: Either[RippleCodecError, NestedEncodedValues] = for {
+    val attempt: Either[RippleCodecError, EncodedNestedVals] = for {
       value    ← findField("value", v).flatMap(encodeFiatValue)
       currency ← findField("currency", v).flatMap(j ⇒ encodeCurrency(j))
       issuer   ← findField("issuer", v).flatMap(AccountIdCodecs.encodeAccountNoVL)
-    } yield NestedEncodedValues(List(value, currency, issuer))
+    } yield EncodedNestedVals(List(value, currency, issuer))
 
     attempt
   }
@@ -84,7 +85,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *  Currency must be three ASCII characters. could pad left if short I guess
     *  Note that "00000000000..." is used for currency XRP in some places.
     **/
-  def encodeCurrency(json: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeCurrency(json: Json): Either[RippleCodecError, RawValue] = {
     // This should alwqays be 160 bits long
 
     val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
@@ -105,7 +106,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
       }
 
     val ok = iso.map(c ⇒ bit90Zero ::: c ::: bit40Zero)
-    ok.fmap(RawEncodedValue)
+    ok.fmap(RawValue)
   }
 
   /**
@@ -118,7 +119,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     *
     * @param json
     */
-  def encodeFiatValue(json: Json): Either[RippleCodecError, RawEncodedValue] = {
+  def encodeFiatValue(json: Json): Either[RippleCodecError, RawValue] = {
     json2string(json)
     .map(BigDecimal(_))
     .flatMap(rippleEncodingOfFiatAmount)
@@ -239,7 +240,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     normalized
   }
 
-  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[RippleCodecError, RawEncodedValue] = {
+  def rippleEncodingOfFiatAmount(bd: BigDecimal): Either[RippleCodecError, RawValue] = {
 
     /*
     Minimum nonzero absolute value: 1000000000000000e-96
@@ -272,7 +273,7 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
           full           = top10 | nman
         } yield full
 
-        val asBytes: Either[RippleCodecError, RawEncodedValue] = res.flatMap(encodeULong(_, "UInt64"))
+        val asBytes: Either[RippleCodecError, RawValue] = res.flatMap(encodeULong(_, "UInt64"))
         asBytes
       }
     }
@@ -287,50 +288,6 @@ object CurrencyEncoders extends StrictLogging with JsonUtils {
     */
   def isRippleAscii(s: String): Boolean = { s.forall(c ⇒ rippleAscii.contains(c)) }
 
-  /*
-
-void
-IOUAmount::normalize ()
-{
-    if (mantissa_ == 0)
-    {
-   *this = beast::zero;
-        return;
-    }
-
-    bool const negative = (mantissa_ < 0);
-
-    if (negative)
-        mantissa_ = -mantissa_;
-
-    while ((mantissa_ < minMantissa) && (exponent_ > minExponent))
-    {
-        mantissa_ *= 10;
-        --exponent_;
-    }
-
-    while (mantissa_ > maxMantissa)
-    {
-        if (exponent_ >= maxExponent)
-            Throw<std::overflow_error> ("IOUAmount::normalize");
-
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    if ((exponent_ < minExponent) || (mantissa_ < minMantissa))
-    {
-   *this = beast::zero;
-        return;
-    }
-
-    if (exponent_ > maxExponent)
-        Throw<std::overflow_error> ("value overflow");
-
-    if (negative)
-        mantissa_ = -mantissa_;
-}
-   */
   /**
     * @param mantissa
     * @param exponent
