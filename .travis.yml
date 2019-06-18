@@ -1,4 +1,8 @@
 language: scala
+
+
+CODECOV_TOKEN="a4287040-b041-43ad-9662-cd0d94d0f0fc"
+
 scala:
   - 2.12.8
 
@@ -21,9 +25,8 @@ before_cache:
   - find $HOME/.sbt        -name "*.lock"               -print -delete
 
 
-# Standard Scala build and test targets
-
-script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 test
+# Standard Scala build and test targets with scoverage (codecov)
+script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test  coverageReport
 
 
 # Deployment to BinTray pending  https://docs.travis-ci.com/user/deployment/bintray/
