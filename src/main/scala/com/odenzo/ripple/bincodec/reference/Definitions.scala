@@ -31,9 +31,6 @@ object Definitions extends StrictLogging with JsonUtils {
     case Right(v)  ⇒ v
   }
 
-
-
-  logger.warn("Instanciating Definitions Object")
   final val objectMarkerEndName: String = "ObjectEndMarker"
   final val arrayMarkerEndName: String  = "ArrayEndMarker"
 
