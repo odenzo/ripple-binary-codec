@@ -1,5 +1,7 @@
 package com.odenzo.ripple.bincodec.decoding
 
+import scala.collection.immutable
+
 import org.scalatest.FunSuite
 import cats._
 import cats.data._
@@ -23,16 +25,27 @@ class TxBlobBusterTest extends FunSuite with OTestSpec {
 
     val got =
       "1200142280000000240000000663D513BDC0B97008000000000000000000000000004E5A440000000000CD91C65EC7AB628A95AB34E45F1DE19C30CFCA53684000000005F5E1007440067A915B95423D7C99A4E926258AEEED403362CC036FDEC0359E3EE004A74D2CA627212C5979EA7E186A82A93FA59F4A6175E01867A163D9E64717BB00B8620981147AD346725481790E2A15CFF0C08676F0411D2494F9EA7D1054657374205472616E73616374696F6E7E18746578742F706C61696E3B636861727365743D5554462D38E1F1"
+
     val src = expected
+   def run(src:String): List[Decoded] = {
     logger.info(s"SRC: $src")
     val res: Either[RippleCodecError, List[Decoded]] = TxBlobBuster.bust(src)
     val ok: List[Decoded] = getOrLog(res)
     logger.info(s"SRC: $src")
     logger.info(s"Raw List FieldDecoded $ok")
+                                ok
 
-    val byField = ok.map(_.show)
+   }
 
-    logger.info(s"Decoded:\n${byField.mkString("\n")}")
+    val expRs: List[Decoded] = run(expected)
+    val gotRs: immutable.Seq[Decoded] = run(got)
+    logger.info(s"Decoded EXPECTED:\n${expRs.mkString("\n")}")
+
+    val txt: immutable.Seq[String] = gotRs.map(_.show)
+
+    logger.info(s"Decoded GOT:\n${gotRs.mkString("\n")}")
+    logger.info(s"Exp: \n${expRs.show.mkString}")
+    logger.info(s"Got: \n${gotRs.map(_.show).mkString("Fields:\n", "\n\t", "\n")}")
   }
 
 }

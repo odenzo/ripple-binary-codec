@@ -56,30 +56,27 @@ object HashPrefix extends StrictLogging {
     logger.warn(s"Long: $lhex bytes: $ubytes")
     HashPrefix(ubytes)
   }
-}
+//
+//  val transactionID: UInt       = fromChar('T', 'X', 'N')
+//  val txNode: UInt              = fromChar('S', 'N', 'D')
+//  val leafNode: UInt            = fromChar('M', 'L', 'N')
+//  val innerNode: UInt           = fromChar('M', 'I', 'N')
+//  val innerNodeV2: UInt         = fromChar('I', 'N', 'R')
+//  val ledgerMaster: UInt        = fromChar('L', 'W', 'R')
+//  val txSign: UInt              = fromChar('S', 'T', 'X')
+//  val txMultiSign: UInt         = fromChar('S', 'M', 'T')
+//  val validation: UInt          = fromChar('V', 'A', 'L')
+//  val proposal: UInt            = fromChar('P', 'R', 'P')
+//  val manifest: UInt            = fromChar('M', 'A', 'N')
+//  val paymentChannelClaim: UInt = fromChar('C', 'L', 'M')
 
-object RippledHashPrefix {
-
-  val transactionID: UInt       = HashPrefix('T', 'X', 'N')
-  val txNode: UInt              = HashPrefix('S', 'N', 'D')
-  val leafNode: UInt            = HashPrefix('M', 'L', 'N')
-  val innerNode: UInt           = HashPrefix('M', 'I', 'N')
-  val innerNodeV2: UInt         = HashPrefix('I', 'N', 'R')
-  val ledgerMaster: UInt        = HashPrefix('L', 'W', 'R')
-  val txSign: UInt              = HashPrefix('S', 'T', 'X')
-  val txMultiSign: UInt         = HashPrefix('S', 'M', 'T')
-  val validation: UInt          = HashPrefix('V', 'A', 'L')
-  val proposal: UInt            = HashPrefix('P', 'R', 'P')
-  val manifest: UInt            = HashPrefix('M', 'A', 'N')
-  val paymentChannelClaim: UInt = HashPrefix('C', 'L', 'M')
-
-  def HashPrefix(a: Char, b: Char, c: Char): UInt = {
+  def fromChar(a: Char, b: Char, c: Char): UInt = {
     val aIn = UInt(a.toInt)
     val bIn = UInt(b.toInt) << 8
     val cIn = UInt(c.toInt) << 8
 
-    (aIn | bIn | cIn) << 8
-
+    val res: UInt = (aIn | bIn | cIn) << 8
+         res
 //
 //    m_prefix = a
 //    m_prefix = (m_prefix << 8) + b

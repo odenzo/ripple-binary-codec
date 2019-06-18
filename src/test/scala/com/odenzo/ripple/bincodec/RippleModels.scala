@@ -83,7 +83,7 @@ object RippleSignature {
   * @param v e.g. "aBPUAJbNXvxP7uiTxmCcCpVgrGjsbJ8f7hQaYPRrdajXNWXuCNLX"
   **/
 case class RipplePublicKey(v: Base58) {
-  def toHex: String = ByteUtils.ubytes2hex(RippleBase58.base58Key2bytesTrimmed(v.v))
+  def toHex: String = ByteUtils.ubytes2hex(RippleBase58.base58CheckToBytes(v.v))
 }
 
 object RipplePublicKey {

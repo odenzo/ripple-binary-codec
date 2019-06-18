@@ -137,31 +137,13 @@ private[bincodec] trait JsonUtils extends StrictLogging {
     }
   }
 
-  /**
-    * {{{
-    *    CirceUtils.decode(json.as[List[Foo]], json, "Decoding all Foo in the Bar")
-    * }}}
-    *
-    * @param v
-    * @param json
-    * @param note
-    * @tparam T
-    *
-    * @return
-    */
-  def decode[T](v: Result[T], json: Json, note: String = "No Clues"): ErrorOr[T] = {
-    v.leftMap { err: DecodingFailure ⇒
-      new AppJsonDecodingError(json, err, note)
-    }
-  }
-
-  def decode[T](json: Json, decoder: Decoder[T]): ErrorOr[T] = {
+  def decode[T](json: Json, decoder: Decoder[T], msg:Option[String]=None): ErrorOr[T] = {
     //val targs = typeOf[T] match { case TypeRef(_, _, args) => args }
     //val tmsg = s"type of $decoder has type arguments $targs"
 
     val decoderInfo = decoder.toString
-    val msg         = s"Using Decoder $decoderInfo for Type"
-    decoder.decodeJson(json).leftMap((e: DecodingFailure) ⇒ new AppJsonDecodingError(json, e, msg))
+    val errmsg         = msg.getOrElse(s"Using Decoder $decoderInfo for Type")
+    decoder.decodeJson(json).leftMap((e: DecodingFailure) ⇒ new AppJsonDecodingError(json, e,errmsg))
   }
 }
 

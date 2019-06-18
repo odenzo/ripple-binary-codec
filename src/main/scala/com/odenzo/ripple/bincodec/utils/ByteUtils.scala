@@ -32,6 +32,13 @@ private[bincodec] trait ByteUtils extends StrictLogging {
 
   def bytes2bigint(a: Array[Byte]): BigInt = BigInt(1, a)
 
+  /** WARNING: This doesn't check range problems */
+  def bigInt2ulong(bi: BigInt): Either[OErrorRipple, ULong] = {
+    if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
+      RippleCodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
+    else ULong.fromBigInt(bi).asRight
+  }
+  
   /**
     * @return Formats unsigned byte as two hex characters, padding on left as needed (lowercase btw)
     */

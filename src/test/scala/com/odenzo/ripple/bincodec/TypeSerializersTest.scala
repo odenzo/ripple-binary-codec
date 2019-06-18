@@ -5,7 +5,7 @@ import io.circe.Json
 import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
+import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleDataType}
 import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
@@ -61,7 +61,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
   test("UInt32") {
     val sequence: Int                 = 25
     val v                             = Json.fromInt(sequence)
-    val res: Encoded = getOrLog(TypeSerializers.encodeUIntN(v, "UInt32"))
+    val res: Encoded = getOrLog(UIntCodecs.encodeUIntN(v, "UInt32"))
     val hex                           = res.toHex
     logger.info(s"Result: $hex")
   }

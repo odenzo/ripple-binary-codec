@@ -45,8 +45,6 @@ case class FieldInfo(name: String,
   */
 case class FieldData(fieldName: String, v: Json, fi: FieldInfo) 
 
-case class FieldHex(value: String, fi: FieldInfo)
-
 
 object FieldInfo extends StrictLogging {
 

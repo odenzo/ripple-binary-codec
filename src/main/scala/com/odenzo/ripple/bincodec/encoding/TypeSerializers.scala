@@ -7,7 +7,15 @@ import io.circe._
 import io.circe.syntax._
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, MoneyCodecs, PathCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.{
+  AccountIdCodecs,
+  ContainerFields,
+  HashHexCodecs,
+  MoneyCodecs,
+  PathCodecs,
+  UIntCodecs,
+  VLEncoding
+}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, RippleDataType}
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
@@ -61,12 +69,12 @@ object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
       case "AccountID" if isNestedObject               ⇒ AccountIdCodecs.encodeAccountNoVL(fieldValue)
       case "AccountID" if !isNestedObject              ⇒ AccountIdCodecs.encodeAccount(fieldValue)
 
-      case "UInt8"     ⇒ encodeUIntN(fieldValue, "UInt8")
-      case "UInt16"    ⇒ encodeUIntN(fieldValue, "UInt16")
-      case "UInt32"    ⇒ encodeUIntN(fieldValue, "UInt32")
-      case "UInt64"    ⇒ encodeUInt64(fieldValue)
-      case "Hash160"   ⇒ encodeHash160(fieldValue)
-      case "Hash256"   ⇒ encodeHash256(fieldValue)
+      case "UInt8"     ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt8")
+      case "UInt16"    ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt16")
+      case "UInt32"    ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt32")
+      case "UInt64"    ⇒ UIntCodecs.encodeUInt64(fieldValue)
+      case "Hash160"   ⇒ HashHexCodecs.encodeHash160(fieldValue)
+      case "Hash256"   ⇒ HashHexCodecs.encodeHash256(fieldValue)
       case "Blob"      ⇒ encodeBlob(fieldValue)
       case "Amount"    ⇒ MoneyCodecs.encodeAmount(fieldValue)
       case "PathSet"   ⇒ PathCodecs.encodePathSet(fieldData)
@@ -94,31 +102,6 @@ object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
 
   }
 
-  def encodeHash(json: Json, byteLen: Int): Either[RippleCodecError, RawValue] = {
-    // This looks like Hex Already... in fact just round tripping
-    val str = JsonUtils.decode(json, Decoder[String])
-    val ans: Either[RippleCodecError, List[UByte]] = str.flatMap { v ⇒
-      ByteUtils.hex2ubytes(v)
-    }
-    val checked = ans.flatMap(ByteUtils.ensureMaxLength(_, byteLen))
-    checked.map(ByteUtils.zeroPadBytes(_, byteLen))
-    ans.fmap(RawValue)
-  }
-
-  def encodeHash160(json: Json): Either[RippleCodecError, EncodedDataType] = {
-    val rtype: Either[OErrorRipple, RippleDataType]            = dd.getTypeObj("Hash160")
-    val encoded: Either[RippleCodecError, RawValue] = encodeHash(json, 20)
-
-    (encoded, rtype).mapN(EncodedDataType)
-  }
-
-  def encodeHash256(json: Json): Either[RippleCodecError, EncodedDataType] = {
-    val rtype: Either[OErrorRipple, RippleDataType]            = dd.getTypeObj("Hash256")
-    val encoded: Either[RippleCodecError, RawValue] = encodeHash(json, 32)
-
-    (encoded, rtype).mapN(EncodedDataType(_, _))
-  }
-
   def encodeTransactionType(json: Json): Either[RippleCodecError, RawValue] = {
     val res: Either[RippleCodecError, RawValue] =
       JsonUtils.decode(json, Decoder[String]).flatMap(v ⇒ txnType2Bin(v))
@@ -135,64 +118,20 @@ object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
     json2string(json).flatMap(txnResultType2Bin)
   }
 
-  /** Adapted from the Javascript
-    * Redo with one UInt Decoder and a function for each type.
-    * */
-  def encodeUIntN(v: Json, dataType: String): Either[RippleCodecError, RawValue] = {
-    BinCodecExeption.wrap(s"Binary Encoding JSON # $v") {
-
-      val number: Option[ULong] = for {
-        numeric <- v.asNumber
-        ulong   <- numeric.toLong.map(ULong(_))
-      } yield ulong
-
-      val unsigned = Either.fromOption(number, RippleCodecError(s"JSON ${v.spaces2} was not a Unisgned Long Number"))
-
-      val ans: Either[OErrorRipple, RawValue] = unsigned.flatMap(v ⇒ encodeULong(v, dataType))
-      ans
-    }
-  }
-
-  def encodeUInt64(json: Json): Either[RippleCodecError, RawValue] = {
-    parseUInt64(json).flatMap(encodeULong(_, "UInt64"))
-  }
-
-  /** TODO: Potentially overflow, check thus esp UInt64 */
-  def encodeULong(value: ULong, dataType: String): Either[Nothing, RawValue] = {
-    val fieldLength = dataType match {
-      case "UInt8"  ⇒ 1
-      case "UInt16" ⇒ 2
-      case "UInt32" ⇒ 4
-      case "UInt64" ⇒ 8
-      case other    ⇒ throw new IllegalArgumentException(s"$other was not a valid unsigned int type")
-    }
-
-    val bytes: Either[Nothing, List[UByte]] = (0 until fieldLength)
-      .map { i: Int ⇒
-        val calcUnsigned: ULong = value >>> (i * 8)
-        UByte(calcUnsigned.toByte)
-      }
-      .toList
-      .reverse
-      .asRight
-    bytes.foreach(bl ⇒ assert(bl.length == fieldLength))
-    bytes.map(RawValue)
-  }
-
   /** Given a transaction type name, an enumeration basically, return its value. -1 invalid until 101 Error if not
     * found. I think these are always UInt16 incoded.
     * */
   def txnType2Bin(txnName: String): Either[RippleCodecError, RawValue] = {
-    dd.getTransactionType(txnName).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
+    dd.getTransactionType(txnName).flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16"))
 
   }
 
   def ledgerType2Bin(entryType: String): Either[RippleCodecError, RawValue] = {
-    dd.getLedgerEntryType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
+    dd.getLedgerEntryType(entryType).flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16"))
   }
 
   // This should be pre-baked of course.
   def txnResultType2Bin(entryType: String): Either[RippleCodecError, RawValue] = {
-    dd.getTxnResultType(entryType).flatMap(l ⇒ encodeUIntN(Json.fromLong(l), "UInt16"))
+    dd.getTxnResultType(entryType).flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16"))
   }
 }

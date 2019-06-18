@@ -4,11 +4,10 @@ import cats._
 import cats.data._
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe._
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, Formatter}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions}
+import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 object BinarySerializer extends StrictLogging with ByteUtils {
 

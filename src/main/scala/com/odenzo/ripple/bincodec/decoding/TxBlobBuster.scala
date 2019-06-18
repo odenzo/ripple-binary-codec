@@ -10,7 +10,7 @@ import com.odenzo.ripple.bincodec.codecs.VLEncoding
 import com.odenzo.ripple.bincodec.reference.{Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, DecodedUBytes}
+import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, RawValue}
 
 /** Development helper, not completed */
 trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
@@ -124,16 +124,16 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
   def decodePathSet(v: List[UByte], info: FieldInfo): Either[Nothing, (DecodedNestedField, List[UByte])] = {
     // Array of Arrays
 
-    def loop(v: List[UByte], acc: List[List[DecodedUBytes]]): (List[List[DecodedUBytes]], List[UByte]) = {
+    def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {
       val (path, tail) = decodePath(v)
-      if (path.head.value.head === UByte.MinValue) {
+      if (path.head.ubytes.head === UByte.MinValue) {
         (path.reverse :: acc, tail)
       } else {
         loop(v, path.reverse :: acc)
       }
     }
-    val (lld: List[List[DecodedUBytes]], tail) = loop(v, List.empty[List[DecodedUBytes]])
-    val flat: List[DecodedUBytes]              = lld.flatten // Not ideal for no Nested w/o Field yet
+    val (lld: List[List[RawValue]], tail) = loop(v, List.empty[List[RawValue]])
+    val flat: List[RawValue]              = lld.flatten // Not ideal for no Nested w/o Field yet
     (com.odenzo.ripple.bincodec.DecodedNestedField(info, flat), tail).asRight
   }
 
@@ -142,15 +142,15 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     * @param path
     * @return A list of decoded ubytes for the path, in reverse order.
     */
-  def decodePath(path: List[UByte]): (List[DecodedUBytes], List[UByte]) = {
+  def decodePath(path: List[UByte]): (List[RawValue], List[UByte]) = {
     // Composed of N Path Steps , first always has implied account
     val endPathWithMorePaths = UByte(0xFF)
     val endPathAndPathSet    = UByte(0x00)
 
     @scala.annotation.tailrec
-    def loop(v: List[UByte], acc: List[DecodedUBytes]): (List[DecodedUBytes], List[UByte]) = {
+    def loop(v: List[UByte], acc: List[RawValue]): (List[RawValue], List[UByte]) = {
       if (v.head === endPathWithMorePaths || v.head == endPathAndPathSet) {
-        val marker = DecodedUBytes(List(v.head))
+        val marker = RawValue(List(v.head))
         (marker :: acc, v.drop(1))
       } else {
         val (decoded, tail) = decodePathStep(v)
@@ -158,10 +158,10 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
       }
     }
 
-    loop(path, List.empty[DecodedUBytes])
+    loop(path, List.empty[RawValue])
   }
 
-  def decodePathStep(v: List[UByte]): (DecodedUBytes, List[UByte]) = {
+  def decodePathStep(v: List[UByte]): (RawValue, List[UByte]) = {
     val kZERO         = UByte(0)
     val kAddressStep  = UByte(1)
     val kCurrencyStep = UByte(16)
@@ -178,7 +178,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
     val len             = 1 + (numBits * 20) // Including the marker
     val (decoded, tail) = v.splitAt(len)
-    (DecodedUBytes(decoded), tail)
+    (RawValue(decoded), tail)
   }
 
   def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {

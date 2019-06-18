@@ -15,10 +15,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
   * @param data
   */
 class Definitions(data: DefinitionData) {
-//
-//  val objectEndMarkerByte: Either[AppError, Byte] = data.findTypeForField(objectMarkerEndName).map(_.value.toByte)
-//
-//  val arrayEndMarkerByte: Either[AppError, Byte] = data.findTypeForField(arrayMarkerEndName).map(_.value.toByte)
+
 
 }
 

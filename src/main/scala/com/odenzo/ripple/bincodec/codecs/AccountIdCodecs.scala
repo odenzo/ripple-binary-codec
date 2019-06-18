@@ -14,7 +14,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecErro
   * For now lets stick with encoding.
   * [[[https://developers.ripple.com/accounts.html#address-encoding]] is good reference point.
   */
-object AccountIdCodecs extends StrictLogging {
+trait AccountIdCodecs extends StrictLogging {
 
   /*
    * Quick Overview:
@@ -34,20 +34,11 @@ object AccountIdCodecs extends StrictLogging {
    */
 
   /**
-    * Binary encodes an Account field (variable length field)
-    *
-    * @param json for the field value
-    *
-    * @return
+    *  encodes an Account field with VL Header (variable length field)
+    *  When not nested, this form is useed.
+    *  Really should have a special EndodedVLStyle(fi, vl, value)
     */
   def encodeAccount(json: Json): Either[OErrorRipple, RawValue] = {
-    // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
-    // Spec is 160bits for account, but VLEncoded of length
-    // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
-    //  VLLen  + account = 160 bits (20 bytes)
-
-    // Is rrrrrrrrrrrrrrrrrrrrBZbvji a special case? All zeros in fixruew
-
     for {
       bits160 ← encodeAccountNoVL(json)
       vl      ← VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
@@ -61,20 +52,7 @@ object AccountIdCodecs extends StrictLogging {
     * This is special case so stick with raw encoded value
     */
   def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawValue] = {
-    // r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2
-    // Spec is 160bits for account, but VLEncoded of length
-    // To handle, make lenvth is 152 bits and VLEncoding is 8 bits
-    //  VLLen  + account = 160 bits (20 bytes)
-
-    /*
-      Between 25 and 35 characters in length
-      Starts with the character r
-      Uses alphanumeric characters, excluding the number "0" capital letter "O", capital letter "I", and lowercase letter "l"
-      Case-sensitive
-      Includes a 4-byte checksum so that the probability of generating a valid address from random characters is approximately 1 in 2^32
-
-     */
-    val account: Either[OErrorRipple, String] =
+     val account: Either[OErrorRipple, String] =
       Either.fromOption(json.asString, RippleCodecError("Account JSON Not String"))
 
     val asBytes: Either[OErrorRipple, List[UByte]] = account.map { s ⇒
@@ -90,3 +68,5 @@ object AccountIdCodecs extends StrictLogging {
   }
 
 }
+
+object AccountIdCodecs extends AccountIdCodecs

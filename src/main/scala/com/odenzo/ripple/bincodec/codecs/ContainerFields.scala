@@ -8,12 +8,13 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers.{encodeFieldAndValue, encodeHash256, json2array, json2object}
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers.encodeFieldAndValue
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.{Encoded, EncodedDataType, EncodedField, EncodedNestedVals}
 
-trait STObject extends StrictLogging with CodecUtils {
+trait STObject extends StrictLogging with CodecUtils with JsonUtils {
 
   /**
     * Top level object has no matching FieldInfo :-/
@@ -70,7 +71,7 @@ trait STObject extends StrictLogging with CodecUtils {
 
 }
 
-trait STArray extends StrictLogging with CodecUtils {
+trait STArray extends StrictLogging with CodecUtils with JsonUtils {
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
     logger.debug(s"STArray:\n${data.v.spaces2}")
 
@@ -103,7 +104,7 @@ trait STArray extends StrictLogging with CodecUtils {
   }
 }
 
-trait Vector256 {
+trait Vector256 extends CodecUtils with JsonUtils {
 
   /**
     * This is usually a field, maybe always not sure.
@@ -116,7 +117,7 @@ trait Vector256 {
 // Like Indexes, these all seems to be 64 hex bytes in quotes 256 bits
 
     def encodeListOfHash(jsonList: List[Json]): Either[RippleCodecError, List[EncodedDataType]] =
-      jsonList.traverse(encodeHash256)
+      jsonList.traverse(HashHexCodecs.encodeHash256)
 
     val list = for {
       arr      ← json2array(data.v)

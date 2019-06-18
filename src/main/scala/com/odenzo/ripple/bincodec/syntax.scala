@@ -4,7 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, Formatter}
+import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 object syntax {
 
@@ -12,26 +12,22 @@ object syntax {
 
     import ByteUtils._
 
-    private def dump[T](v: T): String = "SHOWN: " + Formatter.prettyPrint(v)
-
-    val oDump: Any ⇒ String = dump
-
+    // Compact we can use toHex on all but NestedVal?
     implicit val showEncoded: Show[Encoded] = Show.show {
-      // I thought there was a way around this if sealed trait
       case x: EncodedNestedVals ⇒ x.show
       case x: EncodedField      ⇒ x.show
-      case x: RawValue          ⇒ x.show
-      case x: EncodedDataType   ⇒ x.show
-      case x: EncodedVL         ⇒ x.show
+      case x: EncodedDataType   ⇒ x.toHex
+      case x: EncodedVL         ⇒ x.toHex
+      case x: RawValue          ⇒ x.toHex
       case EmptyValue           ⇒ "{Empty Value}"
     }
 
-    implicit val showRawDecoded: Show[DecodedUBytes] = Show.show[DecodedUBytes] { v ⇒
-      ubytes2hex(v.value)
+    implicit val showRaw: Show[RawValue] = Show.show[RawValue] { v ⇒
+      ubytes2hex(v.ubytes)
     }
 
     implicit val showFieldDecodedUBytes: Show[DecodedField] = Show.show { v ⇒
-      v.fi.fieldID.show + ":" + ubytes2hex(v.value)
+      v.fi.fieldID.show + ":" + ubytes2hex(v.ubytes)
     }
 
     implicit val showFieldDecodedNested: Show[DecodedNestedField] = Show.show { v ⇒
@@ -40,14 +36,11 @@ object syntax {
     }
 
     implicit val showFieldDecoded: Show[Decoded] = Show.show {
-      case x: DecodedUBytes      ⇒ x.show
+      case x: RawValue           ⇒ x.show
       case x: DecodedField       ⇒ x.show
       case x: DecodedNestedField ⇒ x.show
-      case x: RawValue           ⇒ x.show
-
+      case EmptyValue            ⇒ "<Empty Value>"
     }
-
-    implicit val showRaw: Show[RawValue] = Show.show(v ⇒ s" Hex:[${v.toHex}]")
 
     implicit val showEncNested: Show[EncodedNestedVals] = Show.show { nev ⇒
       "Nested: \n" +
@@ -72,10 +65,6 @@ object syntax {
 
     import ByteUtils._
 
-    private def dump[T](v: T): String = "SHOWN: " + Formatter.prettyPrint(v)
-
-    val oDump: Any ⇒ String = dump
-
     implicit val showEncoded: Show[Encoded] = Show.show {
       // I thought there was a way around this if sealed trait
       case x: EncodedNestedVals ⇒ x.show
@@ -83,15 +72,11 @@ object syntax {
       case x: RawValue          ⇒ x.show
       case x: EncodedDataType   ⇒ x.show
       case x: EncodedVL         ⇒ x.show
-      case EmptyValue           ⇒ "{Empty Value}"
-    }
-
-    implicit val showRawDecoded: Show[DecodedUBytes] = Show.show[DecodedUBytes] { v ⇒
-      ubytes2hex(v.value)
+      case EmptyValue           ⇒ "<Empty Value>"
     }
 
     implicit val showFieldDecodedUBytes: Show[DecodedField] = Show.show { v ⇒
-      v.fi.fieldID.show + ":" + ubytes2hex(v.value)
+      v.fi.fieldID.show + ":" + ubytes2hex(v.ubytes)
     }
 
     implicit val showFieldDecodedNested: Show[DecodedNestedField] = Show.show { v ⇒
@@ -100,10 +85,10 @@ object syntax {
     }
 
     implicit val showFieldDecoded: Show[Decoded] = Show.show {
-      case x: DecodedUBytes      ⇒ x.show
+      case x: RawValue           ⇒ x.show
       case x: DecodedField       ⇒ x.show
       case x: DecodedNestedField ⇒ x.show
-      case x: RawValue           ⇒ x.show
+      case EmptyValue            => "<Empty Value>"
     }
 
     implicit val showRaw: Show[RawValue] = Show.show(v ⇒ s" Hex:[${v.toHex}]")

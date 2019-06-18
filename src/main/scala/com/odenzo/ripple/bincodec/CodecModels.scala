@@ -25,15 +25,15 @@ sealed trait Encoded extends CodecValue  {
 }
 
 
-case class DecodedField(fi: FieldInfo, value: List[UByte]) extends Decoded
-
-case class DecodedNestedField(fi: FieldInfo, nested: List[Decoded]) extends Decoded
-
-case class DecodedUBytes(value: List[UByte]) extends Decoded
-
 case class RawValue(ubytes: Seq[UByte]) extends Encoded with Decoded {
   lazy val encoded: List[RawValue] = List(this)
 }
+
+case class DecodedField(fi: FieldInfo, ubytes: List[UByte]) extends Decoded
+
+case class DecodedNestedField(fi: FieldInfo, nested: List[Decoded]) extends Decoded
+
+
 
 
 case class EncodedField(fieldValue: Encoded, data: FieldData) extends Encoded {
@@ -44,6 +44,16 @@ case class EncodedDataType(value: RawValue, rtype: RippleDataType) extends Encod
   lazy val encoded: List[RawValue] = List(value)
 
 }
+
+/**
+  *
+  * @param vl     The calculated length of ubytes with Ripple special encoding
+  * @param ubytes The raw data, prior to being VL encoded
+  */
+case class EncodedVL(vl: RawValue, ubytes: RawValue) extends Encoded {
+  lazy val encoded: List[RawValue] = vl.encoded ::: ubytes.encoded
+}
+
 
 /**
   * @param enclosed Should ne NonEmptyList
@@ -60,17 +70,8 @@ case class EncodedNestedVals(enclosed: List[Encoded]) extends Encoded {
   }
 }
 
-/**
-  *
-  * @param vl     The calculated length of ubytes with Ripple special encoding
-  * @param ubytes The raw data, prior to being VL encoded
-  */
-case class EncodedVL(vl: RawValue, ubytes: RawValue) extends Encoded {
-  lazy val encoded: List[RawValue] = vl.encoded ::: ubytes.encoded
-}
-
 /** For null type objects, e.g. an empty array of memos */
-case object EmptyValue extends Encoded {
+case object EmptyValue extends Encoded with Decoded {
   val encoded: List[RawValue] = List.empty[RawValue]
 }
 
