@@ -4,27 +4,37 @@
 [![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
 
 
+[![codecov](https://codecov.io/gh/odenzo/ripple-binary-codec/branch/master/graph/badge.svg)](https://codecov.io/gh/odenzo/ripple-binary-codec)
+
+
 ## Overview
-This is essentially a remix of the Ripple Javascript code for binary-codec  in Scala 12.X
 
-Minimal amount of third party libraries, should allow cross-compiling to ScalaJS and maybe Scala Native.
+This project is a library written in Scala for use with Ripple XRP ledger.
+It takes 
 
-Best place to start on documentation is: https://developers.ripple.com/serialization.html
+1. JSON and serialization into Ripple binary format, e.g. TxBlob
+2. De-serializes Ripple binary encoded – back to a TxBlob style or broken down to hex fields and subfields for 
+debugging
+
+  
+Best place to start on documentation is:
+ https://developers.ripple.com/serialization.html
 
 Main use case is just signing transaction, but should handle more although not tested as much.
 
 External API is in RippleCodecAPI and returns encoded values now, and byte array form.
 
-This is designed to be able to use stand-alone, and also with ripple-local-signing
-
 
 ## Status
 
-Working on PaymentTx and small set of test cases.
+- Functional serialization, works on a pretty good set of test cases.
+- Deserialization useful for development and debugging work
+- Code is getting cleaner, but not optimized. 
 
-Lots of dead code and non-optimized.
 
 
 ## TODOs
 
 * Add more test cases, particularly of Ripple transactions
+* Cross-compile to Javascript
+* Maven publish
