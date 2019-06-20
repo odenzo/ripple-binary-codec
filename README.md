@@ -1,6 +1,7 @@
 
 # ripple-binary-codec
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b58ab8b6b0d24967823ca73654a69529)](https://app.codacy.com/app/odenzo/ripple-binary-codec?utm_source=github.com&utm_medium=referral&utm_content=odenzo/ripple-binary-codec&utm_campaign=Badge_Grade_Settings)
 [![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
 [![codecov](https://codecov.io/gh/odenzo/ripple-binary-codec/branch/master/graph/badge.svg)](https://codecov.io/gh/odenzo/ripple-binary-codec)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
