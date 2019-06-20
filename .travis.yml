@@ -9,25 +9,24 @@ scala:
 jdk:
 #  - oraclejdk11
   - openjdk11
-
+  - openjdk8
 
 # These directories are cached to a cloud storage provider "close" to the infrastructure the builds run on.
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt
+    - $HOME/.sbt/boot
+    - $HOME/.coursier
 
-
-before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates
-  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
 
 
 # Standard Scala build and test targets with scoverage (codecov)
-script: sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test  coverageReport
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test  coverageReport
 
+  # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.sbt -name "*.lock" | xargs rm
 
 # Deployment to BinTray pending  https://docs.travis-ci.com/user/deployment/bintray/
 #  deploy:

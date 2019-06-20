@@ -12,14 +12,24 @@ enablePlugins(JavaAppPackaging)
 
  publishTo can go to Maven and there is a seperate JFrog/Bintray plugin to publish too
 
-
- I would like to disable Scaladoc in the publishLocal.
  */
 
-
-licenses := List( ("BSD", url("https://www.apache.org/licenses/LICENSE-2.0")))
+licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 homepage := Some(url("https://github.com/odenzo/ripple-binary-codec"))
 credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+credentials ++= (
+                for {
+                  username <- Option(System.getenv().get("SONATYPE_USERNAME"))
+                  password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
+                } yield Credentials(
+                                     "Sonatype Nexus Repository Manager",
+                                     "oss.sonatype.org",
+                                     username,
+                                     password
+                                     )
+                ).toSeq
+
+
 
 
 

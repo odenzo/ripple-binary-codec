@@ -9,7 +9,7 @@ import MyCompileOptions._
 //})
 ThisBuild / organization := "com.odenzo"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "0.2t"
+ThisBuild / version := "0.2"
 
 name := "ripple-binary-codec"
 
@@ -28,6 +28,7 @@ lazy val bincodec = (project in file("."))
   )
 
 lazy val commonSettings = Seq(
+  coverageHighlighting := true,
   libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire,
   resolvers ++= Seq(
     Resolver.bintrayIvyRepo("odenzo", "ripple-binary-codec"),
@@ -40,14 +41,13 @@ val devSettings = Seq(
   Test / parallelExecution := false
 )
 
-
+// TODO: Switch to Scribe for logging.
 val libs = {
   Seq(
     "org.scalatest"              %% "scalatest"      % "3.0.7" % Test,
     "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
-
     "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2", // Java Only
-    "ch.qos.logback"             % "logback-classic" % "1.2.3"  // Java Only
+    "ch.qos.logback"             % "logback-classic" % "1.2.3" // Java Only
   )
 }
 
@@ -67,8 +67,8 @@ val lib_circe = {
 val lib_cats = {
   val catsVersion = "1.6.1"
   Seq(
-    "org.typelevel" %% "cats-core"   % catsVersion, 
-    "org.typelevel" %% "cats-effect" % "1.3.1" 
+    "org.typelevel" %% "cats-core"   % catsVersion,
+    "org.typelevel" %% "cats-effect" % "1.3.1"
   )
 }
 
