@@ -1,7 +1,9 @@
 language: scala
 
 
-CODECOV_TOKEN="a4287040-b041-43ad-9662-cd0d94d0f0fc"
+# Put Tokens in environment variables
+
+#CODECOV_TOKEN="xxxxxxx-xxxx...."
 
 scala:
   - 2.12.8
@@ -22,7 +24,7 @@ cache:
 
 # Standard Scala build and test targets with scoverage (codecov)
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test  coverageReport
+  - sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test coverageReport
 
   # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
   # Tricks to avoid unnecessary cache updates

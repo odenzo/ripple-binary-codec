@@ -36,7 +36,6 @@ trait STObject extends StrictLogging with CodecUtils with JsonUtils {
       .flatMap(prepareJsonObject(_, isSigning))
       .flatMap(lf ⇒ lf.traverse(encodeFieldAndValue(_, isNested, isSigning)))
 
-
     // Only at objectEndMarker when? Not for top level
     val optMarker = if (isNested) {
       ans.map((v: List[EncodedField]) => v :+ DefinitionData.objectEndMarker)
@@ -49,7 +48,7 @@ trait STObject extends StrictLogging with CodecUtils with JsonUtils {
   /**
     *
     * Canonically sorts a json object and removes non-serializable or non-signing fields
-    *
+    * TODO: Should just do this as a deep traverse once at the begining and avoid passing isSigning around.
     * @param o
     * @param isSigning Remove all non-signing fields if true, else serialized
     *
@@ -81,7 +80,7 @@ trait STArray extends StrictLogging with CodecUtils with JsonUtils {
       else {
         val (topFieldName: String, value: Json) = asList.head
         for {
-          fieldData ←dd.getFieldData(topFieldName, value)
+          fieldData ← dd.getFieldData(topFieldName, value)
           bytes     ← encodeFieldAndValue(fieldData, isNestedObject = true, isSigning)
         } yield bytes
       }

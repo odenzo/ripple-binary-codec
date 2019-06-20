@@ -1,5 +1,7 @@
 package com.odenzo.ripple.bincodec.decoding
 
+import scala.annotation.tailrec
+
 import cats._
 import cats.data._
 import cats.implicits._
@@ -147,17 +149,16 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
     val endPathWithMorePaths = UByte(0xFF)
     val endPathAndPathSet    = UByte(0x00)
 
-    @scala.annotation.tailrec
+    @tailrec
     def loop(v: List[UByte], acc: List[RawValue]): (List[RawValue], List[UByte]) = {
-      if (v.head === endPathWithMorePaths || v.head == endPathAndPathSet) {
-        val marker = RawValue(List(v.head))
-        (marker :: acc, v.drop(1))
-      } else {
-        val (decoded, tail) = decodePathStep(v)
-        loop(tail, decoded :: acc)
+      v match {
+        case h :: tail if h === endPathWithMorePaths ⇒ (RawValue(List(h)) :: acc, tail)
+        case h :: tail if h === endPathAndPathSet    ⇒ (RawValue(List(h)) :: acc, tail)
+        case step ⇒
+          val (decoded, rest) = decodePathStep(v)
+          loop(rest, decoded :: acc)
       }
     }
-
     loop(path, List.empty[RawValue])
   }
 
@@ -183,7 +184,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils {
 
   def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
     val TOP_BIT_MASK: UByte = UByte(128)
-    if ((v.head & TOP_BIT_MASK) == UByte(0)) { //XRP
+    if ((v.head & TOP_BIT_MASK) === UByte(0)) { //XRP
       decodeToUBytes(8, v, info)
     } else { // Fiat
       decodeToUBytes(48, v, info)

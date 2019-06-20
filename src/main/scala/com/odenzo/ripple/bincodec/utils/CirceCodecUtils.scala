@@ -18,12 +18,11 @@ private[bincodec] trait CirceCodecUtils {
   /** Capitalize a somewhat normal word */
   val capitalize: KeyTransformer = _.capitalize
 
-  val unCapitalize: KeyTransformer = { toString: String =>
-    if (toString == null) null
-    else if (toString.length == 0) toString
-    else if (toString.charAt(0).isLower) toString
+  val unCapitalize: KeyTransformer = { str: String =>
+    if (str.length == 0) str
+    else if (str.charAt(0).isLower) str
     else {
-      val chars = toString.toCharArray
+      val chars = str.toCharArray
       chars(0) = chars(0).toLower
       new String(chars)
     }

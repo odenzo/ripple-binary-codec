@@ -1,5 +1,7 @@
 package com.odenzo.ripple.bincodec.codecs
 
+import scala.collection.immutable
+
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Json, JsonObject}
@@ -82,26 +84,24 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     *  TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
     **/
   def encodeCurrency(json: Json): Either[RippleCodecError, RawValue] = {
-    // This should alwqays be 160 bits long
+    // This should alwqays be 20 bytes long
 
     val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
     val bit40Zero: List[UByte] = List.fill(5)(UByte(0))
+    //  It should be a 160 bit hex string but can't be XRP
+    // "0158415500000000C1F76FF6ECB0BAC600000000"
 
-    val iso: Either[RippleCodecError, List[UByte]] =
-      json2string(json)
-        .flatMap { s ⇒
-          if (isRippleAscii(s) && s.length === 3) {
-            s.getBytes("UTF-8").map(UByte(_)).toList.asRight
-          } else if (s.length == 40) {
-            // It should be a 160 bit hex string but can't be XRP
-            ByteUtils.hex2ubytes(s)
-            // "0158415500000000C1F76FF6ECB0BAC600000000"
-          } else {
-            RippleCodecError(s"Currency Code $s not three ascii").asLeft
-          }
-        }
+    json2string(json)
+      .flatMap {
+        case s if isRippleAscii(s) && s.length === 3 ⇒
+          val curr = ByteUtils.bytes2ubytes(s.getBytes("UTF-8")).toList
+          RawValue(bit90Zero ::: curr ::: bit40Zero).asRight
 
-    iso.map(c ⇒ bit90Zero ::: c ::: bit40Zero).fmap(RawValue)
+        case s if s.length === 40 ⇒ ByteUtils.hex2ubytes(s).map(RawValue)
+
+        case other ⇒ RippleCodecError(s"Currency $other not three ascii").asLeft
+      }
+
   }
 
   /**
@@ -185,9 +185,9 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
   }
 
   def validateFiatAmount(amount: BigDecimal): Either[OErrorRipple, BigDecimal] = {
-    val minVal: BigDecimal      = BigDecimal("-9999999999999999E80") ///?!?
-    val maxVal: BigDecimal      = BigDecimal("9999999999999999e80")
-    val maxPrecision: Int       = 15
+    val minVal: BigDecimal = BigDecimal("-9999999999999999E80") ///?!?
+    val maxVal: BigDecimal = BigDecimal("9999999999999999e80")
+    val maxPrecision: Int  = 15
 
     if (amount < minVal) {
       logger.info(s"$amount less than min - underflow to ZERO")
@@ -210,8 +210,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
   }
 
   def normalizeAmount2MantissaAndExp(bd: BigDecimal): Either[RippleCodecError, (ULong, Int)] = {
-    /* Trouble with this,
-     *
+    /*
      * - Final value has to shift mantissa to range "1000000000000000"  "9999999999999999"
      * - Final value has to have exponenet in range -97 to 80 (which is later encoded as exp+97 to UByte 0 - 177
      *

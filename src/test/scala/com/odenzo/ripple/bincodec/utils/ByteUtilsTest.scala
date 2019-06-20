@@ -41,23 +41,6 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
 
 
 
-  test("UByte to Binary") {
-    (0 to 255).foreach{ n ⇒
-      val byte: UByte = UByte(n.toByte)
-      val bin: String = ByteUtils.ubyte2bitStr(byte)
-
-      logger.debug(s"$byte <-> $bin")
-    }
-  }
-
-  test("ULong to Binary") {
-
-    val full = ByteUtils.ulong2bitStr(ULong.MaxValue)
-    logger.debug(s"Full: ${ULong.MaxValue} => $full")
-    val empty = ByteUtils.ulong2bitStr(ULong.MinValue)
-    logger.debug(s"Empty:${ULong.MinValue} => $empty")
-
-  }
 
   test("HexToBytes") {
     val fixs: immutable.Seq[(String, UByte)] = (0 to 255).map{ n ⇒
