@@ -16,6 +16,13 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.2.2")
 
 
 
+//
+// ----------- Publishing ---------------
+//
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.4")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
+
+
 //     https://github.com/sbt/sbt-bintray
 // ~/.bintray/.credentials
 // bintrayWhoami
@@ -46,9 +53,9 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
 //sbt coverageReport
 //sbt coverageAggregate
 //sbt codacyCoverage
-// Codacity coverage token from 
+// Codacity coverage token from
 //     export CODACY_PROJECT_TOKEN=%Project_Token%
-addSbtPlugin("com.codacy" % "sbt-codacy-coverage" % "1.3.8")
+addSbtPlugin("com.codacy" % "sbt-codacy-coverage" % "2.3")
 //
 
 
