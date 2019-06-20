@@ -77,7 +77,7 @@ trait STArray extends StrictLogging with CodecUtils with JsonUtils {
 
     def handleOneVar(v: JsonObject, isSigning: Boolean): Either[RippleCodecError, EncodedField] = {
       val asList = v.toList
-      if (asList.length != 1) RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
+      if (asList.length =!= 1) RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
       else {
         val (topFieldName: String, value: Json) = asList.head
         for {

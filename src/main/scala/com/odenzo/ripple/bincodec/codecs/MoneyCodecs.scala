@@ -90,7 +90,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     val iso: Either[RippleCodecError, List[UByte]] =
       json2string(json)
         .flatMap { s ⇒
-          if (isRippleAscii(s) && s.length == 3) {
+          if (isRippleAscii(s) && s.length === 3) {
             s.getBytes("UTF-8").map(UByte(_)).toList.asRight
           } else if (s.length == 40) {
             // It should be a 160 bit hex string but can't be XRP
@@ -137,7 +137,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     val scale: Int = amount.scale
 
     val (man, exp): (ULong, Int) =
-      if (scale == 0) {
+      if (scale === 0) {
         // No decimal points, so its all mantissa. Mantissa cannot be more
         // than 16 9's, so we need to overflow or hope that their are trailing zeros
         val shiftLeft = bd.precision - 16
@@ -188,8 +188,6 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     val minVal: BigDecimal      = BigDecimal("-9999999999999999E80") ///?!?
     val maxVal: BigDecimal      = BigDecimal("9999999999999999e80")
     val maxPrecision: Int       = 15
-    val maxMantissa: BigDecimal = BigDecimal("9999999999999999")
-    val maxLong: BigDecimal     = BigDecimal(Long.MaxValue)
 
     if (amount < minVal) {
       logger.info(s"$amount less than min - underflow to ZERO")
