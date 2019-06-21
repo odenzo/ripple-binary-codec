@@ -9,8 +9,8 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.RawValue
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions}
+import com.odenzo.ripple.bincodec.{DecodedField, RawValue}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
@@ -44,4 +44,15 @@ trait CodecUtils extends StrictLogging  {
     bytes.map(RawValue)
   }
 
+
+  /** Decodes field bytes to hex with no padding */
+  def decodeToUBytes(numBytes: Int,
+                     v: List[UByte],
+                     info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
+    if (numBytes > v.length) RippleCodecError(s"$numBytes exceeded length ${v.length} decoding").asLeft
+    else {
+      val (taken: List[UByte], remaining) = v.splitAt(numBytes)
+      (DecodedField(info, taken), remaining).asRight
+    }
+  }
 }

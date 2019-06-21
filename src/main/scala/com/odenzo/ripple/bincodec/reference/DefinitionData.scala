@@ -60,7 +60,7 @@ object FieldInfo extends StrictLogging {
     // Name -1 for invalid until 259. So I guess 1,2,3 bytes?
     // 16, 16 = 0x01010
     //
-
+    logger.debug(s"Encoding Field $fName and Data Type: $fType")
     val fieldCode = UByte(fName)
     val typeCode  = UByte(fType)
 
@@ -122,6 +122,10 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
     findFieldInfo(fieldName).map { fi ⇒
       FieldData(fieldName, fieldValue, fi)
     }
+  }
+
+  def getFieldsByNth(nth:Long): Iterable[FieldInfo] = {
+    fieldsInfo.filter(_._2.nth == nth).values
   }
 
   def getFieldData(fieldName: String, fieldValue: Json): Either[OErrorRipple, FieldData] = {

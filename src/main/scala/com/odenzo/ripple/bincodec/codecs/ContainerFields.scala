@@ -6,15 +6,17 @@ import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
+import spire.math.UByte
 
+import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers.encodeFieldAndValue
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{Encoded, EncodedDataType, EncodedField, EncodedNestedVals}
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, Encoded, EncodedDataType, EncodedField, EncodedNestedVals}
 
-trait STObject extends StrictLogging with CodecUtils with JsonUtils {
+trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
 
   /**
     * Top level object has no matching FieldInfo :-/
@@ -45,6 +47,30 @@ trait STObject extends StrictLogging with CodecUtils with JsonUtils {
 
   }
 
+  def decodeSTObject(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+    val endOfSTObjectMarker = UByte(0xE1)
+
+    // info is for the top level array
+    @scala.annotation.tailrec
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
+      if (ub.head === endOfSTObjectMarker) {
+        (acc.reverse, ub.drop(1)).asRight
+      } else {
+        val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
+        logger.debug(s"STObject Next: $next")
+        next match {
+          case Left(err)            ⇒ err.asLeft
+          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
+        }
+      }
+    }
+
+    subfields(v, List.empty[Decoded]).fmap{
+      case (fields, rest) ⇒
+        (DecodedNestedField(info, fields), rest)
+    }
+  }
+
   /**
     *
     * Canonically sorts a json object and removes non-serializable or non-signing fields
@@ -70,19 +96,17 @@ trait STObject extends StrictLogging with CodecUtils with JsonUtils {
 
 }
 
-trait STArray extends StrictLogging with CodecUtils with JsonUtils {
+trait STArrayCodec extends StrictLogging with CodecUtils with JsonUtils {
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
     logger.debug(s"STArray:\n${data.v.spaces2}")
 
     def handleOneVar(v: JsonObject, isSigning: Boolean): Either[RippleCodecError, EncodedField] = {
-      val asList = v.toList
-      if (asList.length =!= 1) RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
-      else {
-        val (topFieldName: String, value: Json) = asList.head
-        for {
-          fieldData ← dd.getFieldData(topFieldName, value)
-          bytes     ← encodeFieldAndValue(fieldData, isNestedObject = true, isSigning)
-        } yield bytes
+      v.toList match {
+        case (fieldName: String, value: Json) :: Nil ⇒
+          dd.getFieldData(fieldName, value)
+            .flatMap(fd ⇒ encodeFieldAndValue(fd, isNestedObject = true, isSigning))
+
+        case other ⇒ RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
       }
     }
 
@@ -101,9 +125,31 @@ trait STArray extends StrictLogging with CodecUtils with JsonUtils {
     bar.fmap((v: List[EncodedNestedVals]) ⇒ EncodedNestedVals(v))
 
   }
+
+  def decodeSTArray(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+    val endOfFieldsMarker = UByte(0xF1)
+
+    // info is for the top level array
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
+      if (ub.head === endOfFieldsMarker) {
+        (acc.reverse, ub.drop(1)).asRight
+      } else {
+        val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
+        next match {
+          case Left(err)            ⇒ err.asLeft
+          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
+        }
+      }
+    }
+
+    subfields(v, List.empty[DecodedField]).map{
+      case (fields, rest) ⇒
+        (DecodedNestedField(info, fields), rest)
+    }
+  }
 }
 
-trait Vector256 extends CodecUtils with JsonUtils {
+trait Vector256Codec extends CodecUtils with JsonUtils {
 
   /**
     * This is usually a field, maybe always not sure.
@@ -129,4 +175,9 @@ trait Vector256 extends CodecUtils with JsonUtils {
   }
 }
 
-object ContainerFields extends STArray with STObject with Vector256
+
+
+object STArrayCodec extends STArrayCodec
+object STObjectCodec extends STObjectCodec
+object Vector256Codec extends Vector256Codec
+object ContainerFields extends STArrayCodec with STObjectCodec with Vector256Codec

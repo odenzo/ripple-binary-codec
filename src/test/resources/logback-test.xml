@@ -21,11 +21,11 @@
     </appender>
 
     <logger name="com.odenzo" level="TRACE"/>
-    <logger name="com.odenzo.ripple.bincodec" level="WARN" />
+    <logger name="com.odenzo.ripple.bincodec" level="DEBUG" />
 
 
 
-    <root level="WARN">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>

@@ -1,5 +1,7 @@
 package com.odenzo.ripple.bincodec.codecs
 
+import scala.annotation.tailrec
+
 import cats._
 import cats.data._
 import cats.implicits._
@@ -9,9 +11,9 @@ import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers.{json2array, json2object}
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{EncodedNestedVals, RawValue}
+import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedNestedVals, RawValue}
 
 trait PathCodecs extends StrictLogging {
 
@@ -95,6 +97,70 @@ trait PathCodecs extends StrictLogging {
     ans
 
   }
+
+
+  def decodePathSet(v: List[UByte], info: FieldInfo): Either[Nothing, (DecodedNestedField, List[UByte])] = {
+    // Array of Arrays
+
+    def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {
+      val (path, tail) = decodePath(v)
+      if (path.head.ubytes.head === UByte.MinValue) {
+        (path.reverse :: acc, tail)
+      } else {
+        loop(v, path.reverse :: acc)
+      }
+    }
+
+    val (lld: List[List[RawValue]], tail) = loop(v, List.empty[List[RawValue]])
+    val flat: List[RawValue] = lld.flatten // Not ideal for no Nested w/o Field yet
+    (com.odenzo.ripple.bincodec.DecodedNestedField(info, flat), tail).asRight
+  }
+
+  /**
+    *
+    * @param path
+    *
+    * @return A list of decoded ubytes for the path, in reverse order.
+    */
+  def decodePath(path: List[UByte]): (List[RawValue], List[UByte]) = {
+    // Composed of N Path Steps , first always has implied account
+    val endPathWithMorePaths = UByte(0xFF)
+    val endPathAndPathSet = UByte(0x00)
+
+    @tailrec
+    def loop(v: List[UByte], acc: List[RawValue]): (List[RawValue], List[UByte]) = {
+      v match {
+        case h :: tail if h === endPathWithMorePaths ⇒ (RawValue(List(h)) :: acc, tail)
+        case h :: tail if h === endPathAndPathSet    ⇒ (RawValue(List(h)) :: acc, tail)
+        case step                                    ⇒
+          val (decoded, rest) = decodePathStep(v)
+          loop(rest, decoded :: acc)
+      }
+    }
+
+    loop(path, List.empty[RawValue])
+  }
+
+  def decodePathStep(v: List[UByte]): (RawValue, List[UByte]) = {
+    val kZERO = UByte(0)
+    val kAddressStep = UByte(1)
+    val kCurrencyStep = UByte(16)
+    val kIssuerStep = UByte(32)
+
+    // Since just going to Hex and address currency and issuer all 20 we cheat
+    val stepType = v.head
+
+    val numBits = List(
+                        (stepType & kAddressStep) > kZERO,
+                        (stepType & kCurrencyStep) > kZERO,
+                        (stepType & kIssuerStep) > kZERO
+                        ).filterNot(_ === true).length
+
+    val len = 1 + (numBits * 20) // Including the marker
+    val (decoded, tail) = v.splitAt(len)
+    (RawValue(decoded), tail)
+  }
+
 
 }
 

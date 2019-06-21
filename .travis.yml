@@ -31,7 +31,7 @@ addons:
 # Standard Scala build and test targets with scoverage (codecov)
 script:
   - sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test coverageReport coverageAggregate
- - sonar-scanner
+  - sonar-scanner
   # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm

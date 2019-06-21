@@ -51,8 +51,8 @@ trait FixtureUtils extends JsonUtils with OTestSpec {
     val fixObjs: List[JsonObject] = getOrLog(JsonUtils.decode(txnfixture, Decoder[List[JsonObject]]))
 
     fixObjs.map { obj ⇒
-      val req = findRequiredObject("Request", obj)
-      val res = findRequiredObject("Response", obj)
+      val req = findRequiredObject("request", obj)
+      val res = findRequiredObject("response", obj)
       (req, res)
     }
 

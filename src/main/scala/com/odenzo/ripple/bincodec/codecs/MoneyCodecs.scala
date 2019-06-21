@@ -8,9 +8,10 @@ import io.circe.{Json, JsonObject}
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
+import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonError, BinCodecExeption, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, RawValue}
+import com.odenzo.ripple.bincodec.{DecodedField, Encoded, EncodedNestedVals, RawValue}
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
@@ -47,6 +48,15 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     json.asObject match {
       case None      ⇒ encodeXrpAmount(json)
       case Some(obj) ⇒ encodeIOU(obj)
+    }
+  }
+
+  def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
+    val TOP_BIT_MASK: UByte = UByte(128)
+    if ((v.head & TOP_BIT_MASK) === UByte(0)) { //XRP
+      decodeToUBytes(8, v, info)
+    } else { // Fiat
+      decodeToUBytes(48, v, info)
     }
   }
 

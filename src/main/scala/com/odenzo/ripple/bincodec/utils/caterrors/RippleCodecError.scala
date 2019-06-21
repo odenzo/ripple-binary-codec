@@ -85,7 +85,7 @@ object RippleCodecError extends StrictLogging {
     }
   }
 
-  def dumpErr(err: RippleCodecError) = {
+  def dumpErr(err: RippleCodecError): String = {
     nonImplShow(err)
   }
 
