@@ -9,7 +9,7 @@ import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, Hash
 import com.odenzo.ripple.bincodec.reference.FieldData
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, RawValue}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, EncodedVL, RawValue}
 
 /**
   * I am not building these based on pure JSON rather
@@ -103,7 +103,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
   }
 
   /** Encodes the hex including the Variable Length info */
-  def encodeBlob(json: Json): Either[RippleCodecError, RawValue] = {
+  def encodeBlob(json: Json): Either[RippleCodecError, EncodedVL] = {
     for {
       str    <- json2string(json)
       ubytes ← ByteUtils.hex2ubytes(str)
