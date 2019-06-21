@@ -37,7 +37,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
   val json: Json = {
     val res = JsonUtils.parseAsJson(sample)
 
-    RippleCodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
+    RippleCodecError.dump(res).foreach(e ⇒ scribe.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     res.right.value
   }
 
@@ -45,16 +45,16 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
 
   def encodeSingle(fieldName: String, data: Json) = {
     val req = dd.getFieldData(fieldName, data)
-    req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
+    req.foreach(v ⇒ scribe.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
-    RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
+    RippleCodecError.dump(ans).foreach(e ⇒ scribe.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 
   test("TransactionType") {
     // 12 → 0004
     val code = defdata.getTransactionType("EscrowCancel")
-    logger.debug(s"TxnCode $code")
+    scribe.debug(s"TxnCode $code")
     val c = code.right.value
   }
 
@@ -63,13 +63,13 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
     val v                             = Json.fromInt(sequence)
     val res: Encoded = getOrLog(UIntCodecs.encodeUIntN(v, "UInt32"))
     val hex                           = res.toHex
-    logger.info(s"Result: $hex")
+    scribe.info(s"Result: $hex")
   }
 
   def encodeField(name: String) = {
     val fi: FieldInfo                     = getOrLog(defdata.getFieldInfo(name))
     val fieldId: Encoded = fi.fieldID
-    logger.debug(s"$name => ${fieldId.toHex}")
+    scribe.debug(s"$name => ${fieldId.toHex}")
   }
 
   test("Sample Fields") {
@@ -95,15 +95,15 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
   test("Field Names") {
     val json            = loadJsonResource("/test/fixtures/data-driven-tests.json").right.value
     val arr: List[Json] = json.asObject.flatMap(_("fields_tests")).flatMap(_.asArray).map(_.toList).get
-    logger.debug(s"Things to Test ${arr.length}")
+    scribe.debug(s"Things to Test ${arr.length}")
     val ftd: Result[List[FieldTestData]] = arr.traverse(_.as[FieldTestData])
-    ftd.left.foreach(d ⇒ logger.error(s"Decoding Failure: $d"))
+    ftd.left.foreach(d ⇒ scribe.error(s"Decoding Failure: $d"))
     ftd.map { lst ⇒
       lst.foreach { fix: FieldTestData ⇒
-        logger.debug(s"FieldTestData $fix")
+        scribe.debug(s"FieldTestData $fix")
         val res: List[UByte] = FieldInfo.encodeFieldID(fix.nth_of_type, fix.tipe)
         val hex              = res.map(ByteUtils.ubyte2hex).mkString
-        logger.info("Result: " + hex)
+        scribe.info("Result: " + hex)
         if (fix.name == "TickSize") hex shouldEqual ("0" + fix.expected_hex)
         else hex shouldEqual fix.expected_hex
       }
@@ -115,8 +115,8 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
     defdata.fieldsData.values.foreach { ft ⇒
       val rt: RippleDataType = getOrLog(defdata.getTypeObj(ft.tipe))
 
-      logger.debug(s"Field Type: $ft")
-      logger.debug(s"Type      : $rt")
+      scribe.debug(s"Field Type: $ft")
+      scribe.debug(s"Type      : $rt")
       // Special cases, including Amount?
       if (ft.isSigningField || ft.isSerialized) {
         val res = FieldInfo.encodeFieldID(ft.nth.toInt, rt.value.toInt)
@@ -135,7 +135,7 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
 
     val min: ULong = ULong(0)
     val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
-    logger.info(s"Min - Max $min $max")
+    scribe.info(s"Min - Max $min $max")
 
     t(max)
     t(max - ULong(1))
@@ -144,10 +144,10 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
     def t(v: ULong): String = {
       val jsonV: String = v.toString()
       val json: Json    = Json.fromString(jsonV)
-      logger.info(s"From $v Sending JSON: ${json.noSpaces}")
+      scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
       val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(json))
       val hex                           = res.toHex
-      logger.debug(s"$v  => $hex")
+      scribe.debug(s"$v  => $hex")
       hex
     }
   }
@@ -155,6 +155,6 @@ class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
   test("XRP Encode") {
     val xrp: Json                     = Json.fromString("10000")
     val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
-    logger.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
+    scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 }

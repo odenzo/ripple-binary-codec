@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec.reference
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
@@ -19,7 +18,7 @@ case class HashPrefix(v: List[UByte]) {
 }
 
 /** These are all Four Bytes Long with bottom byte 00  */
-object HashPrefix extends StrictLogging {
+object HashPrefix  {
 
   val raw: HashPrefix = toHashPrefix("54584E00")
 
@@ -53,7 +52,7 @@ object HashPrefix extends StrictLogging {
   /** None of these overflow signed I think */
   def toHashPrefix(lhex: String): HashPrefix = {
     val ubytes: List[UByte] = ByteUtils.unsafeHex2ubytes(lhex)
-    logger.warn(s"Long: $lhex bytes: $ubytes")
+    scribe.warn(s"Long: $lhex bytes: $ubytes")
     HashPrefix(ubytes)
   }
 //

@@ -1,23 +1,18 @@
 package com.odenzo.ripple.bincodec.encoding
 
-import scala.util.Try
-
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
-import io.circe.Json
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.{DecodedField, RawValue}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
-import com.odenzo.ripple.bincodec.utils.ByteUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{DecodedField, RawValue}
 
 /**
   * Better dealing with definitions data ?
   */
-trait CodecUtils extends StrictLogging  {
+trait CodecUtils   {
 
   val dd: DefinitionData = Definitions.fieldData
 

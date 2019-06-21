@@ -44,7 +44,7 @@ class JsonUtilsTest extends FunSuite with OTestSpec with JsonUtils {
     } yield a |+| b
 
     val s = getOrLog(sum)
-    logger.info(s"Sum  ${s.asJson.spaces4}")
+    scribe.info(s"Sum  ${s.asJson.spaces4}")
 
     s("b").value shouldEqual  "2b".asJson
     s.size shouldEqual 3

@@ -1,13 +1,13 @@
 package com.odenzo.ripple.bincodec
 
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
+
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
-trait OTestUtils extends StrictLogging {
+trait OTestUtils  {
 
   /**
     *
@@ -22,9 +22,9 @@ trait OTestUtils extends StrictLogging {
                                                    .map(b ⇒ (b | UByte(8)) === UByte(0))
 
     isXRP.map {
-      case true => logger.info("XRP Value Deal With IT")
+      case true => scribe.info("XRP Value Deal With IT")
       case false ⇒
-        logger.info("Analyzing Suspected Fiat Amount")
+        scribe.info("Analyzing Suspected Fiat Amount")
         val gotFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])]      = breakFiat(got)
         val expectedFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])] = breakFiat(expected)
     }
@@ -52,7 +52,7 @@ trait OTestUtils extends StrictLogging {
     val expMask: ULong      = ULong(0xFF) << 54
     val mantissaMask: ULong = ULong(0x3FFFFFFFFFFFFFL) // 13 nibbles
 
-    //    logger.debug("Masks:\n" + ByteUtils.uLong2Base2Str(topMask)+
+    //    scribe.debug("Masks:\n" + ByteUtils.uLong2Base2Str(topMask)+
     //    "\n" + ByteUtils.uLong2Base2Str(expMask)+
     //    "\n" + ByteUtils.uLong2Base2Str(mantissaMask))
 

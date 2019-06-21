@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec.reference
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import spire.math.{UByte, UInt}
 
@@ -45,14 +44,14 @@ case class FieldInfo(name: String,
   */
 case class FieldData(fieldName: String, v: Json, fi: FieldInfo)
 
-object FieldInfo extends StrictLogging {
+object FieldInfo  {
 
   /*
    * Encodes the field id marker by field code and type code.
    * https://developers.ripple.com/serialization.html#field-ids
    */
   def encodeFieldID(fName: Int, fType: Int): List[UByte] = {
-    logger.debug(s"Encoding Field $fName and Data Type: $fType")
+    scribe.debug(s"Encoding Field $fName and Data Type: $fType")
     val fieldCode = UByte(fName)
     val typeCode  = UByte(fType)
 
@@ -94,7 +93,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
                           ledgerTypes: Map[String, Long],
                           txnTypes: Map[String, Long],
                           txnResultTypes: Map[String, Long])
-    extends StrictLogging {
+     {
 
   private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OErrorRipple, V] = {
     Either.fromOption(map.get(key), RippleCodecError(s" $key not found in map"))
@@ -143,7 +142,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
     * Meh, easier to do this via bytes*/
   def findByFieldMarker(ub: Seq[UByte]): Option[(String, FieldInfo)] = {
     val ms = fieldsInfo.filter((v: (String, FieldInfo)) ⇒ v._2.fieldID.ubytes == ub)
-    ms.foreach(ms => logger.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
+    ms.foreach(ms => scribe.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
     ms.headOption
   }
 

@@ -24,7 +24,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
         n.toString +" " + hex 
       }
       .mkString("\n")
-    logger.debug("Full Range to Hex\n" + fullRange)
+    scribe.debug("Full Range to Hex\n" + fullRange)
   }
 
   test("UByte 2 Looping") {
@@ -33,7 +33,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
         val hex: String = ByteUtils.ubyte2hex(byte)
         val back: Either[RippleCodecError, UByte] = ByteUtils.hex2ubyte(hex)
 
-        logger.debug(s"$byte <-> $hex <-> $back")
+        scribe.debug(s"$byte <-> $hex <-> $back")
         back.right.value shouldEqual byte
 
       }
@@ -44,7 +44,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
     unsafeHex2ubytes("FACEBEEF") shouldEqual hex2ubytes("FACEBEEF").right.value
 
    val thrown = the [Exception] thrownBy  unsafeHex2ubytes("1BADRABBIT")
-    logger.info("Thrown" + thrown)
+    scribe.info("Thrown" + thrown)
   }
 
 
@@ -56,7 +56,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
       (hex,byte)
     }
     val allHexDigits: String = fixs.map(_._1).mkString
-    logger.debug(s"All Fex $allHexDigits")
+    scribe.debug(s"All Fex $allHexDigits")
     val calc: List[UByte] = hex2ubytes(allHexDigits).right.value
     calc.length shouldBe 256
   }

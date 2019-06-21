@@ -6,7 +6,6 @@ import scala.annotation.tailrec
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.implicits._
 import spire.math.{UByte, UInt, ULong}
 
@@ -15,7 +14,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRippl
 /** Helpers since I seldom use bits/bytes directly and Scala/Java sucks. Don't know a good lib
   * SDtarting to use Spire, and making sure these all work -- but more convenience than speed at this point
   * */
-private[bincodec] trait ByteUtils extends StrictLogging {
+private[bincodec] trait ByteUtils  {
 
   val bytezero: Byte = 0.toByte
 

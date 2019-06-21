@@ -3,20 +3,18 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data.{Nested, _}
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
-import io.circe.syntax._
 import io.circe.{Json, JsonObject}
+import io.circe.syntax._
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
-import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers.encodeFieldAndValue
+import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, Encoded, EncodedDataType, EncodedField, EncodedNestedVals}
 
-trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
+trait STObjectCodec  extends CodecUtils with JsonUtils {
 
   /**
     * Top level object has no matching FieldInfo :-/
@@ -30,13 +28,13 @@ trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
     */
   def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
     // Well, first lets try and get the fields and order them if needed.
-    logger.info("Encoding STObject to Bytes")
+    scribe.info("Encoding STObject to Bytes")
 
     val jobj: Either[RippleCodecError, JsonObject] = json2object(o)
 
     val ans: Either[RippleCodecError, List[EncodedField]] = jobj
       .flatMap(prepareJsonObject(_, isSigning))
-      .flatMap(lf ⇒ lf.traverse(encodeFieldAndValue(_, isNested, isSigning)))
+      .flatMap(lf ⇒ lf.traverse(TypeSerializers.encodeFieldAndValue(_, isNested, isSigning)))
 
     // Only at objectEndMarker when? Not for top level
     val optMarker = if (isNested) {
@@ -57,7 +55,7 @@ trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
         (acc.reverse, ub.drop(1)).asRight
       } else {
         val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
-        logger.debug(s"STObject Next: $next")
+        scribe.debug(s"STObject Next: $next")
         next match {
           case Left(err)            ⇒ err.asLeft
           case Right((field, tail)) ⇒ subfields(tail, field :: acc)
@@ -81,7 +79,7 @@ trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
     * @return
     */
   def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[RippleCodecError, List[FieldData]] = {
-    logger.trace(s"prepareJsonObect ")
+
     val bound: List[FieldData] = o.toList.flatMap {
       case (fieldName, fieldVal) ⇒ dd.optFieldData(fieldName, fieldVal)
     }
@@ -96,15 +94,15 @@ trait STObjectCodec extends StrictLogging with CodecUtils with JsonUtils {
 
 }
 
-trait STArrayCodec extends StrictLogging with CodecUtils with JsonUtils {
+trait STArrayCodec  extends CodecUtils with JsonUtils {
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
-    logger.debug(s"STArray:\n${data.v.spaces2}")
+    scribe.debug(s"STArray:\n${data.v.spaces2}")
 
     def handleOneVar(v: JsonObject, isSigning: Boolean): Either[RippleCodecError, EncodedField] = {
       v.toList match {
         case (fieldName: String, value: Json) :: Nil ⇒
           dd.getFieldData(fieldName, value)
-            .flatMap(fd ⇒ encodeFieldAndValue(fd, isNestedObject = true, isSigning))
+            .flatMap(fd ⇒ TypeSerializers.encodeFieldAndValue(fd, isNestedObject = true, isSigning))
 
         case other ⇒ RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
       }

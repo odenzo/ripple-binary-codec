@@ -3,13 +3,12 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 
-trait VLEncoding extends StrictLogging {
+trait VLEncoding  {
 
   def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
     encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))

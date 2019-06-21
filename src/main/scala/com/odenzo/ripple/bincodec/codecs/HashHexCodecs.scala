@@ -1,22 +1,19 @@
 package com.odenzo.ripple.bincodec.codecs
 
-import scala.util.Try
-
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Decoder, Json}
-import spire.math.{UByte, ULong}
+import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.{EncodedDataType, RawValue}
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers.{dd, encodeULong}
+import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.reference.RippleDataType
+import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{EncodedDataType, RawValue}
 
 /** Deals with Blobs and Hashes and things that are plain hex encoded in Json */
-trait HashHexCodecs extends StrictLogging {
+trait HashHexCodecs extends CodecUtils {
 
 
   def encodeHash(json: Json, byteLen: Int): Either[RippleCodecError, RawValue] = {

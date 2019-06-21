@@ -23,7 +23,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   def decodeOne(rq: JsonObject, rs: JsonObject): Either[RippleCodecError, List[Decoded]] = {
 
     
-    logger.info(s"Response: ${rs.asJson.spaces4}")
+    scribe.info(s"Response: ${rs.asJson.spaces4}")
 
     val result         = findRequiredObject("result", rs)
     val txjson         = findRequiredObject("tx_json", result)
@@ -37,7 +37,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
     val done =
       txnFixt.zipWithIndex.traverse {
         case ((rq: JsonObject, rs: JsonObject), indx: Int) ⇒
-          logger.info(s"\n\n\n====== Executing Case $indx =======")
+          scribe.info(s"\n\n\n====== Executing Case $indx =======")
           decodeOne(rq, rs)
       }
 
@@ -47,14 +47,14 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
 
   def dumpNestedFieldsInfo(nested: EncodedNestedVals): Unit = {
     import com.odenzo.ripple.bincodec.syntax.debugging._
-    logger.info(s"The tree: ${nested.show}")
+    scribe.info(s"The tree: ${nested.show}")
   }
 
   test("Specific Cases") {
     val done =
       txnFixt.zipWithIndex.drop(10).take(1).traverse {
         case ((rq: JsonObject, rs: JsonObject), indx: Int) ⇒
-          logger.info(s"\n\n\n====== Executing Case $indx =======")
+          scribe.info(s"\n\n\n====== Executing Case $indx =======")
           decodeOne(rq, rs)
       }
 

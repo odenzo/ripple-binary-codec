@@ -4,7 +4,6 @@ import java.io.InputStream
 import scala.io.{BufferedSource, Source}
 
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
@@ -14,7 +13,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
   *
   * 
   */
-object Definitions extends StrictLogging with JsonUtils {
+object Definitions extends JsonUtils {
 
 
 
@@ -33,7 +32,7 @@ object Definitions extends StrictLogging with JsonUtils {
     */
   def loadDefaultData(): Either[RippleCodecError, DefinitionData] = {
     val resourceName = "/ripplereferencedata/definitions.json"
-    logger.info(s"Loading Default Data from ${resourceName}")
+    scribe.info(s"Loading Default Data from ${resourceName}")
 
     val rippleDefsUrl: InputStream = this.getClass.getResourceAsStream(resourceName)
     if (rippleDefsUrl == null) {RippleCodecError(s"Couldn't Find Definitions Resource ${resourceName}").asLeft}

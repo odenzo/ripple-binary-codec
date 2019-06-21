@@ -1,9 +1,6 @@
 package com.odenzo.ripple.bincodec.codecs
 
-import scala.collection.immutable
-
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Json, JsonObject}
 import spire.math.{UByte, ULong}
 
@@ -18,7 +15,7 @@ import com.odenzo.ripple.bincodec.{DecodedField, Encoded, EncodedNestedVals, Raw
   * IMportant -- some objects may not have an amount ... I guess replace with amount ZERO
   * This needs some cleanup for sure.
   */
-trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
+trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   /* The range for the mantissa when normalized */
   private val minMantissa: ULong = ULong("1000000000000000")
@@ -154,7 +151,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
         if (shiftLeft > 0) {
           val scaler: BigDecimal = spire.math.pow(BigDecimal(10L), shiftLeft)
           val scaled             = amount / scaler
-          logger.debug(s"Scaled by $shiftLeft is $scaled")
+          scribe.debug(s"Scaled by $shiftLeft is $scaled")
           val ul = ULong.fromLong(scaled.longValue)
           (ul, shiftLeft)
         } else {
@@ -163,7 +160,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
           val ul = if (bd.isValidLong) {
             ULong.fromLong(bd.longValue)
           } else {
-            logger.error("Coding Error in normalization of Fiat")
+            scribe.error("Coding Error in normalization of Fiat")
             ULong(0)
           }
           (ul, scale)
@@ -177,7 +174,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
         val scaler: BigDecimal = spire.math.pow(BigDecimal(10L), BigDecimal(scale.toLong)) // 10 * 75 not happy for long
         val scaled             = amount * scaler
         val ul                 = ULong.fromLong(scaled.longValue)
-        logger.debug(s"PreNormalized to $ul + ${-scale} using $scaler => $scaled")
+        scribe.debug(s"PreNormalized to $ul + ${-scale} using $scaler => $scaled")
         (ul, -scale)
       } else if (scale < 0) { // No Decimal places
         // n = unscaledValue * 10^ (-scale)
@@ -186,11 +183,11 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
 
         val scaled = amount * scaler
         val ul     = ULong.fromLong(scaled.longValue())
-        logger.debug(s"PreNormalized to $ul + ${bd.precision} using $scaler => $scaled")
+        scribe.debug(s"PreNormalized to $ul + ${bd.precision} using $scaler => $scaled")
         (ul, shiftLeft)
       } else (ULong(0), 0)
 
-    logger.debug(s"Amount $bd Precision ${bd.precision} Scale ${bd.scale}  Man $man Exp = $exp ")
+    scribe.debug(s"Amount $bd Precision ${bd.precision} Scale ${bd.scale}  Man $man Exp = $exp ")
     (man, exp) // Maybe scale - 1  to get back to x.yyyyyy ^ scale = number
   }
 
@@ -200,7 +197,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
     val maxPrecision: Int  = 15
 
     if (amount < minVal) {
-      logger.info(s"$amount less than min - underflow to ZERO")
+      scribe.info(s"$amount less than min - underflow to ZERO")
       BigDecimal(0).asRight
     } else if (amount > maxVal) {
       RippleCodecError(s"Overflow FiatAmount $amount < $maxVal").asLeft
@@ -211,7 +208,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
       //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
 
       // Well, what to do here.
-      logger.debug(s"Too Much Precision $amount was ${amount.precision} w/ Scale ${amount.scale}")
+      scribe.debug(s"Too Much Precision $amount was ${amount.precision} w/ Scale ${amount.scale}")
       amount.asRight
     } else {
       amount.asRight
@@ -235,9 +232,9 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
      *
      */
     val (amount: ULong, exp: Int) = normalizeToIntegral(bd.abs)
-    logger.info(s"Pre Normalized Mantissa $amount  Exponent $exp ")
+    scribe.info(s"Pre Normalized Mantissa $amount  Exponent $exp ")
     val normalized: Either[RippleCodecError, (ULong, Int)] = properNormalize(amount, exp)
-    logger.info("Ripple Normalized: " + normalized)
+    scribe.info("Ripple Normalized: " + normalized)
     normalized
   }
 
@@ -256,7 +253,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
         val zero = ULong(1) << 63
         encodeULong(zero, "UInt64") // This is 8 bytes.
       } else {
-        logger.info(s"Encoding BigDecimal Fiat [$bd] Scale and Precision: " + amt.scale + " " + amt.precision)
+        scribe.info(s"Encoding BigDecimal Fiat [$bd] Scale and Precision: " + amt.scale + " " + amt.precision)
 
         val negative: Boolean = amt.signum == -1
 
@@ -267,7 +264,7 @@ trait MoneyCodecs extends StrictLogging with CodecUtils with JsonUtils {
         // The top 3 nibbles are screwed
         val res: Either[RippleCodecError, ULong] = for {
           normalized     ← normalizeAmount2MantissaAndExp(amt)
-          _              = logger.info(s"Normalized $normalized")
+          _              = scribe.info(s"Normalized $normalized")
           (nman, nexp)   = normalized
           expBitsShifted = ULong(nexp + 97L) << 54
           top10          = top2Bits | expBitsShifted

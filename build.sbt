@@ -9,7 +9,7 @@ import MyCompileOptions._
 //})
 ThisBuild / organization := "com.odenzo"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "0.2"
+ThisBuild / version := "0.2.1"
 
 name := "ripple-binary-codec"
 
@@ -29,7 +29,7 @@ lazy val bincodec = (project in file("."))
 
 lazy val commonSettings = Seq(
   coverageHighlighting := true,
-  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire,
+  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire ++ lib_scribe,
   resolvers ++= Seq(
     Resolver.bintrayIvyRepo("odenzo", "ripple-binary-codec"),
     Resolver.defaultLocal, // Usual I pulishLocal to Ivy not maven
@@ -46,8 +46,8 @@ val libs = {
   Seq(
     "org.scalatest"              %% "scalatest"      % "3.0.7" % Test,
     "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
-    "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2", // Java Only
-    "ch.qos.logback"             % "logback-classic" % "1.2.3" // Java Only
+ //   "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2", // Java Only
+ //   "ch.qos.logback"             % "logback-classic" % "1.2.3" // Java Only
   )
 }
 
@@ -76,4 +76,9 @@ val lib_spire = {
   Seq(
     "org.typelevel" %% "spire" % "0.16.2"
   )
+}
+
+
+val lib_scribe = {
+   Seq( "com.outr" %% "scribe" % "2.7.3" )
 }

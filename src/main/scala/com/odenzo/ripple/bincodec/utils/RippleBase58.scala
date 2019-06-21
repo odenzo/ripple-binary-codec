@@ -3,14 +3,13 @@ package com.odenzo.ripple.bincodec.utils
 import java.math.BigInteger
 import scala.annotation.tailrec
 
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
 /** Based on
   https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
   Note: This is restricted to bincodec.* packages
   */
-private[bincodec] trait RippleBase58 extends StrictLogging {
+private[bincodec] trait RippleBase58  {
 
   val std      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val alphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"

@@ -22,8 +22,8 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
   /** See if we can get the correct Signing Public Key and Hash to start */
   def testJustSigningSerialization(rq: JsonObject, rs: JsonObject) = {
 
-    logger.info(s"Request: ${rq.asJson.spaces4}")
-    logger.info(s"Response: ${rs.asJson.spaces4}")
+    scribe.info(s"Request: ${rq.asJson.spaces4}")
+    scribe.info(s"Response: ${rs.asJson.spaces4}")
 
 
     // This is from response which is populated with default values.
@@ -40,10 +40,10 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     // Lets go check and see that all the encoded fields are actually in TxBlob, won't be complete though
     encoded.enclosed.foreach {
       case fe @ EncodedField(fieldValue: Encoded, data) =>
-        logger.info(s"Examinging Field ${data.key}")
+        scribe.info(s"Examinging Field ${data.key}")
         val hex = fe.toHex
-        logger.info(s"${txblob.contains(hex)} : $hex")
-      case other => logger.info(s"Skipping $other")
+        scribe.info(s"${txblob.contains(hex)} : $hex")
+      case other => scribe.info(s"Skipping $other")
     }
 
     // Blob has F9F1 at the end, and a few extra fields it seems.
@@ -66,7 +66,7 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
 
   def dumpNestedFieldsInfo(nested: EncodedNestedVals): Unit = {
     import com.odenzo.ripple.bincodec.syntax.debugging._
-    logger.info(s"The tree: ${nested.show}")
+    scribe.info(s"The tree: ${nested.show}")
   }
 
   test("Specific Cases") {
