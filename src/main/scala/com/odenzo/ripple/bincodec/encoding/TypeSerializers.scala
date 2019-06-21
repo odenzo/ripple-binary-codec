@@ -4,11 +4,11 @@ import cats.data._
 import cats.implicits._
 import io.circe.Json
 
-import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, EncodedVL, RawValue}
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, HashHexCodecs, MoneyCodecs, PathCodecs, UIntCodecs, VLEncoding}
 import com.odenzo.ripple.bincodec.reference.FieldData
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, EncodedVL, RawValue}
 
 /**
   * I am not building these based on pure JSON rather

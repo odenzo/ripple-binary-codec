@@ -13,9 +13,9 @@ import org.scalatest.{Assertion, FunSuite}
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{ContainerFields, MoneyCodecs}
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.syntax.debugging._
-import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}

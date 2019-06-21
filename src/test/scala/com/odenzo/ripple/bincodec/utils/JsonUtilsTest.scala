@@ -3,9 +3,8 @@ package com.odenzo.ripple.bincodec.utils
 import cats._
 import cats.data._
 import cats.implicits._
-import org.scalatest.FunSuite
-
 import io.circe.syntax._
+import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
 

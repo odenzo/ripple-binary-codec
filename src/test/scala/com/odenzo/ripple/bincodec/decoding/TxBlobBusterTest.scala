@@ -2,16 +2,14 @@ package com.odenzo.ripple.bincodec.decoding
 
 import scala.collection.immutable
 
-import org.scalatest.FunSuite
 import cats._
 import cats.data._
 import cats.implicits._
+import org.scalatest.FunSuite
 
-import com.odenzo.ripple.bincodec.{Decoded, OTestSpec}
 import com.odenzo.ripple.bincodec.reference.Definitions
-import com.odenzo.ripple.bincodec.encoding.BinarySerializer
-import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.{Decoded, OTestSpec}
 
 class TxBlobBusterTest extends FunSuite with OTestSpec {
 

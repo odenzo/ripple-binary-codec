@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils, RippleBase58}
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils}
 import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, OTestSpec}
 
 /** This test is designed to process Transaction Request and Response files */

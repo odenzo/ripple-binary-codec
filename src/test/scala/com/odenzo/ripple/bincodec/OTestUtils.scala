@@ -1,7 +1,6 @@
 package com.odenzo.ripple.bincodec
 
 import cats.implicits._
-
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils

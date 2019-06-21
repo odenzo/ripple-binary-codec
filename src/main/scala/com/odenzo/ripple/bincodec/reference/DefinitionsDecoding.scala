@@ -4,8 +4,9 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Decoder.Result
-import io.circe.{Decoder, Json, JsonObject}
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, Json, JsonObject}
+
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonDecodingError, OErrorRipple, RippleCodecError}

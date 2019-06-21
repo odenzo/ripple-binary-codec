@@ -1,12 +1,12 @@
 package com.odenzo.ripple.bincodec.encoding
 
+import cats._
+import cats.data._
+import cats.implicits._
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.FunSuite
 import spire.math.ULong
-import cats._
-import cats.data._
-import cats.implicits._
 
 import com.odenzo.ripple.bincodec.OTestSpec
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs}

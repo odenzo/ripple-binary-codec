@@ -6,8 +6,8 @@ import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
+import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleDataType}
-import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 

@@ -3,8 +3,8 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data.{Nested, _}
 import cats.implicits._
-import io.circe.{Json, JsonObject}
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster

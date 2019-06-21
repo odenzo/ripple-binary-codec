@@ -6,10 +6,10 @@ import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs, VLEncoding}
-import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, RawValue}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, RawValue}
 
 class AccountID$Test extends FunSuite with OTestSpec {
 

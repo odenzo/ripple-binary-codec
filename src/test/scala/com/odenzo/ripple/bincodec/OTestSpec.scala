@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec
 import java.net.URL
 import scala.io.{BufferedSource, Source}
 
-
 import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.{EitherValues, Matchers, OptionValues}
 
