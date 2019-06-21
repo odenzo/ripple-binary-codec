@@ -21,16 +21,23 @@ cache:
     - $HOME/.coursier
 
 
+addons:
+  sonarcloud:
+    organization: "odenzo-github" # the key of the org you chose at step #3
+    token:
+      secure: "ArFnRAKXp+l+wljN/+WH1YcaxbGgcYnWqxUpzwlikX5XSTDBPj7iVf3J+piR8xwLE3skgTXXaEc/JAHANRMq9+ED94oR/mwdZPmbsqK8vfN8zwE6Pizs724lJlYNhJqIVZf3w27lMUNsSlfFE0xVG0ohx+Xaqnt4HTy3Ia4WvI2MNd1hehhqoplM3bDKwXv1rHEd9hUkKKIYCENRqdYRlMQOOUeZ8BkU3JpYfBn4CwO5FTGO8KB2w6fE8Wdk9fHKisRX/sZJP4fpp2S0LNyvXqrV5meR6K8ulMYbBpioasfovHK+KnI6yeMFKtbm1a6p6QRVXlneSh7IMsQusETA2/EsoZ0eDM2ybzjatbKdjvst1KohEQVm5MyAuRP5ymCQQxBn1slYXEnPmbB9KnCiD7xMFNcVRCUASUh68E2xXSK2bDrHX0tWOwU+Upfy3+BwI09gOFRBTJTlcU8l2Mk8wwNCIL/Pw2CWQJLzj2P7gIKSjSCQ4z9q9jQndh9kPtMHwiBOFRQHSZnuznNV85YLyjcE7lOpod5/3qqwzKjOhbtwXBIUEq3CdTKZHKsz7/8pM5pttdiKm6z3kMtiC3KCXbx6R47QYPlqzyz67XNVHTgR30QSnDYCkrB7QebMYI+8xXWk/D+/Z9Ng7+r8r85EB/ZYcU2AWMBRmxQLlMsxe6w="
+
 
 # Standard Scala build and test targets with scoverage (codecov)
 script:
   - sbt ++$TRAVIS_SCALA_VERSION -Dfile.encoding=UTF8 coverage test coverageReport coverageAggregate
-
+ - sonar-scanner
   # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
 
 
+# For public repos this is supposed to work without a TOKEN, in fact it seems its not needed?
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   
