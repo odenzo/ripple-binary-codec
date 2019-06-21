@@ -24,9 +24,8 @@ object RippleCodecAPI  {
   /**
     * Expects a top level JsonObject representing a transaction
     * that would be sent to rippled server. All isSigningField fields serialized.
-    * This and binarySerialize and the only two top level user
-    * FIXME: I am guessing this is the whole transaction because fee_multi_max and other important stuff in top
-    * level
+    *
+    * This does not populate any "auto-fill" fields
     *
     * @param tx_json
     */

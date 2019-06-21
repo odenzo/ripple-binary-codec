@@ -5,6 +5,7 @@ import scala.io.{BufferedSource, Source}
 
 import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.{EitherValues, Matchers, OptionValues}
+import scribe.Level
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
@@ -12,6 +13,8 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodec
 
 trait OTestSpec extends Matchers with EitherValues with OptionValues {
 
+  // Setting Global Levels...I am using global logger everywhere
+  scribe.Logger.root.clearHandlers().clearModifiers().withHandler(minimumLevel = Some(Level.Warn)).replace()
   /**
     * This will load from resources/test/fixtures/...
     * Most of those were stolen from Ripple Javascript.

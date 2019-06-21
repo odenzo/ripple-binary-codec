@@ -306,7 +306,6 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     val bound: EncodedNestedVals = getOrLog(
       ContainerFields.encodeSTObject(json.asJson, false, false)
     )
-    scribe.info("Field Order: " + bound.fieldsInOrder.mkString("\n\t", "\n\t", "\n"))
     scribe.debug(s"Full Dump: ${bound.show}")
     bound
   }
