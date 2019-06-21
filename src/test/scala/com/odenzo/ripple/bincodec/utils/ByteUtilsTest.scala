@@ -40,6 +40,12 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
   }
 
 
+  test("Unsafe") {
+    unsafeHex2ubytes("FACEBEEF") shouldEqual hex2ubytes("FACEBEEF").right.value
+
+   val thrown = the [Exception] thrownBy  unsafeHex2ubytes("1BADRABBIT")
+    logger.info("Thrown" + thrown)
+  }
 
 
   test("HexToBytes") {

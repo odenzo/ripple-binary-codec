@@ -9,11 +9,10 @@ import spire.math.UByte
 /** Based on
   https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
   Note: This is restricted to bincodec.* packages
-*/
-private[bincodec] object RippleBase58 extends StrictLogging {
+  */
+private[bincodec] trait RippleBase58 extends StrictLogging {
 
-  
-  val std = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+  val std      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val alphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
 
   // char -> value
@@ -49,7 +48,6 @@ private[bincodec] object RippleBase58 extends StrictLogging {
   /**
     * This potentially fails if String has char not in the alphabet.
     * @param input base-58 encoded data
-    *
     * @return the decoded data
     */
   def decode(input: String): Array[Byte] = {
@@ -67,16 +65,17 @@ private[bincodec] object RippleBase58 extends StrictLogging {
         .dropWhile(_ == 0) // BigInteger.toByteArray may add a leading 0x00
   }
 
-
-  def base58CheckToBytes(b58check:String) = {
+  def base58CheckToBytes(b58check: String) = {
     base58ToBytes(b58check).drop(1).dropRight(4)
   }
 
   def base58ToBytes(b58: String): List[UByte] = {
-    RippleBase58.decode(b58).map(ByteUtils.byte2ubyte).toList
+    decode(b58).map(ByteUtils.byte2ubyte).toList
   }
 
   def base58ToHex(b58: String): String = {
     ByteUtils.ubytes2hex(base58ToBytes(b58))
   }
 }
+
+private[bincodec] object RippleBase58 extends RippleBase58

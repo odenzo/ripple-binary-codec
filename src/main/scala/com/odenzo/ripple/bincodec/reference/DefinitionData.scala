@@ -43,8 +43,7 @@ case class FieldInfo(name: String,
   * @param v         Value of the field in Json format
   * @param fi        Metadata about the field and its type
   */
-case class FieldData(fieldName: String, v: Json, fi: FieldInfo) 
-
+case class FieldData(fieldName: String, v: Json, fi: FieldInfo)
 
 object FieldInfo extends StrictLogging {
 
@@ -53,22 +52,13 @@ object FieldInfo extends StrictLogging {
    * https://developers.ripple.com/serialization.html#field-ids
    */
   def encodeFieldID(fName: Int, fType: Int): List[UByte] = {
-    // This encoding is complicated. The value in the type and the value for the fieldName.
-    // If fieldName fits in one byte do that. Else expand to two bytes.
-    // See: datadriventest.json for fixtures
-    // fName maps to nth of type, or nth in definitions.json.
-    // Name -1 for invalid until 259. So I guess 1,2,3 bytes?
-    // 16, 16 = 0x01010
-    //
     logger.debug(s"Encoding Field $fName and Data Type: $fType")
     val fieldCode = UByte(fName)
     val typeCode  = UByte(fType)
 
     val fcBig = fieldCode >= UByte(16)
     val tcBig = typeCode >= UByte(16)
-
-    // Refactored to match the found documentation
-    // One two or three BYTES
+    
     val packed: List[UByte] = (fcBig, tcBig) match {
       case (false, false) ⇒ ((typeCode << 4) | fieldCode) :: Nil
       case (true, false)  ⇒ (typeCode << 4) :: fieldCode :: Nil
@@ -124,7 +114,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
     }
   }
 
-  def getFieldsByNth(nth:Long): Iterable[FieldInfo] = {
+  def getFieldsByNth(nth: Long): Iterable[FieldInfo] = {
     fieldsInfo.filter(_._2.nth == nth).values
   }
 
@@ -133,7 +123,6 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
   }
 
   def getFieldInfo(name: String): Either[OErrorRipple, FieldInfo] = getMapEntry(fieldsInfo, name)
-
 
   def findFieldInfo(fieldName: String): Option[FieldInfo] = fieldsInfo.get(fieldName)
 

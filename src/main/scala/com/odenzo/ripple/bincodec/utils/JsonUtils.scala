@@ -83,16 +83,6 @@ private[bincodec] trait JsonUtils extends StrictLogging {
   /** Ripled doesn't like objects like { x=null } */
   val droppingNullsPrinter: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  /** Converts json to formatted text dropping null JsonObject fields.
-    *
-    * @param json
-    *
-    * @return
-    */
-  def print(json: Json): String = json.pretty(droppingNullsPrinter)
-
-  def print(jsonObject: JsonObject): String = print(jsonObject.asJson)
-
   /** For now does top level pruning of null fields from JSON Object
     * Now recurses */
   def pruneNullFields(obj: JsonObject): JsonObject = {

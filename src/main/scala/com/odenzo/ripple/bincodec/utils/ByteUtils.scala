@@ -63,7 +63,7 @@ private[bincodec] trait ByteUtils extends StrictLogging {
   def unsafeHex2ubytes(v: String): List[UByte] = {
     hex2ubytes(v) match {
       case Right(list) ⇒ list
-      case Left(err)   ⇒ throw new Exception(s"Programming Error $err")
+      case Left(err)   ⇒ throw new IllegalArgumentException(s"Bad Hex $v ",err)
     }
   }
 

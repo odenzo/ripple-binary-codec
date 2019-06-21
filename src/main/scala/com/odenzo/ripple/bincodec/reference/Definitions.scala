@@ -12,14 +12,8 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 /** Definitions are loading from the definitions.js file supplied by Ripple from their C++ for the JavaScript library.
   *     [[https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json]]
   *
-  * @param data
+  * 
   */
-class Definitions(data: DefinitionData) {
-
-
-}
-
-/** Little module to wrap around the Ripple definitions.json for Binary Serialization for Signign */
 object Definitions extends StrictLogging with JsonUtils {
 
 

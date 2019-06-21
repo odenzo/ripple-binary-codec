@@ -6,16 +6,14 @@ import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.RawValue
+import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 trait VLEncoding extends StrictLogging {
 
+  def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
+    encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))
 
-  def prependVL(bytes: List[UByte]): Either[OErrorRipple, RawValue] = {
-    val vl: Either[OErrorRipple, RawValue] = encodeVL(bytes.length)
-    val concatBytes = vl.map(rev ⇒ rev.ubytes ++ bytes)
-    concatBytes.map(RawValue)
   }
 
   /** We are going to encode the len in an array of bytes betwen 0 and 4 bytes long.
@@ -29,18 +27,18 @@ trait VLEncoding extends StrictLogging {
   def encodeVL(lengthToEnc: Int): Either[OErrorRipple, RawValue] = {
     val vl = lengthToEnc match {
 
-        // Is this really inclusive 192 = 11000000
-      case l if Range(1, 192).inclusive.contains(l)        => (UByte(l) :: Nil).asRight
-      case l if Range(193, 12480).inclusive.contains(l)    ⇒
+      // Is this really inclusive 192 = 11000000
+      case l if Range(1, 192).inclusive.contains(l) => (UByte(l) :: Nil).asRight
+      case l if Range(193, 12480).inclusive.contains(l) ⇒
         val l2: Int = l - 193
         List(UByte(193 + (l2 >>> 8)), UByte(l2 & 0xff)).asRight
       case l if Range(12481, 918744).inclusive.contains(l) ⇒
         val length = l - 12481
         List(
-              UByte(241 + (length >>> 16)),
-              UByte((length >> 8) & 0xff),
-              UByte(length & 0xff),
-              ).asRight
+          UByte(241 + (length >>> 16)),
+          UByte((length >> 8) & 0xff),
+          UByte(length & 0xff),
+        ).asRight
 
       case l => RippleCodecError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
     }
@@ -48,18 +46,17 @@ trait VLEncoding extends StrictLogging {
     vl.map(RawValue)
   }
 
-
-  def decodeVL(data:List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
-         // If top two bits are zero its one byte
+  def decodeVL(data: List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
+    // If top two bits are zero its one byte
 
     val headInt: Int = data.head.toInt
 
-    if ( headInt  <= 192) {
-      ( headInt, data.drop(1)).asRight
-   } else if (Range(193,240).inclusive.contains(headInt)) {
-      (0,data.drop(2)).asRight
-    } else if (Range(241,254).inclusive.contains(headInt)) {
-      (0.toInt,data.drop(3)).asRight
+    if (headInt <= 192) {
+      (headInt, data.drop(1)).asRight
+    } else if (Range(193, 240).inclusive.contains(headInt)) {
+      (0, data.drop(2)).asRight
+    } else if (Range(241, 254).inclusive.contains(headInt)) {
+      (0.toInt, data.drop(3)).asRight
     } else {
       RippleCodecError(s"Illegal VL Encoding").asLeft
     }

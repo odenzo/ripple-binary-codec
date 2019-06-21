@@ -5,13 +5,13 @@ import scala.io.{BufferedSource, Source}
 
 import com.typesafe.scalalogging.{Logger, StrictLogging}
 import io.circe.{Decoder, Json, JsonObject}
-import org.scalatest.{EitherValues, Matchers}
+import org.scalatest.{EitherValues, Matchers, OptionValues}
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
 
-trait OTestSpec extends StrictLogging with Matchers with EitherValues {
+trait OTestSpec extends StrictLogging with Matchers with EitherValues with OptionValues {
 
   /**
     * This will load from resources/test/fixtures/...
