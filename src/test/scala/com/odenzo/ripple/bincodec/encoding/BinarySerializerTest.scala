@@ -45,7 +45,7 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
   def printMaxMinInt(label: String, v: Seq[Int]): Unit = {
     val max = v.max
     val min = v.min
-    logger.info(s"$label Max $max  Min $min")
+    scribe.info(s"$label Max $max  Min $min")
   }
 
   test("unsigned binary") {
@@ -56,7 +56,7 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
     byteLens.map { len ⇒
       val maxUInt: BigInt = BigInt(len)
       Math.pow(2d, len.toLong * 8d) - 1d // FIXME: Integral Power?
-      logger.info(s"Bytes: $len max unsigned is: $maxUInt")
+      scribe.info(s"Bytes: $len max unsigned is: $maxUInt")
       maxUInt
     }
 
@@ -65,6 +65,6 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
   def printMaxMin(label: String, v: Seq[UByte]): Unit = {
     val max = v.max
     val min = v.min
-    logger.info(s"$label Max $max  Min $min")
+    scribe.info(s"$label Max $max  Min $min")
   }
 }

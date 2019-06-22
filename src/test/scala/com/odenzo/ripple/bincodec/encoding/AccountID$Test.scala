@@ -6,10 +6,10 @@ import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs, VLEncoding}
-import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, RawValue}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, RawValue}
 
 class AccountID$Test extends FunSuite with OTestSpec {
 
@@ -37,7 +37,7 @@ class AccountID$Test extends FunSuite with OTestSpec {
   val json: Json = {
     val res = JsonUtils.parseAsJson(sample)
 
-    RippleCodecError.dump(res).foreach(e ⇒ logger.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
+    RippleCodecError.dump(res).foreach(e ⇒ scribe.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     res.right.value
   }
 
@@ -46,9 +46,9 @@ class AccountID$Test extends FunSuite with OTestSpec {
   /** Pack up Data and go through more of the pipeline */
   def encodeSingle(fieldName: String, data: Json, isNested:Boolean): Either[RippleCodecError, EncodedField] = {
     val req = defdata.getFieldData(fieldName, data)
-    req.foreach(v ⇒ logger.info(s"encoding Single Field: $v"))
+    req.foreach(v ⇒ scribe.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_,isNested,false))
-    RippleCodecError.dump(ans).foreach(e ⇒ logger.error(s"Trouble Encoding Field $fieldName $e "))
+    RippleCodecError.dump(ans).foreach(e ⇒ scribe.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 
@@ -70,11 +70,11 @@ class AccountID$Test extends FunSuite with OTestSpec {
     special.foreach {
       case (account, expected) ⇒
         val bd = BigInt(expected, 16)
-        logger.debug(s"$expected = $bd")
+        scribe.debug(s"$expected = $bd")
         val json                           = Json.fromString(account)
         val noVL: String = getOrLog(AccountIdCodecs.encodeAccountNoVL(json)).toHex
         // val vl: Either[AppError, String] = TypeSerializers.encodeAccount(json).map(ByteUtils.ubyte2Hex)
-        logger.info(s"\nFor $account Expected and Got \n $expected \n $noVL ")
+        scribe.info(s"\nFor $account Expected and Got \n $expected \n $noVL ")
 
 //        got shouldEqual expected
     }
@@ -85,13 +85,13 @@ class AccountID$Test extends FunSuite with OTestSpec {
     val ok                 = "14EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA" // This seems to be the repeated account But get 1 19 1A 1B ED
     val account            = Json.fromString("r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2")
     val rev: RawValue = getOrLog(AccountIdCodecs.encodeAccount(account))
-    logger.info(s"Valid Result: $ok \n Length ${rev.rawBytes.length * 4} bites")
-    logger.info(s"Results Byte Len: ${rev.rawBytes.length}")
-    logger.info(s"Account Btes: ${rev.toHex}")
+    scribe.info(s"Valid Result: $ok \n Length ${rev.rawBytes.length * 4} bites")
+    scribe.info(s"Results Byte Len: ${rev.rawBytes.length}")
+    scribe.info(s"Account Btes: ${rev.toHex}")
     // C++ code says null account is empty, other serialize to 160bits.
     // Account is VLEncoded apparently, thus 0x14 may be length
     val lenEncoded: RawValue = getOrLog(VLEncoding.encodeVL(160 / 8))
-    logger.info(s"VL Encoded ${lenEncoded.toHex}")
+    scribe.info(s"VL Encoded ${lenEncoded.toHex}")
     // Yes it is.
 
   }
@@ -110,15 +110,15 @@ class AccountID$Test extends FunSuite with OTestSpec {
   test("Field Names") {
     val json            = loadJsonResource("/test/fixtures/data-driven-tests.json").right.value
     val arr: List[Json] = json.asObject.flatMap(_("fields_tests")).flatMap(_.asArray).map(_.toList).get
-    logger.debug(s"Things to Test ${arr.length}")
+    scribe.debug(s"Things to Test ${arr.length}")
     val ftd: Result[List[FieldTestData]] = arr.traverse(_.as[FieldTestData])
-    ftd.left.foreach(d ⇒ logger.error(s"Decoding Failure: $d"))
+    ftd.left.foreach(d ⇒ scribe.error(s"Decoding Failure: $d"))
     ftd.map { lst ⇒
       lst.foreach { fix: FieldTestData ⇒
-        logger.debug(s"FieldTestData $fix")
+        scribe.debug(s"FieldTestData $fix")
         val res: List[UByte] = FieldInfo.encodeFieldID(fix.nth_of_type, fix.tipe)
         val hex: String = ByteUtils.ubytes2hex(res.toSeq)
-        logger.info("Result: " + hex)
+        scribe.info("Result: " + hex)
         if (fix.name == "TickSize") hex shouldEqual ("0" + fix.expected_hex)
         else hex shouldEqual fix.expected_hex
       }
@@ -130,8 +130,8 @@ class AccountID$Test extends FunSuite with OTestSpec {
     defdata.fieldsData.values.foreach { ft ⇒
       val rt = getOrLog(defdata.getTypeObj(ft.tipe))
 
-      logger.debug(s"Field Type: $ft")
-      logger.debug(s"Type      : $rt")
+      scribe.debug(s"Field Type: $ft")
+      scribe.debug(s"Type      : $rt")
       // Special cases, including Amount?
       if (ft.isSigningField || ft.isSerialized) {
         val res = FieldInfo.encodeFieldID(ft.nth.toInt, rt.value.toInt)
@@ -150,7 +150,7 @@ class AccountID$Test extends FunSuite with OTestSpec {
 
     val min: ULong = ULong(0)
     val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
-    logger.info(s"Min - Max $min $max")
+    scribe.info(s"Min - Max $min $max")
 
     t(max)
     t(max - ULong(1))
@@ -159,10 +159,10 @@ class AccountID$Test extends FunSuite with OTestSpec {
     def t(v: ULong): String = {
       val jsonV: String = v.toString()
       val json: Json    = Json.fromString(jsonV)
-      logger.info(s"From $v Sending JSON: ${json.noSpaces}")
+      scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
       val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
       val hex                                = res.toHex
-      logger.debug(s"$v  => $hex")
+      scribe.debug(s"$v  => $hex")
       hex
     }
 
@@ -174,6 +174,6 @@ class AccountID$Test extends FunSuite with OTestSpec {
     val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
 
 
-    logger.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
+    scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 }

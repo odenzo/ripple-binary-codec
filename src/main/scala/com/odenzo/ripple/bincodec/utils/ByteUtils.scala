@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
+import scribe.{Level, Logging}
 import spire.implicits._
 import spire.math.{UByte, UInt, ULong}
 
@@ -15,9 +15,12 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRippl
 /** Helpers since I seldom use bits/bytes directly and Scala/Java sucks. Don't know a good lib
   * SDtarting to use Spire, and making sure these all work -- but more convenience than speed at this point
   * */
-private[bincodec] trait ByteUtils extends StrictLogging {
+private[bincodec] trait ByteUtils extends Logging {
 
-  val bytezero: Byte = 0.toByte
+  // Set the logging threshold for this class only
+  logger.withHandler(minimumLevel=Some(Level.Warn))
+
+  val ZEROBYTE: Byte = 0.toByte
 
   def hex2Bytes(hex: String): Either[RippleCodecError, List[Byte]] = Nested(hex2ubytes(hex)).map(_.toByte).value
 
@@ -34,7 +37,7 @@ private[bincodec] trait ByteUtils extends StrictLogging {
 
   /** WARNING: This doesn't check range problems */
   def bigInt2ulong(bi: BigInt): Either[OErrorRipple, ULong] = {
-    if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
+     if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
       RippleCodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
     else ULong.fromBigInt(bi).asRight
   }
@@ -104,9 +107,9 @@ private[bincodec] trait ByteUtils extends StrictLogging {
   @tailrec
   final def trimLeftZeroBytes(a: List[Byte]): List[Byte] = {
     a.toList match {
-      case h :: t if h != bytezero ⇒ a
+      case h :: t if h != ZEROBYTE ⇒ a
       case Nil                     ⇒ a
-      case h :: t if h == bytezero ⇒ trimLeftZeroBytes(t)
+      case h :: t if h == ZEROBYTE ⇒ trimLeftZeroBytes(t)
     }
     
   }

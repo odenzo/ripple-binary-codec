@@ -2,8 +2,7 @@ package com.odenzo.ripple.bincodec.encoding
 
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
-import io.circe._
+import io.circe.Json
 
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, HashHexCodecs, MoneyCodecs, PathCodecs, UIntCodecs, VLEncoding}
 import com.odenzo.ripple.bincodec.reference.FieldData
@@ -15,7 +14,7 @@ import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, Enc
   * I am not building these based on pure JSON rather
   * than the WSModel objects
   */
-object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
+object TypeSerializers  extends JsonUtils with CodecUtils {
 
   def encodeTopLevel(json: Json, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
 
@@ -71,7 +70,7 @@ object TypeSerializers extends StrictLogging with JsonUtils with CodecUtils {
     val fieldName: String = fieldData.fieldName
     val fieldValue: Json  = fieldData.v
 
-    logger.debug(s"Encoding FieldValue: $fieldData")
+    scribe.debug(s"Encoding FieldValue: $fieldData")
 
     val valueBytes: Either[RippleCodecError, Encoded] = fieldData.fi.fieldTypeName match {
       case "UInt16" if fieldName === "LedgerEntryType" ⇒ encodeLedgerEntryType(fieldValue)

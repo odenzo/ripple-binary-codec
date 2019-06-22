@@ -1,7 +1,6 @@
 package com.odenzo.ripple.bincodec.codecs
 
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import spire.math.UByte
 
@@ -14,7 +13,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecErro
   * For now lets stick with encoding.
   * [[[https://developers.ripple.com/accounts.html#address-encoding]] is good reference point.
   */
-trait AccountIdCodecs extends StrictLogging {
+trait AccountIdCodecs  {
 
   /*
    * Quick Overview:

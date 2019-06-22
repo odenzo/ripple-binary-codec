@@ -1,11 +1,8 @@
 package com.odenzo.ripple.bincodec.decoding
 
-import scala.annotation.tailrec
-
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, PathCodecs, STArrayCodec, STObjectCodec, VLEncoding}
@@ -13,10 +10,10 @@ import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.reference.{Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, RawValue}
+import com.odenzo.ripple.bincodec.{Decoded, DecodedField}
 
 /** Development helper, not completed */
-trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils with CodecUtils {
+trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
 
   def bust(txBlob: String): Either[RippleCodecError, List[Decoded]] = {
     val ubytes: Either[RippleCodecError, List[UByte]] = hex2ubytes(txBlob)
@@ -72,7 +69,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils with Code
 //        case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
 
         case other ⇒
-          logger.error(s"Not Decoding Field Type $other")
+          scribe.error(s"Not Decoding Field Type $other")
           RippleCodecError(s"Not Decoding Field Type $other").asLeft
 
       }
@@ -92,14 +89,14 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils with Code
     * @return FieldInfomation and the remaining UBytes that were not fieldid
     */
   def decodeNextFieldId(blob: List[UByte]): Either[OErrorRipple, (FieldInfo, List[UByte])] = {
-    logger.info(s"Decoding Field ID from ${blob.take(6)}...")
+    scribe.info(s"Decoding Field ID from ${blob.take(6)}...")
     val ZERO             = UByte.MinValue
     val TOP_FOUR_MASK    = UByte(0xF0)
     val BOTTOM_FOUR_MASK = UByte(0x0F)
 
     val top    = blob.head & TOP_FOUR_MASK
     val bottom = blob.head & BOTTOM_FOUR_MASK
-    logger.info(s"Top $top Bottom $bottom")
+    scribe.info(s"Top $top Bottom $bottom")
     
     val (fCode, tCode, blobRemaining) = (top === ZERO, bottom === ZERO) match {
       case (false, false) ⇒ // One Byte
@@ -122,7 +119,7 @@ trait TxBlobBuster extends StrictLogging with JsonUtils with ByteUtils with Code
         (fieldcode, typecode, blob.drop(3))
     }
           // Actually, we coudl just find by fieldCode!
-    logger.info(s"Potential Fields\n:" + Definitions.fieldData.getFieldsByNth(fCode.toLong).mkString("\n"))
+    scribe.info(s"Potential Fields\n:" + Definitions.fieldData.getFieldsByNth(fCode.toLong).mkString("\n"))
     val fieldMarker: List[UByte] = FieldInfo.encodeFieldID(fCode.toInt, tCode.toInt)
     Definitions.fieldData.findByFieldMarker(fieldMarker) match {
       case None     ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft

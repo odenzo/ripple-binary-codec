@@ -5,17 +5,16 @@ import scala.annotation.tailrec
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers.{json2array, json2object}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedNestedVals, RawValue}
 
-trait PathCodecs extends StrictLogging {
+trait PathCodecs  extends JsonUtils {
 
   /** These is really a container. Inside is a list of  datasteps and delimeters **/
   def encodePathSet(data: FieldData): Either[RippleCodecError, EncodedNestedVals] = {
@@ -53,7 +52,7 @@ trait PathCodecs extends StrictLogging {
       currency and issuer as long as the currency is not XRP
       issuer by itself
      */
-    logger.debug(s"Encoding Path Step\n ${json.spaces2}")
+    scribe.debug(s"Encoding Path Step\n ${json.spaces2}")
     // Another array of arrays
     val arr: Either[RippleCodecError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
 
@@ -73,7 +72,7 @@ trait PathCodecs extends StrictLogging {
     }
 
     val ans = arr.flatMap{ obj: JsonObject ⇒
-      logger.debug(s"JOBJ: ${obj.asJson.spaces2}")
+      scribe.debug(s"JOBJ: ${obj.asJson.spaces2}")
 
       val fields: Seq[Option[Json]] = Seq("account", "currency", "issuer").map(k ⇒ obj(k))
       fields match {

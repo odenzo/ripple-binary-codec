@@ -1,12 +1,12 @@
 package com.odenzo.ripple.bincodec.encoding
 
+import cats._
+import cats.data._
+import cats.implicits._
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.FunSuite
 import spire.math.ULong
-import cats._
-import cats.data._
-import cats.implicits._
 
 import com.odenzo.ripple.bincodec.OTestSpec
 import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs}
@@ -21,7 +21,7 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     val amt = BigDecimal("1.234")
     val res = MoneyCodecs.rippleEncodingOfFiatAmount(amt)
     RippleCodecError.dump(res).foreach { e ⇒
-      logger.error("Error: " + e)
+      scribe.error("Error: " + e)
     }
   }
 
@@ -66,7 +66,7 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     val iou    = getOrLog(JsonUtils.parseAsJsonObject(nzAmount))
     val iouEnc = MoneyCodecs.encodeIOU(iou)
     val amtEnc = MoneyCodecs.encodeAmount(iou.asJson)
-    logger.info(s"Encoded IOU: ${iouEnc.show}")
+    scribe.info(s"Encoded IOU: ${iouEnc.show}")
     iouEnc shouldEqual amtEnc
   }
 
@@ -87,17 +87,17 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     val currency = "USD"
     val res      = getOrLog(MoneyCodecs.encodeCurrency(Json.fromString(currency)))
     val hex      = res.toHex
-    logger.debug(s"$currency => $hex")
+    scribe.debug(s"$currency => $hex")
 
     val amount: Json      = Json.fromString("10")
     val amountBytes       = getOrLog(MoneyCodecs.encodeFiatValue(amount))
     val amountHex: String = amountBytes.toHex
-    logger.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
+    scribe.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
 
     val issuer: Json = Json.fromString(issuerStr)
     val issuerBytes  = AccountIdCodecs.encodeAccountNoVL(issuer).right.value
     val issuerHex    = issuerBytes.toHex
-    logger.debug(s"Issuer [$issuer] Len ${issuerHex.length * 4} : $issuerHex")
+    scribe.debug(s"Issuer [$issuer] Len ${issuerHex.length * 4} : $issuerHex")
 
     hex shouldEqual currencyExpected
     issuerHex shouldEqual issuerHex
@@ -107,7 +107,7 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
   test("Normalizing") {
 
     val ans: Either[RippleCodecError, (ULong, Int)] = MoneyCodecs.properNormalize(ULong(1L), 2)
-    RippleCodecError.dump(ans).foreach(msg ⇒ logger.error("Error: " + msg))
+    RippleCodecError.dump(ans).foreach(msg ⇒ scribe.error("Error: " + msg))
 
   }
 

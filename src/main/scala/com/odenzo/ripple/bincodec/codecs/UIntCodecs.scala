@@ -2,19 +2,18 @@ package com.odenzo.ripple.bincodec.codecs
 
 import scala.util.Try
 
-import com.typesafe.scalalogging.StrictLogging
-import io.circe.Json
-import spire.math.{UByte, ULong}
 import cats._
 import cats.data._
 import cats.implicits._
+import io.circe.Json
+import spire.math.ULong
 
 import com.odenzo.ripple.bincodec.RawValue
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers.encodeULong
+import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
-trait UIntCodecs extends StrictLogging {
+trait UIntCodecs extends CodecUtils {
 
   /** Adapted from the Javascript
     * Redo with one UInt Decoder and a function for each type.

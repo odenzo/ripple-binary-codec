@@ -3,9 +3,8 @@ package com.odenzo.ripple.bincodec.utils
 import cats._
 import cats.data._
 import cats.implicits._
-import org.scalatest.FunSuite
-
 import io.circe.syntax._
+import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
 
@@ -44,7 +43,7 @@ class JsonUtilsTest extends FunSuite with OTestSpec with JsonUtils {
     } yield a |+| b
 
     val s = getOrLog(sum)
-    logger.info(s"Sum  ${s.asJson.spaces4}")
+    scribe.info(s"Sum  ${s.asJson.spaces4}")
 
     s("b").value shouldEqual  "2b".asJson
     s.size shouldEqual 3

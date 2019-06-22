@@ -4,8 +4,6 @@ import java.io.File
 
 import cats.Monoid
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder.Result
 import io.circe.jawn.JawnParser
 import io.circe.syntax._
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject, Printer}
@@ -13,7 +11,7 @@ import io.circe.{Decoder, DecodingFailure, Json, JsonObject, Printer}
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonDecodingError, AppJsonParsingError, BinCodecExeption, OErrorRipple, RippleCodecError}
 
-private[bincodec] trait JsonUtils extends StrictLogging {
+private[bincodec] trait JsonUtils  {
 
 
   /** Monoid/Semigroup for Circe Json Object so we can add them togeher. */
@@ -121,7 +119,7 @@ private[bincodec] trait JsonUtils extends StrictLogging {
   }
 
   def parseAsJson(f: File): ErrorOr[Json] = {
-    logger.info(s"Parsing FIle $f")
+    scribe.info(s"Parsing FIle $f")
     new JawnParser().parseFile(f).leftMap{ pf ⇒
       new BinCodecExeption(s"Error Parsing File $f to Json", pf)
     }

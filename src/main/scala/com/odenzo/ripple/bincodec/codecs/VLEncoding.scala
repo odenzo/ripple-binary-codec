@@ -3,13 +3,12 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 
-trait VLEncoding extends StrictLogging {
+trait VLEncoding  {
 
   def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
     encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))
@@ -48,9 +47,15 @@ trait VLEncoding extends StrictLogging {
 
   def decodeVL(data: List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
     // If top two bits are zero its one byte
-
+    // This just calculates the number of bytes in VL
+    // FIXME: Isn't actaully returning the length yet, except < 192 lengths
     val headInt: Int = data.head.toInt
 
+    val oneByte = Range(0,192).inclusive
+    val twoByte = Range(193,240).inclusive
+    val threeByte = Range(241,254).inclusive
+
+    
     if (headInt <= 192) {
       (headInt, data.drop(1)).asRight
     } else if (Range(193, 240).inclusive.contains(headInt)) {

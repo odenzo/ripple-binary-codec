@@ -32,7 +32,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
     fixture.foreach(oneOff)
     def oneOff(amt: BigDecimal): Unit = {
       val res = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(amt))
-      logger.info(s"Res: $amt => ${res.toHex}")
+      scribe.info(s"Res: $amt => ${res.toHex}")
     }
   }
 
@@ -56,14 +56,14 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
   test("All") {
 
     fixes.take(3).map { v: AmountFixture ⇒
-      logger.debug(s"Fixture $v")
+      scribe.debug(s"Fixture $v")
 
-      logger.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
+      scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
       val res = getOrLog(MoneyCodecs.encodeFiatValue(v.value))
-      logger.info(s"Res: ${res.show}")
+      scribe.info(s"Res: ${res.show}")
       assert(res.ubytes.length == 8)
-      logger.info(s"Got Res: ${res.toHex}")
+      scribe.info(s"Got Res: ${res.toHex}")
       val hex = res.toHex
 
       v.bin shouldEqual hex
@@ -100,12 +100,12 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
     testData.foreach { fix: TData ⇒
       val bd                  = BigDecimal(fix.value)
       val step1: (ULong, Int) = MoneyCodecs.normalizeToIntegral(bd)
-      logger.debug(s"Step 1 $step1")
+      scribe.debug(s"Step 1 $step1")
 
       val res = MoneyCodecs.normalizeAmount2MantissaAndExp(bd)
       RippleCodecError.log(res)
       val (mant, exp) = res.right.value
-      logger.info(s"Fully Normalized: $mant -> $exp")
+      scribe.info(s"Fully Normalized: $mant -> $exp")
 
       val fiatAmount = BigDecimal(fix.value)
       val amtRes     = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(fiatAmount))

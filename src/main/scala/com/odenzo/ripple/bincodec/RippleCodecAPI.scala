@@ -1,14 +1,13 @@
 package com.odenzo.ripple.bincodec
 
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.JsonObject
 import io.circe.syntax._
 
-import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, TypeSerializers}
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
-object RippleCodecAPI extends StrictLogging {
+object RippleCodecAPI  {
 
   /**
     * Expects a top level JsonObject representing a JSON document
@@ -25,14 +24,12 @@ object RippleCodecAPI extends StrictLogging {
   /**
     * Expects a top level JsonObject representing a transaction
     * that would be sent to rippled server. All isSigningField fields serialized.
-    * This and binarySerialize and the only two top level user
-    * FIXME: I am guessing this is the whole transaction because fee_multi_max and other important stuff in top
-    * level
+    *
+    * This does not populate any "auto-fill" fields
     *
     * @param tx_json
     */
   def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
-    logger.trace("Serializing for Signing")
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
   }
 

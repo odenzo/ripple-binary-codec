@@ -13,9 +13,9 @@ import org.scalatest.{Assertion, FunSuite}
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{ContainerFields, MoneyCodecs}
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.syntax.debugging._
-import com.odenzo.ripple.bincodec.encoding.{BinarySerializer, TypeSerializers}
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
@@ -47,13 +47,13 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
       ]
      */
 
-    //  logger.info(s"Fields ${json.spaces2}")
+    //  scribe.info(s"Fields ${json.spaces2}")
 
     val allFields: List[Json]            = getOrLog(json2array(json))
     val eachFieldArray: List[List[Json]] = getOrLog(allFields.traverse(json2array))
 
     val ans: immutable.Seq[(String, ExpectedField)] = allFields.map { elemJson: Json ⇒
-      //  logger.info(s"Field JSON ${elemJson.spaces2}")
+      //  scribe.info(s"Field JSON ${elemJson.spaces2}")
 
       val subArr            = elemJson.asArray.get
       val fieldName: String = subArr(0).asString.get
@@ -73,7 +73,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   test("Field Tests") {
     val fixturesAttempt = super.loadJsonResource("/test/fixtures/data-driven-tests.json")
 
-    fixturesAttempt.left.foreach(e ⇒ logger.error("Error: " + e.show))
+    fixturesAttempt.left.foreach(e ⇒ scribe.error("Error: " + e.show))
     val codec_fixtures: Json = fixturesAttempt.right.value
 
     case class FieldTest(type_name: String, name: String, nth_of_type: Int, tipe: Int, expected_hex: String)
@@ -88,11 +88,11 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     val fields: ErrorOr[List[FieldTest]] = JsonUtils.decode(fieldsTests, Decoder[List[FieldTest]])
 
     fields.map { lf ⇒
-      logger.info(s"TOTAL Number of Fixtures ${lf.length}")
+      scribe.info(s"TOTAL Number of Fixtures ${lf.length}")
       lf.zipWithIndex.drop(0).foreach { d ⇒
-        logger.info(s"\n\n\n*************** DOING  FIXTURE ${d._2}\n")
+        scribe.info(s"\n\n\n*************** DOING  FIXTURE ${d._2}\n")
         val fix: FieldTest = d._1
-        logger.info(s"FT: $fix")
+        scribe.info(s"FT: $fix")
         val res: List[UByte] = FieldInfo.encodeFieldID(fix.nth_of_type, fix.tipe)
         val hex: String      = ByteUtils.ubytes2hex(res)
         if (fix.tipe == 16 && fix.nth_of_type == 16) {
@@ -106,7 +106,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
   test("Whole Objects") {
     val fixturesAttempt = super.loadJsonResource("/test/fixtures/data-driven-tests.json")
-    fixturesAttempt.left.foreach(e ⇒ logger.error("Error: " + e.show))
+    fixturesAttempt.left.foreach(e ⇒ scribe.error("Error: " + e.show))
     val fixtures: Json = fixturesAttempt.right.value
 
     val dobj: JsonObject = fixtures.asObject.get
@@ -132,18 +132,18 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     // There is a structural problem here.
     // Account's are NOT VL encoded, even at top level of txJson like Account : "r....." because TxJson is nexted
     // in the actual message.
-    logger.info(s"TOTAL Number of Fixtures ${targets.length}")
+    scribe.info(s"TOTAL Number of Fixtures ${targets.length}")
     targets.zipWithIndex.drop(4).foreach {
       case ((json: JsonObject, fields: Seq[(String, ExpectedField)], blob: String), index) ⇒
-        logger.info(s"\n\n\n*************** DOING  FIXTURE $index of ${targets.length}\n")
+        scribe.info(s"\n\n\n*************** DOING  FIXTURE $index of ${targets.length}\n")
 
-        logger.info("Expected: " + fields.map(v ⇒ v._1 + v._2.toString).mkString("\n\t", "\n\t", "\n\n"))
+        scribe.info("Expected: " + fields.map(v ⇒ v._1 + v._2.toString).mkString("\n\t", "\n\t", "\n\n"))
 
         // Then we do the whole thing for fun.
         val res: EncodedNestedVals = getOrLog(ContainerFields.encodeSTObject(json.asJson, true, false))
 
-        logger.info(s"Full Hexz: ${res.toHex}")
-        logger.info(s"Full Dump ${res.show}")
+        scribe.info(s"Full Hexz: ${res.toHex}")
+        scribe.info(s"Full Dump ${res.show}")
 
         val expectedWholeHex = fields.map(v ⇒ v._2.hexByField.mkString).mkString
 
@@ -184,9 +184,9 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   case class TypeSpecializationTest(canonical_json: Option[Json], type_specialisation_field: String)
 
   def testXrp(b: BaseValueTest, v: XrpAmountTest) = {
-    logger.debug(s"Testing XRP $v")
+    scribe.debug(s"Testing XRP $v")
     if (b.error.isDefined) {
-      logger.info("This is a negative test")
+      scribe.info("This is a negative test")
     } else {
       val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
       val hex                           = res.toHex
@@ -195,7 +195,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   }
 
   def testFiat(b: BaseValueTest, v: FiatAmountTest): Assertion = {
-    logger.info(s"Testing Fiat $v")
+    scribe.info(s"Testing Fiat $v")
     val manual: Either[RippleCodecError, (ULong, Int)] = TypeSerializers
                                                          .json2object(b.test_json)
                                                          .flatMap(findField("value", _))
@@ -203,20 +203,20 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
                                                          .map(BigDecimal(_))
                                                          .flatMap(MoneyCodecs.normalizeAmount2MantissaAndExp)
 
-    logger.debug(s"Man / Exponent $manual")
+    scribe.debug(s"Man / Exponent $manual")
     val (mantissa: ULong, exp: Int) = manual.right.value
 
     val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
 
     val hex = res.toHex
 
-    logger.info(s"Fiat  Expected/Got \n ${b.expected_hex.get} \n $hex")
+    scribe.info(s"Fiat  Expected/Got \n ${b.expected_hex.get} \n $hex")
     hex shouldEqual b.expected_hex.get
   }
 
   def testSpecial(b: BaseValueTest, v: TypeSpecializationTest): Assertion = {
-    logger.info(s"Base $b")
-    logger.info(s"TypeSpecial: $v")
+    scribe.info(s"Base $b")
+    scribe.info(s"TypeSpecial: $v")
     // tecNO_ALTERNATIVE_KEY replaced tecMASTER_DISABLED
     // Whats with test_json being a number?
     val testVal: Json =
@@ -232,7 +232,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
       // TODO: Add this functionality for TransactionResult Codes. in TRANSACTION_RESULTS section of definitions
       case "TransactionResult" ⇒
-        logger.debug(s"Testing Txn Result Codes: $testVal")
+        scribe.debug(s"Testing Txn Result Codes: $testVal")
         getOrLog(TypeSerializers.encodeTxnResultType(testVal))
 
     }
@@ -248,7 +248,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
   test("Value Tests") {
     val fixturesAttempt = super.loadJsonResource("/test/fixtures/data-driven-tests.json")
-    fixturesAttempt.left.foreach(e ⇒ logger.error("Error: " + e.show))
+    fixturesAttempt.left.foreach(e ⇒ scribe.error("Error: " + e.show))
     val codec_fixtures: Json = fixturesAttempt.right.value
 
     val dobj: JsonObject            = codec_fixtures.asObject.get
@@ -256,7 +256,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     val allFields: List[JsonObject] = getOrLog(JsonUtils.decode(fieldsTests, Decoder[List[JsonObject]]))
 
     val indexed: List[(JsonObject, Int)] = allFields.zipWithIndex
-    logger.debug(s"Number of Fields ${indexed.length}")
+    scribe.debug(s"Number of Fields ${indexed.length}")
 
     val skipBroken = Seq(
       75,
@@ -274,11 +274,11 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     // All should be BaseValuesTest + specific
     todo.map {
       case (obj, indx) ⇒
-        logger.debug(s"\n\n *** DOING INDEX $indx *****\n\n")
+        scribe.debug(s"\n\n *** DOING INDEX $indx *****\n\n")
         val json = obj.asJson
-        logger.debug("Decoding \n" + json.spaces2)
+        scribe.debug("Decoding \n" + json.spaces2)
         val base: BaseValueTest = JsonUtils.decode(obj.asJson, Decoder[BaseValueTest]).right.value
-        logger.info(s"Base: $base")
+        scribe.info(s"Base: $base")
 
         val xrp: ErrorOr[XrpAmountTest]              = JsonUtils.decode(json, Decoder[XrpAmountTest])
         val fiat: ErrorOr[FiatAmountTest]            = JsonUtils.decode(json, Decoder[FiatAmountTest])
@@ -302,12 +302,11 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
   /** This does no checking, just a manual JSON Object encoding for later verification */
   def oneFixtureByField(json: JsonObject): EncodedNestedVals = {
-    logger.info(s"OneFixture: \n ${json.asJson.spaces4}")
+    scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")
     val bound: EncodedNestedVals = getOrLog(
       ContainerFields.encodeSTObject(json.asJson, false, false)
     )
-    logger.info("Field Order: " + bound.fieldsInOrder.mkString("\n\t", "\n\t", "\n"))
-    logger.debug(s"Full Dump: ${bound.show}")
+    scribe.debug(s"Full Dump: ${bound.show}")
     bound
   }
 }

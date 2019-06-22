@@ -3,16 +3,15 @@ package com.odenzo.ripple.bincodec.reference
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder.Result
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, Json, JsonObject}
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonDecodingError, OErrorRipple, RippleCodecError}
 
-object DefinitionsDecoding extends StrictLogging with JsonUtils {
+object DefinitionsDecoding extends JsonUtils {
 
   implicit val rtypeDecoder: Decoder[RippleDataType] = deriveDecoder[RippleDataType]
 

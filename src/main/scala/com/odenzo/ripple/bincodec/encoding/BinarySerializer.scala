@@ -3,13 +3,12 @@ package com.odenzo.ripple.bincodec.encoding
 import cats._
 import cats.data._
 import cats.implicits._
-import com.typesafe.scalalogging.StrictLogging
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
-object BinarySerializer extends StrictLogging with ByteUtils {
+object BinarySerializer  extends ByteUtils {
 
   val defns: DefinitionData = Definitions.fieldData
 

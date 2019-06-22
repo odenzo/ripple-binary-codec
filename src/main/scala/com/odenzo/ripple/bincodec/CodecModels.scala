@@ -56,18 +56,11 @@ case class EncodedVL(vl: RawValue, ubytes: RawValue) extends Encoded {
 
 
 /**
-  * @param enclosed Should ne NonEmptyList
+  * @param enclosed Can be nested fields or other Encoded types.
+  *                 Should ne NonEmptyList
   */
 case class EncodedNestedVals(enclosed: List[Encoded]) extends Encoded {
   lazy val encoded: List[RawValue] = enclosed.flatMap(_.encoded)
-
-
-  def fieldsInOrder: List[String] = {
-    enclosed.flatMap{
-      case fe: EncodedField ⇒ Some(fe.data.fieldName)
-      case other            ⇒ None
-    }
-  }
 }
 
 /** For null type objects, e.g. an empty array of memos */
