@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.codecs.ContainerFields
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{EncodedNestedVals, OTestSpec, OTestUtils, TestFixData}
+import com.odenzo.ripple.bincodec.{EncodedNestedVals, OTestSpec, OTestUtils}
 
 class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
 
@@ -30,8 +30,8 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
     val badTests = Seq(
       262 // Appears to be testsing a ledger or something with field account_hash which is not in definitions
     )
-    scribe.info(s"TOTAL Number of Fixtures ${letsGo.length}")
-    scribe.info("First One: " + letsGo.head.toString)
+    scribe.debug(s"TOTAL Number of Fixtures ${letsGo.length}")
+    scribe.debug("First One: " + letsGo.head.toString)
     letsGo.zipWithIndex
       .drop(0)
       .filterNot(v ⇒ badTests.contains(v._2))

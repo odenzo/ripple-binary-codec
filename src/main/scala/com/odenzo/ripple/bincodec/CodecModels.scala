@@ -1,5 +1,6 @@
 package com.odenzo.ripple.bincodec
 
+import scribe.Logging
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{FieldData, FieldInfo, RippleDataType}
@@ -10,7 +11,7 @@ sealed trait CodecValue
 sealed trait Decoded   extends CodecValue
 
 
-sealed trait Encoded extends CodecValue  {
+sealed trait Encoded extends CodecValue  with Logging {
    val encoded: List[RawValue]
 
   /**

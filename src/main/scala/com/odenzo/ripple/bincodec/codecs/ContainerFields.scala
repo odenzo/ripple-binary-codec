@@ -28,7 +28,7 @@ trait STObjectCodec  extends CodecUtils with JsonUtils {
     */
   def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
     // Well, first lets try and get the fields and order them if needed.
-    scribe.info("Encoding STObject to Bytes")
+    scribe.debug(s"Encoding STObject to Bytes: nested $isNested  Signing $isSigning")
 
     val jobj: Either[RippleCodecError, JsonObject] = json2object(o)
 

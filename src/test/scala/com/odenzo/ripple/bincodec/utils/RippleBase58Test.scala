@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
 
-class RippleBase58Test extends FunSuite with OTestSpec with RippleBase58 {
+class RippleBase58Test extends OTestSpec with RippleBase58 {
 
 
   test("58Check"){
