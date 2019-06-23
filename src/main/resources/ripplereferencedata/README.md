@@ -2,11 +2,8 @@
 
 ## Types
 
-TODO
-
-## Ledger Entry Types
-
-TODO
+Each field has a data type, e.g. UINT16, these define those types.
+Each field references a type.
 
 ## Fields
 
@@ -15,7 +12,7 @@ These are Serialization Fields (`sf`) [defined in rippled's SField.cpp](https://
 ### Key
 
 The key is the string defined in the rippled source code, such as "LedgerEntry", "Transaction", etc.
-
+It also the JSON field name.
 ### nth
 
 nth is the `index` used to make an [`SField` field code](https://github.com/ripple/rippled/blob/eaff9a0e6aec0ad077f118501791c7684debcfd5/src/ripple/protocol/SField.h#L95-L98).
@@ -35,10 +32,15 @@ Fields are serialized if they are not [one of these](https://github.com/ripple/r
 
 True unless the field is [specified with `SField::notSigning`](https://github.com/ripple/rippled/blob/eaff9a0e6aec0ad077f118501791c7684debcfd5/src/ripple/protocol/impl/SField.cpp#L198).
 
-## Transaction Results
+## Special Fields
 
-TODO
+All these special fields are String values in the JSON, but are encoded in UINT32 in binary.
+### Transaction Results
 
-## Transaction Types
+### Transaction Types
+
+e.g. Payment, OfferCreate
+ 
+### Ledger Entry Types
 
 TODO

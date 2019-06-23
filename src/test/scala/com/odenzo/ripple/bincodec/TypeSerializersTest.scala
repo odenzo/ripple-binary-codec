@@ -11,7 +11,7 @@ import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldI
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 
-class TypeSerializersTest extends FunSuite with OTestSpec with CodecUtils {
+class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   val defdata: DefinitionData = Definitions.fieldData
 

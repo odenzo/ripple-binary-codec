@@ -2,12 +2,16 @@ package com.odenzo.ripple.bincodec
 
 import io.circe.JsonObject
 import io.circe.syntax._
+import scribe.Level.Debug
 
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 object RippleCodecAPI  {
+
+  //scribe.warn("RippleCodeAPI Setup")
+  //com.odenzo.ripple.bincodec.defaultSetup()
 
   /**
     * Expects a top level JsonObject representing a JSON document
