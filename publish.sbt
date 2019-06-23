@@ -14,7 +14,7 @@ enablePlugins(JavaAppPackaging)
 
  */
 
-licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+licenses += ("Apache-2.0" , url("http://www.apache.org/licenses/LICENSE-2.0"))
 homepage := Some(url("https://github.com/odenzo/ripple-binary-codec"))
 credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
 credentials ++= (
@@ -34,9 +34,10 @@ credentials ++= (
 
 
 //publishArtifact in Test := true // to add the tests JAR
-publishArtifact in Test := false
-publishMavenStyle := false
+publishArtifact in Test := true
+publishMavenStyle := true
 bintrayOrganization := Some("odenzoorg")
 bintrayRepository := "odenzooss"
 bintrayPackage := "ripple-binary-codec"
 bintrayReleaseOnPublish in ThisBuild := false
+bintrayPackageLabels := Seq("Ripple", "xrpl", "scala")

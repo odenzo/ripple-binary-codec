@@ -44,10 +44,8 @@ val devSettings = Seq(
 // TODO: Switch to Scribe for logging.
 val libs = {
   Seq(
-    "org.scalatest"              %% "scalatest"      % "3.0.7" % Test,
+    "org.scalatest"              %% "scalatest"      % "3.0.8" % Test,
     "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
- //   "com.typesafe.scala-logging" %% "scala-logging"  % "3.9.2", // Java Only
- //   "ch.qos.logback"             % "logback-classic" % "1.2.3" // Java Only
   )
 }
 
@@ -78,7 +76,6 @@ val lib_spire = {
   )
 }
 
-
 val lib_scribe = {
-   Seq( "com.outr" %% "scribe" % "2.7.3" )
+   Seq( "com.outr" %% "scribe" % "2.7.7" )
 }

@@ -1,6 +1,7 @@
 
 # ripple-binary-codec
 
+[ ![Download](https://api.bintray.com/packages/odenzoorg/odenzooss/ripple-binary-codec/images/download.svg) ](https://bintray.com/odenzoorg/odenzooss/ripple-binary-codec/_latestVersion)
 [![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
 [![codecov](https://codecov.io/gh/odenzo/ripple-binary-codec/branch/master/graph/badge.svg)](https://codecov.io/gh/odenzo/ripple-binary-codec)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0ec6db4a57fc4de98a9f52f80a39dc1a)](https://www.codacy.com/app/odenzo/ripple-binary-codec?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=odenzo/ripple-binary-codec&amp;utm_campaign=Badge_Grade)
@@ -23,6 +24,18 @@ Main use case is just signing transaction, but should handle more although not t
 
 External API is in RippleCodecAPI and returns encoded values now, and byte array form.
 
+
+## Setup
+
+Binaries are hosted at BinTray, using SBT, update the version based on download badge above.
+
+```
+     resolvers +=   Resolver.bintrayRepo("odenzooss", "maven")
+     resolvers +=   Resolver.jcenterRepo   // Will be moving there soon
+        
+     libraryDependencies +=  "com.odenzo" %% "ripple-binary-codec" % "0.2.1" 
+        
+```
 
 ## Status
 
