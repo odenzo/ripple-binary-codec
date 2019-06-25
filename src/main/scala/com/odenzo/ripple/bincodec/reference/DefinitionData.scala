@@ -139,8 +139,8 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
 
   /** Each field has a marker, for debugging I find the fieldinfo from that
     * Meh, easier to do this via bytes*/
-  def findByFieldMarker(ub: Seq[UByte]): Option[(String, FieldInfo)] = {
-    val ms = fieldsInfo.filter((v: (String, FieldInfo)) ⇒ v._2.fieldID.ubytes == ub)
+  def findByFieldMarker(ub: List[UByte]): Option[(String, FieldInfo)] = {
+    val ms = fieldsInfo.filter{ case (v:String, fi:FieldInfo) ⇒ fi.fieldID.ubytes === ub }
     ms.foreach(ms => scribe.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
     ms.headOption
   }

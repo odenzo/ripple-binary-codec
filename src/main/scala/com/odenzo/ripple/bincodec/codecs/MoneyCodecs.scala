@@ -50,11 +50,11 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
     val TOP_BIT_MASK: UByte = UByte(128)
-    if ((v.head & TOP_BIT_MASK) === UByte(0)) { //XRP
-      decodeToUBytes(8, v, info)
-    } else { // Fiat
-      decodeToUBytes(48, v, info)
+    v match {
+      case h :: t if (h & TOP_BIT_MASK) === UByte(0) ⇒ decodeToUBytes(8, v, info)  // XRP
+      case other                                     ⇒ decodeToUBytes(48, other, info)    // Fiat
     }
+
   }
 
   /** In Progress, UInt64 encoding **/

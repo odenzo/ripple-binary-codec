@@ -2,14 +2,13 @@ package com.odenzo.ripple.bincodec
 
 import io.circe.Decoder.Result
 import io.circe.Json
-import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
 import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo, RippleDataType}
+import com.odenzo.ripple.bincodec.reference._
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.utils._
 
 class TypeSerializersTest extends OTestSpec with CodecUtils {
 

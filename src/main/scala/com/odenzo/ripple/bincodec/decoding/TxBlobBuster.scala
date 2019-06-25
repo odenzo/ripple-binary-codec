@@ -13,7 +13,11 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{Decoded, DecodedField}
 
 /** Development helper, not completed */
-trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
+trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
+
+  protected val ZERO             = UByte.MinValue
+  protected val TOP_FOUR_MASK    = UByte(0xF0)
+  protected val BOTTOM_FOUR_MASK = UByte(0x0F)
 
   def bust(txBlob: String): Either[RippleCodecError, List[Decoded]] = {
     val ubytes: Either[RippleCodecError, List[UByte]] = hex2ubytes(txBlob)
@@ -52,34 +56,33 @@ trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
       val vled = VLEncoding.decodeVL(blob).flatMap { case (len, data) ⇒ decodeToUBytes(len, data, info) }
       vled
     } else {
-      info.datatype.name match {
-
-        case "AccountID" ⇒ decodeToUBytes(20, blob, info)
-        case "UInt8"     ⇒ decodeToUBytes(1, blob, info)
-        case "UInt16"    ⇒ decodeToUBytes(2, blob, info)
-        case "UInt32"    ⇒ decodeToUBytes(4, blob, info)
-        case "UInt64"    ⇒ decodeToUBytes(8, blob, info)
-        case "Hash160"   ⇒ decodeToUBytes(20, blob, info)
-        case "Hash256"   ⇒ decodeToUBytes(32, blob, info)
-        // Below here are container fields, in the case of amount sometimes
-        case "Amount"   ⇒ MoneyCodecs.decodeAmount(blob, info)
-        case "STArray"  ⇒ STArrayCodec.decodeSTArray(blob, info)
-        case "STObject" ⇒ STObjectCodec.decodeSTObject(blob, info)
-        case "PathSet"  ⇒ PathCodecs.decodePathSet(blob, info)
-//        case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
-
-        case other ⇒
-          scribe.error(s"Not Decoding Field Type $other")
-          RippleCodecError(s"Not Decoding Field Type $other").asLeft
-
-      }
+      decodePlainField(info, blob)
     }
 
   }
 
+  def decodePlainField(info: FieldInfo, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
+    info.datatype.name match {
+      case "AccountID" ⇒ decodeToUBytes(20, blob, info)
+      case "UInt8"     ⇒ decodeToUBytes(1, blob, info)
+      case "UInt16"    ⇒ decodeToUBytes(2, blob, info)
+      case "UInt32"    ⇒ decodeToUBytes(4, blob, info)
+      case "UInt64"    ⇒ decodeToUBytes(8, blob, info)
+      case "Hash160"   ⇒ decodeToUBytes(20, blob, info)
+      case "Hash256"   ⇒ decodeToUBytes(32, blob, info)
+      // Below here are container fields, in the case of amount sometimes
+      case "Amount"   ⇒ MoneyCodecs.decodeAmount(blob, info)
+      case "STArray"  ⇒ STArrayCodec.decodeSTArray(blob, info)
+      case "STObject" ⇒ STObjectCodec.decodeSTObject(blob, info)
+      case "PathSet"  ⇒ PathCodecs.decodePathSet(blob, info)
+      //        case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
 
+      case other ⇒
+        scribe.error(s"Not Decoding Field Type $other")
+        RippleCodecError(s"Not Decoding Field Type $other").asLeft
 
-
+    }
+  }
 
   /**
     *   Check the next 1 to 3 bytes for a FieldID and lookup the field info
@@ -90,21 +93,16 @@ trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
     */
   def decodeNextFieldId(blob: List[UByte]): Either[OErrorRipple, (FieldInfo, List[UByte])] = {
     scribe.info(s"Decoding Field ID from ${blob.take(6)}...")
-    val ZERO             = UByte.MinValue
-    val TOP_FOUR_MASK    = UByte(0xF0)
-    val BOTTOM_FOUR_MASK = UByte(0x0F)
 
-    val first = blob.head
+    val first  = blob.head
     val top    = first & TOP_FOUR_MASK
     val bottom = first & BOTTOM_FOUR_MASK
     scribe.info(s"Top $top Bottom $bottom")
 
-
-
     val (fCode, tCode, blobRemaining) = (top === ZERO, bottom === ZERO) match {
       case (false, false) ⇒ // One Byte
-        val typecode = top >> 4
-        val fieldcode  = bottom 
+        val typecode  = top >> 4
+        val fieldcode = bottom
         (fieldcode, typecode, blob.drop(1))
 
       case (false, true) ⇒ // 2 byte typecode top
@@ -121,12 +119,13 @@ trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
         val fieldcode = blob(2)
         (fieldcode, typecode, blob.drop(3))
     }
-          // Actually, we coudl just find by fieldCode!
-    scribe.info(s"Potential Fields\n:" + Definitions.fieldData.getFieldsByNth(fCode.toLong).mkString("\n"))
+
+    
     val fieldMarker: List[UByte] = FieldInfo.encodeFieldID(fCode.toInt, tCode.toInt)
+    
     Definitions.fieldData.findByFieldMarker(fieldMarker) match {
-      case None     ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft
-      case Some(fd) ⇒ (fd._2, blobRemaining).asRight
+      case None                     ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft
+      case Some((_, fi: FieldInfo)) ⇒ (fi, blobRemaining).asRight
     }
   }
 

@@ -63,7 +63,7 @@ trait AccountIdCodecs  {
       val ans: List[UByte] = padded.take(160 / 8)
       ans
     }
-    asBytes.map(v ⇒ RawValue(v.toSeq))
+    asBytes.map(v ⇒ RawValue(v))
   }
 
 }

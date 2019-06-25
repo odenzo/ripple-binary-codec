@@ -26,7 +26,7 @@ sealed trait Encoded extends CodecValue  with Logging {
 }
 
 
-case class RawValue(ubytes: Seq[UByte]) extends Encoded with Decoded {
+case class RawValue(ubytes: List[UByte]) extends Encoded with Decoded {
   lazy val encoded: List[RawValue] = List(this)
 }
 

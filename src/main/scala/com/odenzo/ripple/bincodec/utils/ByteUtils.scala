@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec.utils
 import java.util.Locale
 import scala.annotation.tailrec
 
-
 import scribe.{Level, Logging}
 import spire.implicits._
 import spire.math.{UByte, UInt, ULong}
@@ -20,7 +19,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRippl
 private[bincodec] trait ByteUtils extends Logging {
 
   // Set the logging threshold for this class only
-  logger.withHandler(minimumLevel=Some(Level.Warn))
+  logger.withHandler(minimumLevel = Some(Level.Warn))
 
   val ZEROBYTE: Byte = 0.toByte
 
@@ -39,7 +38,7 @@ private[bincodec] trait ByteUtils extends Logging {
 
   /** WARNING: This doesn't check range problems */
   def bigInt2ulong(bi: BigInt): Either[OErrorRipple, ULong] = {
-     if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
+    if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
       RippleCodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
     else ULong.fromBigInt(bi).asRight
   }
@@ -68,7 +67,7 @@ private[bincodec] trait ByteUtils extends Logging {
   def unsafeHex2ubytes(v: String): List[UByte] = {
     hex2ubytes(v) match {
       case Right(list) ⇒ list
-      case Left(err)   ⇒ throw new IllegalArgumentException(s"Bad Hex $v ",err)
+      case Left(err)   ⇒ throw new IllegalArgumentException(s"Bad Hex $v ", err)
     }
   }
 
@@ -110,15 +109,16 @@ private[bincodec] trait ByteUtils extends Logging {
       case 0 ⇒ hex
     }
   }
-  
+
   @tailrec
   final def trimLeftZeroBytes(a: List[Byte]): List[Byte] = {
-    a.toList match {
+
+    a match {
       case h :: t if h != ZEROBYTE ⇒ a
       case Nil                     ⇒ a
       case h :: t if h == ZEROBYTE ⇒ trimLeftZeroBytes(t)
-    }
-    
+    }                     
+
   }
 
   /** List of four unsigned bytes representing unsigned long get converted */
@@ -146,17 +146,20 @@ private[bincodec] trait ByteUtils extends Logging {
   /** If there are 8 bytes then return as 64 bit  ULong otherwise error. */
   def longBytesToULong(bytes: List[UByte]): Either[OErrorRipple, ULong] = {
 
-    if (8 == bytes.length ) {
+    bytes.length match {
+      case 8 ⇒
         val shifted: List[ULong] = bytes.mapWithIndex {
-        case (b, indx) ⇒
-          ULong(b.toLong) << ((7 - indx) * 8)
-      }
+          case (b, indx) ⇒
+            ULong(b.toLong) << ((7 - indx) * 8)
+        }
 
-      val ulong: ULong = shifted.foldLeft(ULong(0))(_ | _)
-      ulong.asRight
-    } else {
-      RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
+        val ulong: ULong = shifted.foldLeft(ULong(0))(_ | _)
+        ulong.asRight
+
+      case x if x < 8 ⇒ RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}, pleaase pad").asLeft
+      case _          ⇒ RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
     }
+
   }
 
   def byteToBitString(a: Int): String = {

@@ -32,19 +32,18 @@ object Definitions extends JsonUtils {
     */
   def loadDefaultData(): Either[RippleCodecError, DefinitionData] = {
     val resourceName = "/ripplereferencedata/definitions.json"
-    scribe.info(s"Loading Default Data from ${resourceName}")
+    scribe.info(s"Loading Default Data from $resourceName")
 
-    val rippleDefsUrl: InputStream = this.getClass.getResourceAsStream(resourceName)
-    if (rippleDefsUrl == null) {RippleCodecError(s"Couldn't Find Definitions Resource ${resourceName}").asLeft}
-    else {
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case None ⇒ RippleCodecError(s"Couldn't Find Definitions Resource $resourceName").asLeft
+      case Some(s) ⇒
+        val txt = Source.fromInputStream(s, "UTF-8").getLines().mkString("\n")
+        JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitionFileJson)
+    }
 
-    val localSrc: BufferedSource   = Source.fromInputStream(rippleDefsUrl, "UTF-8")
 
     // In Case I want to fetch directly next time.
-    val rippleSiteUrl: String = "https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json"
-    val txt: String           = localSrc.getLines().mkString("\n")
-    JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitionFileJson)
-    }
+   // val rippleSiteUrl: String = "https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json"
   }
 
 
