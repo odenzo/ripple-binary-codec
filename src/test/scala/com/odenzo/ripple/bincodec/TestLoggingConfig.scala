@@ -17,7 +17,7 @@ object TestLoggingConfig {
   lazy val setTestLogging: Unit = {
     if (!bincodec.inCI) {
       scribe.warn(s"****** Calling setAllLevel with ${Level.Debug}")
-      bincodec.setAllToLevel(Level.Debug)
+      bincodec.setAllToLevel(Level.Warn)
 //      scribe.debug(s"DEBUG is on")
 //      scribe.info("INFO is on")
 //      scribe.warn("WARN is on")

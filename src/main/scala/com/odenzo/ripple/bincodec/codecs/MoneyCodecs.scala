@@ -28,7 +28,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   private val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
 
   /**  0x8000000000000000000000000000000000000000 to represent special case encoding of 0 fiat amount xrp */
-  private val zeroFiatAmount: List[UByte] = UByte(0x80) :: List.fill(19)(UByte(0))
+  // private val zeroFiatAmount: List[UByte] = UByte(0x80) :: List.fill(19)(UByte(0))
 
   /** Valid currency characters */
   private val rippleAscii: String =
@@ -196,22 +196,24 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     val maxVal: BigDecimal = BigDecimal("9999999999999999e80")
     val maxPrecision: Int  = 15
 
-    if (amount < minVal) {
-      scribe.info(s"$amount less than min - underflow to ZERO")
-      BigDecimal(0).asRight
-    } else if (amount > maxVal) {
-      RippleCodecError(s"Overflow FiatAmount $amount < $maxVal").asLeft
+    amount match {
+      case amt if amt < minVal ⇒
+        scribe.info(s"$amt less than min - underflow to ZERO")
+        BigDecimal(0).asRight
 
-    } else if (amount.precision > maxPrecision) {
-      // Too much precision, some will be ignored. But if close to zero make zero?
-      // FIXME: Max Precision check hacked ... add cases to round down to ZERO on underflow
-      //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
+      case amt if amt > maxVal ⇒
+        RippleCodecError(s"Overflow FiatAmount $amt < $maxVal").asLeft
 
-      // Well, what to do here.
-      scribe.debug(s"Too Much Precision $amount was ${amount.precision} w/ Scale ${amount.scale}")
-      amount.asRight
-    } else {
-      amount.asRight
+      case amt if amt.precision > maxPrecision ⇒
+        // Too much precision, some will be ignored. But if close to zero make zero?
+        // FIXME: Max Precision check hacked ... add cases to round down to ZERO on underflow
+        //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
+
+        // Well, what to do here.
+        scribe.debug(s"Too Much Precision $amt was ${amt.precision} w/ Scale ${amt.scale}")
+        amt.asRight
+
+      case amountInBounds ⇒ amountInBounds.asRight
     }
 
   }
@@ -248,7 +250,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
      */
     validateFiatAmount(bd).flatMap { amt: BigDecimal ⇒
-      if (amt == 0) { // TODO: Review thisand add test cases
+      if (amt === 0) { // TODO: Review thisand add test cases
         // 0x8000000000000000000000000000000000000000 say doc as 64 bit, which makes no sense
         val zero = ULong(1) << 63
         encodeULong(zero, "UInt64") // This is 8 bytes.

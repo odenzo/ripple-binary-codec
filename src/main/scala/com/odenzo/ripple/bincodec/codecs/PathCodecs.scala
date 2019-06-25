@@ -102,9 +102,11 @@ trait PathCodecs  extends JsonUtils {
     // Array of Arrays
 
     def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {
-      val (path, tail) = decodePath(v)
+      val (path, remaining) = decodePath(v)
+
+
       if (path.head.ubytes.head === UByte.MinValue) {
-        (path.reverse :: acc, tail)
+        (path.reverse :: acc, remaining)
       } else {
         loop(v, path.reverse :: acc)
       }

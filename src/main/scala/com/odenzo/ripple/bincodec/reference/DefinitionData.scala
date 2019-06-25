@@ -44,7 +44,7 @@ case class FieldInfo(name: String,
   */
 case class FieldData(fieldName: String, v: Json, fi: FieldInfo)
 
-object FieldInfo  {
+object FieldInfo {
 
   /*
    * Encodes the field id marker by field code and type code.
@@ -57,7 +57,7 @@ object FieldInfo  {
 
     val fcBig = fieldCode >= UByte(16)
     val tcBig = typeCode >= UByte(16)
-    
+
     val packed: List[UByte] = (fcBig, tcBig) match {
       case (false, false) ⇒ ((typeCode << 4) | fieldCode) :: Nil
       case (true, false)  ⇒ (typeCode << 4) :: fieldCode :: Nil
@@ -92,8 +92,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
                           types: Map[String, Long],
                           ledgerTypes: Map[String, Long],
                           txnTypes: Map[String, Long],
-                          txnResultTypes: Map[String, Long])
-     {
+                          txnResultTypes: Map[String, Long]) {
 
   private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OErrorRipple, V] = {
     Either.fromOption(map.get(key), RippleCodecError(s" $key not found in map"))
@@ -114,7 +113,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldInfo],
   }
 
   def getFieldsByNth(nth: Long): Iterable[FieldInfo] = {
-    fieldsInfo.filter(_._2.nth == nth).values
+    fieldsInfo.filter { case (_: String, fi: FieldInfo) ⇒ fi.nth === nth }.values
   }
 
   def getFieldData(fieldName: String, fieldValue: Json): Either[OErrorRipple, FieldData] = {
@@ -159,10 +158,13 @@ object DefinitionData {
       s" Serialized/Signing ${fi.isSerialized}/${fi.isSigningField} "
   }
   implicit val show: Show[DefinitionData] = Show[DefinitionData] { dd ⇒
-    val sortedFields: List[(String, FieldInfo)] =
-      dd.fieldsInfo.toList.sortBy(e ⇒ (e._2.fieldID.toHex.length, e._2.fieldID.toHex))
-
-    sortedFields.map((v: (String, FieldInfo)) ⇒ v._2.show).mkString("\n")
+    val sortedFields: String =
+      dd.fieldsInfo.values.toList
+        .sortBy(e ⇒ (e.fieldID.toHex.length, e.fieldID.toHex))
+        .map(info ⇒ info.show)
+        .mkString("\n")
+    
+    sortedFields
 
   }
 }

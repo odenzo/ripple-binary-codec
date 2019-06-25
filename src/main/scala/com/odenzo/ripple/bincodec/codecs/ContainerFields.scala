@@ -1,7 +1,7 @@
 package com.odenzo.ripple.bincodec.codecs
 
 import cats._
-import cats.data.{Nested, _}
+import cats.data._
 import cats.implicits._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -12,9 +12,9 @@ import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
-import com.odenzo.ripple.bincodec.{Decoded, DecodedField, DecodedNestedField, Encoded, EncodedDataType, EncodedField, EncodedNestedVals}
+import com.odenzo.ripple.bincodec._
 
-trait STObjectCodec  extends CodecUtils with JsonUtils {
+trait STObjectCodec extends CodecUtils with JsonUtils {
 
   /**
     * Top level object has no matching FieldInfo :-/
@@ -51,19 +51,18 @@ trait STObjectCodec  extends CodecUtils with JsonUtils {
     // info is for the top level array
     @scala.annotation.tailrec
     def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
-      if (ub.head === endOfSTObjectMarker) {
-        (acc.reverse, ub.drop(1)).asRight
-      } else {
-        val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
-        scribe.debug(s"STObject Next: $next")
-        next match {
-          case Left(err)            ⇒ err.asLeft
-          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
-        }
+      ub match {
+        case h :: t if h === endOfSTObjectMarker ⇒ (acc.reverse, ub.drop(1)).asRight
+        case Nil                                 ⇒ RippleCodecError("Badly Formed STObject").asLeft
+        case other ⇒ // The next bytes have another field
+          TxBlobBuster.decodeNextField(ub) match {
+            case Left(err)            ⇒ err.asLeft
+            case Right((field, tail)) ⇒ subfields(tail, field :: acc)
+          }
       }
     }
 
-    subfields(v, List.empty[Decoded]).fmap{
+    subfields(v, List.empty[Decoded]).fmap {
       case (fields, rest) ⇒
         (DecodedNestedField(info, fields), rest)
     }
@@ -94,7 +93,7 @@ trait STObjectCodec  extends CodecUtils with JsonUtils {
 
 }
 
-trait STArrayCodec  extends CodecUtils with JsonUtils {
+trait STArrayCodec extends CodecUtils with JsonUtils {
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
     scribe.debug(s"STArray:\n${data.v.spaces2}")
 
@@ -140,7 +139,7 @@ trait STArrayCodec  extends CodecUtils with JsonUtils {
       }
     }
 
-    subfields(v, List.empty[DecodedField]).map{
+    subfields(v, List.empty[DecodedField]).map {
       case (fields, rest) ⇒
         (DecodedNestedField(info, fields), rest)
     }
@@ -173,9 +172,7 @@ trait Vector256Codec extends CodecUtils with JsonUtils {
   }
 }
 
-
-
-object STArrayCodec extends STArrayCodec
-object STObjectCodec extends STObjectCodec
-object Vector256Codec extends Vector256Codec
+object STArrayCodec    extends STArrayCodec
+object STObjectCodec   extends STObjectCodec
+object Vector256Codec  extends Vector256Codec
 object ContainerFields extends STArrayCodec with STObjectCodec with Vector256Codec

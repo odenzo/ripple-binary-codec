@@ -35,7 +35,7 @@ trait CodecUtils   {
       .toList
       .reverse
       .asRight
-    bytes.foreach(bl ⇒ assert(bl.length == fieldLength))
+    bytes.foreach(bl ⇒ assert(bl.length === fieldLength))
     bytes.map(RawValue)
   }
 

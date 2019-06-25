@@ -8,7 +8,7 @@ import spire.math.UByte
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 
-trait VLEncoding  {
+trait VLEncoding {
 
   def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
     encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))
@@ -45,27 +45,21 @@ trait VLEncoding  {
     vl.map(RawValue)
   }
 
+  /** Note that for generality, data may have more fields after the VL encoded one */
   def decodeVL(data: List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
     // If top two bits are zero its one byte
     // This just calculates the number of bytes in VL
     // FIXME: Isn't actaully returning the length yet, except < 192 lengths
-    val headInt: Int = data.head.toInt
+    // The length is data.length - 1 , 2 or 3 cheating.
+    // Better to do the full decode
+    val left: Either[OErrorRipple, (Int, List[UByte])] = data match {
+      case h :: t if h <= UByte(192) ⇒ (h.toInt, data.drop(1)).asRight
+      case h :: t if h <= UByte(240) ⇒ (0, data.drop(2)).asRight
+      case h :: t if h <= UByte(254) ⇒ (0.toInt, data.drop(3)).asRight
+      case other                     ⇒ RippleCodecError(s"Illegal VL Encoding").asLeft
+      }
 
-    val oneByte = Range(0,192).inclusive
-    val twoByte = Range(193,240).inclusive
-    val threeByte = Range(241,254).inclusive
-
-    
-    if (headInt <= 192) {
-      (headInt, data.drop(1)).asRight
-    } else if (Range(193, 240).inclusive.contains(headInt)) {
-      (0, data.drop(2)).asRight
-    } else if (Range(241, 254).inclusive.contains(headInt)) {
-      (0.toInt, data.drop(3)).asRight
-    } else {
-      RippleCodecError(s"Illegal VL Encoding").asLeft
-    }
-
+    left
   }
 }
 

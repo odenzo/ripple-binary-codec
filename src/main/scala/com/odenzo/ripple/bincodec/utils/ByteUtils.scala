@@ -3,12 +3,14 @@ package com.odenzo.ripple.bincodec.utils
 import java.util.Locale
 import scala.annotation.tailrec
 
-import cats._
-import cats.data._
-import cats.implicits._
+
 import scribe.{Level, Logging}
 import spire.implicits._
 import spire.math.{UByte, UInt, ULong}
+
+import cats._
+import cats.data._
+import cats.implicits._
 
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
@@ -102,8 +104,13 @@ private[bincodec] trait ByteUtils extends Logging {
     }
   }
 
-  def zeroEvenPadHex(hex: String): String = if (hex.length % 2 == 1) "0" + hex else hex
-
+  def zeroEvenPadHex(hex: String): String = {
+    hex.length % 2 match {
+      case 1 ⇒ "0" + hex
+      case 0 ⇒ hex
+    }
+  }
+  
   @tailrec
   final def trimLeftZeroBytes(a: List[Byte]): List[Byte] = {
     a.toList match {

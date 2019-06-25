@@ -3,6 +3,10 @@ package com.odenzo.ripple.bincodec.utils
 import java.math.BigInteger
 import scala.annotation.tailrec
 
+import cats._
+import cats.data._
+import cats.implicits._
+
 import spire.math.UByte
 
 /** Based on
@@ -39,7 +43,7 @@ private[bincodec] trait RippleBase58  {
       }
 
       encode1(big)
-      input.takeWhile(_ == 0).map(_ => builder.append(alphabet.charAt(0)))
+      input.takeWhile(_ === 0).map(_ => builder.append(alphabet.charAt(0)))
       builder.toString().reverse
     }
   }
@@ -50,8 +54,8 @@ private[bincodec] trait RippleBase58  {
     * @return the decoded data
     */
   def decode(input: String): Array[Byte] = {
-    val zeroes = input.takeWhile(_ == '1').map(_ => 0: Byte).toArray
-    val trim   = input.dropWhile(_ == '1').toList
+    val zeroes = input.takeWhile(_ === '1').map(_ => 0: Byte).toArray
+    val trim   = input.dropWhile(_ === '1').toList
     val decoded = trim
       .foldLeft(BigInteger.ZERO)(
         (a, b) =>
@@ -61,7 +65,7 @@ private[bincodec] trait RippleBase58  {
     if (trim.isEmpty) zeroes
     else
       zeroes ++ decoded.toByteArray
-        .dropWhile(_ == 0) // BigInteger.toByteArray may add a leading 0x00
+        .dropWhile(_ === 0) // BigInteger.toByteArray may add a leading 0x00
   }
 
   def base58CheckToBytes(b58check: String) = {

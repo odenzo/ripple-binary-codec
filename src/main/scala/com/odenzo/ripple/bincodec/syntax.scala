@@ -6,7 +6,7 @@ import cats.implicits._
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
-object syntax {
+package syntax {
 
   object compact {
 

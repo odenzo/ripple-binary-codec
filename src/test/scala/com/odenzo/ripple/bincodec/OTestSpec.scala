@@ -16,6 +16,8 @@ trait OTestSpec extends FunSuiteLike with Matchers with EitherValues with Option
 
   val touch  = TestLoggingConfig.setTestLogging
 
+
+
   def getOrLog[T](ee: ErrorOr[T], msg: String = "Error: "): T = {
     if (ee.isLeft) {
       RippleCodecError.dump(ee) match {

@@ -94,10 +94,13 @@ trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
     val TOP_FOUR_MASK    = UByte(0xF0)
     val BOTTOM_FOUR_MASK = UByte(0x0F)
 
-    val top    = blob.head & TOP_FOUR_MASK
-    val bottom = blob.head & BOTTOM_FOUR_MASK
+    val first = blob.head
+    val top    = first & TOP_FOUR_MASK
+    val bottom = first & BOTTOM_FOUR_MASK
     scribe.info(s"Top $top Bottom $bottom")
-    
+
+
+
     val (fCode, tCode, blobRemaining) = (top === ZERO, bottom === ZERO) match {
       case (false, false) ⇒ // One Byte
         val typecode = top >> 4
@@ -105,12 +108,12 @@ trait TxBlobBuster  extends JsonUtils with ByteUtils with CodecUtils {
         (fieldcode, typecode, blob.drop(1))
 
       case (false, true) ⇒ // 2 byte typecode top
-        val typecode  = blob.head >> 4
+        val typecode  = first >> 4
         val fieldcode = blob(1)
         (fieldcode, typecode, blob.drop(2))
 
       case (true, false) ⇒
-        val fieldcode = blob.head
+        val fieldcode = first
         val typecode  = blob(1)
         (fieldcode, typecode, blob.drop(2))
       case (true, true) ⇒ // 3 byte case
