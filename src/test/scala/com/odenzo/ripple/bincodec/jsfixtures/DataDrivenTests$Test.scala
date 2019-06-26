@@ -12,7 +12,7 @@ import io.circe.syntax._
 import org.scalatest.{Assertion, FunSuite}
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.codecs.{ContainerFields, MoneyCodecs}
+import com.odenzo.ripple.bincodec.codecs.{ContainerFields, FiatAmountCodec, MoneyCodecs}
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.reference.FieldInfo
 import com.odenzo.ripple.bincodec.syntax.debugging._
@@ -189,23 +189,20 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
       scribe.info("This is a negative test")
     } else {
       val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
-      val hex                           = res.toHex
+      val hex          = res.toHex
       b.expected_hex.map(hex shouldEqual _)
     }
   }
 
   def testFiat(b: BaseValueTest, v: FiatAmountTest): Assertion = {
     scribe.info(s"Testing Fiat $v")
-    val manual: Either[RippleCodecError, (ULong, Int)] = TypeSerializers
-                                                         .json2object(b.test_json)
-                                                         .flatMap(findField("value", _))
-                                                         .flatMap(TypeSerializers.json2string)
-                                                         .map(BigDecimal(_))
-                                                         .flatMap(MoneyCodecs.normalizeAmount2MantissaAndExp)
+    val manual: Either[RippleCodecError, RawValue] = JsonUtils
+                                                     .json2object(b.test_json)
+                                                     .flatMap(findField("value", _))
+                                                     .flatMap(json ⇒ FiatAmountCodec.encodeFiatValue(json))
 
     scribe.debug(s"Man / Exponent $manual")
-    val (mantissa: ULong, exp: Int) = manual.right.value
-
+    
     val res: Encoded = getOrLog(MoneyCodecs.encodeAmount(b.test_json))
 
     val hex = res.toHex

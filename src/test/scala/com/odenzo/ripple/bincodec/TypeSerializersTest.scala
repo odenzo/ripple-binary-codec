@@ -126,9 +126,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   }
 
-  test("Fiat Amount") {
-    MoneyCodecs.rippleEncodingOfFiatAmount(BigDecimal("0.00000000000001234500"))
-  }
+
 
   test("XRP") {
 
