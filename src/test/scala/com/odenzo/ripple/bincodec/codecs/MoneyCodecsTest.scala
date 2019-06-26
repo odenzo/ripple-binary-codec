@@ -20,17 +20,6 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
   import com.odenzo.ripple.bincodec.syntax.debugging._
 
-  override def beforeAll(): Unit = {
-    if (!com.odenzo.ripple.bincodec.inCI) {
-      com.odenzo.ripple.bincodec.setAllToLevel(Level.Debug)
-    }
-  }
-
-  override def afterAll(): Unit = {
-    if (!com.odenzo.ripple.bincodec.inCI) {
-      com.odenzo.ripple.bincodec.setAllToLevel(Level.Warn)
-    }
-  }
 
 
   test("Fixture") {
@@ -113,5 +102,35 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     amountHex shouldEqual amountExpected
   }
 
+  test("XRP"){
+
+    val min: ULong = ULong(0)
+    val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
+    scribe.info(s"Min - Max $min $max")
+
+    t(max)
+    t(max - ULong(1))
+    t(ULong(370000000))
+
+    def t(v: ULong): String = {
+      val jsonV: String = v.toString()
+      val json: Json = Json.fromString(jsonV)
+      scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
+      val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
+      val hex = res.toHex
+      scribe.debug(s"$v  => $hex")
+      hex
+    }
+
+  }
+
+
+  test("XRP Encode"){
+    val xrp: Json = Json.fromString("10000")
+    val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
+
+
+    scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
+  }
 
 }

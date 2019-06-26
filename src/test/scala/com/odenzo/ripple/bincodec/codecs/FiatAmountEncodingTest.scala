@@ -1,17 +1,17 @@
-package com.odenzo.ripple.bincodec.encoding
+package com.odenzo.ripple.bincodec.codecs
 
 import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.{Decoder, Json}
 import org.scalatest.{Assertion, FunSuite}
+import scribe.Level
 import spire.math._
 
-import com.odenzo.ripple.bincodec.codecs.{FiatAmountCodec, MoneyCodecs}
 import com.odenzo.ripple.bincodec.syntax.debugging._
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
+import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils, RawValue, TestLoggingConfig}
 
 /**
   * Trouble with Fiat encoding so a dedicated test suite.
@@ -31,8 +31,8 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     fixture.foreach(oneOff)
     def oneOff(amt: BigDecimal): Unit = {
-      val res = getOrLog(FiatAmountCodec.encodeFiatAmount(amt))
-      scribe.info(s"Res: $amt => ${res.toHex}")
+      val res = getOrLog(FiatAmountCodec.newEncodeFiatAmount(amt))
+      scribe.info(s"Res: $amt =>")
     }
   }
 
@@ -75,6 +75,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
   }
 
+  
   test("Dev Fiat Amount Value") {
     val fixture =
       """
@@ -89,21 +90,21 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     case class TData(bin: String, mant: String, exp: Int, value: String)
 
+    TestLoggingConfig.setAll(Level.Debug)
     val td: Either[RippleCodecError, List[TData]] =
       JsonUtils
         .parseAsJson(fixture)
         .flatMap(j ⇒ JsonUtils.decode(j, Decoder[List[TData]]))
-
+       
+    
     RippleCodecError.log(td, "Error Parsing Test Data: ")
     val testData: List[TData] = td.right.value
 
+    // Note that I return (0,0) for value 0.0 but encodes the same
     testData.foreach { fix: TData ⇒
-      val bd                  = BigDecimal(fix.value)
-
-      val fiatAmount = BigDecimal(fix.value)
-      val amtRes     = getOrLog(FiatAmountCodec.encodeFiatAmount(fiatAmount))
-      amtRes.toHex shouldEqual fix.bin
-
+      val fiatAmount  = BigDecimal(fix.value)
+      val bin: RawValue = getOrLog(FiatAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+      bin.toHex shouldEqual fix.bin
     }
   }
   def testOne(v: Json, expected: Json): Assertion = {

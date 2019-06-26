@@ -32,8 +32,9 @@ package object bincodec {
 
   /** Scala test should manuall control after this */
   lazy val defaultSetup: Unit = {
-    scribe.warn("defaultSetup for logging")
+
     if (inCI) { // This should catch case when as a library in someone elses CI
+      scribe.warn("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
       setAllToLevel(Warn)
     } else {
       setAllToLevel(Warn) // On Assumption we are in library mode, not testing, which will override.

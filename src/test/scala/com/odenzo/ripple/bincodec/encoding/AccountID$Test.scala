@@ -142,38 +142,5 @@ class AccountID$Test extends FunSuite with OTestSpec {
 
   }
 
-  test("Fiat Amount") {
-    FiatAmountCodec.encodeFiatAmount(BigDecimal("0.00000000000001234500"))
-  }
 
-  test("XRP") {
-
-    val min: ULong = ULong(0)
-    val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
-    scribe.info(s"Min - Max $min $max")
-
-    t(max)
-    t(max - ULong(1))
-    t(ULong(370000000))
-
-    def t(v: ULong): String = {
-      val jsonV: String = v.toString()
-      val json: Json    = Json.fromString(jsonV)
-      scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
-      val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
-      val hex                                = res.toHex
-      scribe.debug(s"$v  => $hex")
-      hex
-    }
-
-  }
-
-
-  test("XRP Encode") {
-    val xrp: Json                          = Json.fromString("10000")
-    val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
-
-
-    scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
-  }
 }

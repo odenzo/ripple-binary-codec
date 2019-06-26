@@ -133,7 +133,12 @@ private[bincodec] trait ByteUtils extends Logging {
     }
   }
 
-  def ulong2hex(v: ULong): String = v.toHexString()
+  /**
+  *
+    * @param v
+    * @return Hex padded with zeros out to full 8 bytes
+    */
+  def ulong2hex(v: ULong): String =  zeroPadLeft(v.toHexString(),16)
 
   /** Quicky to take 16 hex chars and turn into ULong. Hex prefixed with 0x if missing */
   def hex2ulong(hex: String): Either[RippleCodecError, ULong] = {

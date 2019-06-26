@@ -11,7 +11,7 @@ import spire.math.ULong
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{Decoded, OTestSpec}
+import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue, TestLoggingConfig}
 
 class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmountCodec {
 
@@ -21,15 +21,11 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
   import com.odenzo.ripple.bincodec.syntax.debugging._
 
   override def beforeAll(): Unit = {
-    if (!com.odenzo.ripple.bincodec.inCI) {
-      com.odenzo.ripple.bincodec.setAllToLevel(Level.Debug)
-    }
+   TestLoggingConfig.debugLevel()
   }
 
   override def afterAll(): Unit = {
-    if (!com.odenzo.ripple.bincodec.inCI) {
-      com.odenzo.ripple.bincodec.setAllToLevel(Level.Warn)
-    }
+    TestLoggingConfig.setAll(Level.Warn)
   }
 
   test("Fiat Amount Test Cases") {
@@ -51,14 +47,9 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
       "11002200"
     ).map(v ⇒ BigDecimal(v)).map(ensureSame)
 
-
     def ensureSame(amount: BigDecimal) = {
       scribe.info(s"\n\nEnsuring Fiat Amount $amount")
-      val mine: (ULong, Int) = oldPrenormalize(amount)
-      val myNorm  = getOrLog(myNormalize(mine._1,mine._2))
-      val norm: (ULong, Int) = getOrLog(calcNormalizedMantissaAndExp(amount))
-      val exposed: Decoded   = getOrLog(rippleEncodingOfFiatAmount(amount))
-      myNorm shouldEqual norm
+      val v2: (ULong, Int) = getOrLog(newEncodeFiatAmount(amount))
 
     }
 
@@ -69,7 +60,6 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
     BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
     ULong.MaxValue > maxMantissa shouldBe true
 
-    scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
     List(
       "123.123",
       "0000.00111234",
@@ -79,40 +69,80 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
 
   }
 
-  test("Error Cases") {
-    List(
-         
-          "123456789.123456789123", // Too much precision as underflow (rehect)
-          "123456789012345678900" // Too much precision that significantly effects amount (reject)
-          ).map(v ⇒ BigDecimal(v)).map(testOne)
+  def backToBigDecimal(mant: ULong, exp: Int): BigDecimal = {
+    exp match {
+      case ex if ex > 0 ⇒ BigDecimal(mant.toBigInt.bigInteger) * BigDecimal(10).pow(exp)
+      case ex if ex < 0 ⇒ BigDecimal(mant.toBigInt.bigInteger) / BigDecimal(10).pow(exp.abs)
+      case 0            ⇒ BigDecimal(mant.toBigInt.bigInteger)
+    }
   }
 
-  test("Boundary Cases") {
+  test("Overflow") {
+    TestLoggingConfig.debugLevel()
+    val src                                       = BigDecimal("999999999999999999999")
+    val v: Either[RippleCodecError, (ULong, Int)] = newEncodeFiatAmount(src) // This is going to drop precision
 
+    val (mant: ULong, exp: Int) = getOrLog(v)
+
+    val looped = backToBigDecimal(mant, exp)
+
+    scribe.debug(s"Source: $src  rounded to $looped")
+
+    looped < src shouldBe true
+  }
+
+  test("Error Cases") {
+
+    List(
+      maxVal + 100,
+      minVal - 100,
+    ).map { bd: BigDecimal ⇒
+      val v2: Either[RippleCodecError, (ULong, Int)] = newEncodeFiatAmount(bd)
+      scribe.debug(s"New $v2")
+      v2.isLeft shouldBe true
+    }
+  }
+
+  test("Zero Boundary Cases") {
+    TestLoggingConfig.setAll(Level.Debug)
+
+    List(
+      "0000.00000000",
+    ).map(v ⇒ BigDecimal(v)).map(testOne)
+
+  }
+
+  test("Min Boundary ") {
+    TestLoggingConfig.setAll(Level.Debug)
     BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
     ULong.MaxValue > maxMantissa shouldBe true
 
     scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
     List(
-          "0000.00000000",
-          minAbsAmount.toString(),
-          maxAbsAmount.toString(),
+      minAbsAmount.toString(),
+    ).map(v ⇒ BigDecimal(v)).map(testOne)
 
-          ).map(v ⇒ BigDecimal(v)).map(testOne)
+  }
+
+  test("Max") {
+    TestLoggingConfig.setAll(Level.Debug)
+    BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
+    ULong.MaxValue > maxMantissa shouldBe true
+
+    scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
+    List(
+      maxAbsAmount.toString(),
+    ).map(v ⇒ BigDecimal(v)).map { bd ⇒
+      val v2: (ULong, Int) = getOrLog(newEncodeFiatAmount(bd))
+
+    }
 
   }
 
   def testOne(bd: BigDecimal) {
-    val exp    = bd.scale
-    val asLong = bd * BigDecimal(10).pow(exp)
 
-    scribe.debug(s"BD: $bd with Scale: $exp ::  Scaled To $asLong  is valid long: ${asLong.isValidLong}")
-
-    val (cman, cexp) = oldPrenormalize(bd)
-    scribe.debug(s"Calculate Normalized: $cman * 10^ $cexp")
-    asLong.toLong
+    val v2: (ULong, Int) = getOrLog(newEncodeFiatAmount(bd))
 
   }
-
 
 }

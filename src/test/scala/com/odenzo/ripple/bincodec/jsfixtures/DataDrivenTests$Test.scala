@@ -10,6 +10,7 @@ import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import org.scalatest.{Assertion, FunSuite}
+import scribe.Level
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{ContainerFields, FiatAmountCodec, MoneyCodecs}
@@ -19,7 +20,7 @@ import com.odenzo.ripple.bincodec.syntax.debugging._
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, OTestSpec, OTestUtils, RawValue}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, OTestSpec, OTestUtils, RawValue, TestLoggingConfig}
 
 class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with FixtureUtils {
 
@@ -244,6 +245,8 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   }
 
   test("Value Tests") {
+   
+    
     val fixturesAttempt = super.loadJsonResource("/test/fixtures/data-driven-tests.json")
     fixturesAttempt.left.foreach(e ⇒ scribe.error("Error: " + e.show))
     val codec_fixtures: Json = fixturesAttempt.right.value
@@ -260,7 +263,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
       76, // EnabledAmendments TransactionType not in data definitions Cant see on dev portal
       //30, // Negative XRP test not really handled but passes Weird XRP ErrorXS
       28, //Negative test case: ignoring  Exponenr to large test
-      //10, // Very large fiat amount, x ^ 62 is there result
+      10, // Very large fiat amount, x ^ 62 is there result - this should fail in my mind
       2 // XRP JSON of -1 should be disallowed I think
     )
     val todo: List[(JsonObject, Int)] = indexed
@@ -271,7 +274,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
     // All should be BaseValuesTest + specific
     todo.map {
       case (obj, indx) ⇒
-        scribe.debug(s"\n\n *** DOING INDEX $indx *****\n\n")
+        scribe.info(s"\n\n *** DOING INDEX $indx *****\n\n")
         val json = obj.asJson
         scribe.debug("Decoding \n" + json.spaces2)
         val base: BaseValueTest = JsonUtils.decode(obj.asJson, Decoder[BaseValueTest]).right.value
