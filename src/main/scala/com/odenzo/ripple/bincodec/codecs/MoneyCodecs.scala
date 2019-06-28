@@ -79,7 +79,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     // If the amount is zero a special amount if returned... TODO: Check if correct
 
     for {
-      value    ← findField("value", v).flatMap(FiatAmountCodec.encodeFiatValue)
+      value    ← findField("value", v).flatMap(IssuedAmountCodec.encodeFiatValue)
       currency ← findField("currency", v).flatMap(encodeCurrency)
       issuer   ← findField("issuer", v).flatMap(AccountIdCodecs.encodeAccountNoVL)
     } yield EncodedNestedVals(List(value, currency, issuer))

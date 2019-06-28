@@ -5,7 +5,7 @@ import io.circe.Json
 import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, FiatAmountCodec, MoneyCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, IssuedAmountCodec, MoneyCodecs, VLEncoding}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}

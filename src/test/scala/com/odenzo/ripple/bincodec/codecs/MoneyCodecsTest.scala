@@ -88,7 +88,7 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     scribe.debug(s"$currency => $hex")
 
     val amount: Json      = Json.fromString("10")
-    val amountBytes       = getOrLog(FiatAmountCodec.encodeFiatValue(amount))
+    val amountBytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(amount))
     val amountHex: String = amountBytes.toHex
     scribe.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
 

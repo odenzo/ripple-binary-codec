@@ -31,7 +31,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     fixture.foreach(oneOff)
     def oneOff(amt: BigDecimal): Unit = {
-      val res = getOrLog(FiatAmountCodec.newEncodeFiatAmount(amt))
+      val res = getOrLog(IssuedAmountCodec.newEncodeFiatAmount(amt))
       scribe.info(s"Res: $amt =>")
     }
   }
@@ -60,7 +60,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
       scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
-      val res = getOrLog(FiatAmountCodec.encodeFiatValue(v.value))
+      val res = getOrLog(IssuedAmountCodec.encodeFiatValue(v.value))
       scribe.info(s"Res: ${res.show}")
       assert(res.ubytes.length == 8)
       scribe.info(s"Got Res: ${res.toHex}")
@@ -103,13 +103,13 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
     // Note that I return (0,0) for value 0.0 but encodes the same
     testData.foreach { fix: TData ⇒
       val fiatAmount  = BigDecimal(fix.value)
-      val bin: RawValue = getOrLog(FiatAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+      val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
       bin.toHex shouldEqual fix.bin
     }
   }
   def testOne(v: Json, expected: Json): Assertion = {
     val expectedHex = expected.asString.get
-    val bytes       = getOrLog(FiatAmountCodec.encodeFiatValue(v))
+    val bytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(v))
     bytes.toHex shouldEqual expectedHex
   }
 

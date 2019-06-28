@@ -13,7 +13,7 @@ import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue, TestLoggingConfig}
 
-class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmountCodec {
+class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with IssuedAmountCodec {
 
   // Ripple method working, but we can make more concise using Java Math
   // This tries to compare the two.
@@ -57,8 +57,7 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
 
   test("BigD Scaling") {
 
-    BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
-    ULong.MaxValue > maxMantissa shouldBe true
+    
 
     List(
       "123.123",
@@ -77,19 +76,6 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
     }
   }
 
-  test("Overflow") {
-    TestLoggingConfig.debugLevel()
-    val src                                       = BigDecimal("999999999999999999999")
-    val v: Either[RippleCodecError, (ULong, Int)] = newEncodeFiatAmount(src) // This is going to drop precision
-
-    val (mant: ULong, exp: Int) = getOrLog(v)
-
-    val looped = backToBigDecimal(mant, exp)
-
-    scribe.debug(s"Source: $src  rounded to $looped")
-
-    looped < src shouldBe true
-  }
 
   test("Error Cases") {
 
@@ -114,28 +100,13 @@ class FiatAmountCodecTest extends OTestSpec with BeforeAndAfterAll with FiatAmou
 
   test("Min Boundary ") {
     TestLoggingConfig.setAll(Level.Debug)
-    BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
+    BigInt(Long.MaxValue) > maxMantissa shouldBe true
     ULong.MaxValue > maxMantissa shouldBe true
 
     scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
     List(
       minAbsAmount.toString(),
     ).map(v ⇒ BigDecimal(v)).map(testOne)
-
-  }
-
-  test("Max") {
-    TestLoggingConfig.setAll(Level.Debug)
-    BigInt(Long.MaxValue) > maxMantissa.toBigInt shouldBe true
-    ULong.MaxValue > maxMantissa shouldBe true
-
-    scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
-    List(
-      maxAbsAmount.toString(),
-    ).map(v ⇒ BigDecimal(v)).map { bd ⇒
-      val v2: (ULong, Int) = getOrLog(newEncodeFiatAmount(bd))
-
-    }
 
   }
 

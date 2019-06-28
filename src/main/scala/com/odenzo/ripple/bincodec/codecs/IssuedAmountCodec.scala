@@ -11,35 +11,24 @@ import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
-trait FiatAmountCodec extends CodecUtils {
+trait IssuedAmountCodec extends CodecUtils {
 
-  protected val minVal: BigDecimal = BigDecimal("-9999999999999999E80")
-  protected val maxVal: BigDecimal = BigDecimal("9999999999999999e80")
+  protected val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
+  protected val maxVal: BigDecimal       = BigDecimal("9999999999999999e80")
+  protected val minAbsAmount: BigDecimal = BigDecimal("1000000000000000e-95")
 
-  protected val maxPrecision: Int = 15
-
-  /*
-  Minimum nonzero absolute value: 1000000000000000e-96
-  Maximum value: 9999999999999999e80
-  Minimum value: -9999999999999999e80
-  15 (16?) decimal digits of precision
-
-   */
-
-  /* The range for the mantissa when normalized */
-  protected val minMantissa: ULong = ULong("1000000000000000")
-  protected val maxMantissa: ULong = ULong("9999999999999999")
+  protected val maxPrecision: Int        = 15
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
-  protected val minExponent: Int = -96
-  protected val maxExponent: Int = 80
+  protected val minExponent: Int    = -96
+  protected val maxExponent: Int    = 80
+  protected val minMantissa: BigInt = BigDecimal("1e15")toBigInt() // For normalizing not input
+  protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt()-1 // For normalizing not input
 
-  /** Maximum absolute value which is also maxVal  */
-  protected val maxAbsAmount: BigDecimal = BigDecimal(maxMantissa * BigInt(10).pow(maxExponent))
+  // 64 bits!=  20 * 8  160 bits which  doesn't match 2*160 or 3*160
+  val ZERO_SPECIAL_CASE =  "0x8000000000000000000000000000000000000000"
 
   /** This is closest number to zero that is valid, ie smallest absolute value  */
-  protected val minAbsAmount: BigDecimal = BigDecimal(minMantissa / BigInt(10).pow(minExponent.abs))
-
   /**
     * Encode the amount field of a fiat value structure.
     * Fiat value can be positive or negative and very large or very
@@ -89,8 +78,12 @@ trait FiatAmountCodec extends CodecUtils {
   protected def newPreNormalize(bd: BigDecimal): Either[OErrorRipple, (BigInt, Int)] = {
     val absBd = bd.abs
     scribe.debug(s"Normalizing $bd with precision ${bd.precision}")
-    if (absBd > maxAbsAmount || absBd < minAbsAmount) {
-      RippleCodecError(s"$bd not in range $minAbsAmount ... " + s"$maxAbsAmount").asLeft
+    if (bd > maxVal || bd < minVal || bd < minAbsAmount) {
+      RippleCodecError(s"$bd not in range $minVal ...$maxVal  or smaller than $minAbsAmount").asLeft
+    } else if (absBd < minAbsAmount) {
+      RippleCodecError(s"$bd Absolute value smaller than $minAbsAmount").asLeft
+    } else if (bd.precision > 16) {
+      RippleCodecError(s"$bd Precision > 16 and probably would be rounded").asLeft
     } else {
       val exp     = absBd.scale
       val fExp    = 0 - exp
@@ -218,4 +211,4 @@ trait FiatAmountCodec extends CodecUtils {
 
 }
 
-object FiatAmountCodec extends FiatAmountCodec
+object IssuedAmountCodec extends IssuedAmountCodec

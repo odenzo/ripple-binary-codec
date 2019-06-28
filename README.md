@@ -24,6 +24,27 @@ Main use case is just signing transaction, but should handle more although not t
 
 External API is in RippleCodecAPI and returns encoded values now, and byte array form.
 
+## Differences from Ripple Signing
+
+### Issued Amounts (aka Fiat Amount, IOU Amount)
+  [[https://xrpl.org/currency-formats.html#issued-currency-math]] defines
+This is defined with 15-digits of precision and min and max ranges.
+Testing has shown that messages with more than 15 digits of precision are round/truncated.
+This is unlikely to occur in most cases, but I am not comfortable with it.
+All amounts with more than 15 digits of precision are rejected by the binary-encoder for now.
+If I figure out the precise behaviour of RippleD may change this.
+For now a hack with BigDecimal precision which treated 1234.00 as precision 6 (trailing zeros are significant digits)s 
+
+Examples:
+ - 9223372036854775807 is SignRq is returned as 9223372036854775e3 in response)
+ - 18014398509481989 =>   1801439850948198e1 
+
+Mantissa is 54 bit unsigned, everything after that seems to be truncated.
+
+Tidy up and correct error messages pending for Issued Amounts, see IssuedAmountCodec
+
+### 160-bit hex encoded Currencies not tested or supported
+On the two do list - low priority.
 
 ## Setup
 

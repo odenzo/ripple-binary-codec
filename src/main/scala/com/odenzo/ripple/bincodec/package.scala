@@ -34,12 +34,12 @@ package object bincodec {
   lazy val defaultSetup: Unit = {
 
     if (inCI) { // This should catch case when as a library in someone elses CI
-      scribe.warn("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
+      scribe.info("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
       setAllToLevel(Warn)
     } else {
       setAllToLevel(Warn) // On Assumption we are in library mode, not testing, which will override.
     }
-    scribe.error("Done with Default")
+    scribe.info("Done with Default")
   }
 
   // Well, as far as I can tell the flow is: Logger => Modifiers => Handlers, The handlers write with Formatters
@@ -51,7 +51,7 @@ package object bincodec {
     scribe.info(s"Setting Packages Level to $l")
     val pri = Priority.Normal // unnecessary since clearing existing modifiers, but handy for future.
     scribe.Logger.root.clearModifiers().withModifier(LoggingConfig.excludePackageSelction(packages, l,pri)).replace()
-    val root: Logger = scribe.Logger.root
+    
   }
 
 }
