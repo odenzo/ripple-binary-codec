@@ -1,17 +1,17 @@
-package com.odenzo.ripple.bincodec.encoding
+package com.odenzo.ripple.bincodec.codecs
 
 import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.{Decoder, Json}
 import org.scalatest.{Assertion, FunSuite}
+import scribe.Level
 import spire.math._
 
-import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
 import com.odenzo.ripple.bincodec.syntax.debugging._
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils}
+import com.odenzo.ripple.bincodec.{OTestSpec, OTestUtils, RawValue, TestLoggingConfig}
 
 /**
   * Trouble with Fiat encoding so a dedicated test suite.
@@ -31,8 +31,8 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     fixture.foreach(oneOff)
     def oneOff(amt: BigDecimal): Unit = {
-      val res = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(amt))
-      scribe.info(s"Res: $amt => ${res.toHex}")
+      val res = getOrLog(IssuedAmountCodec.newEncodeFiatAmount(amt))
+      scribe.info(s"Res: $amt =>")
     }
   }
 
@@ -60,7 +60,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
       scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
-      val res = getOrLog(MoneyCodecs.encodeFiatValue(v.value))
+      val res = getOrLog(IssuedAmountCodec.encodeFiatValue(v.value))
       scribe.info(s"Res: ${res.show}")
       assert(res.ubytes.length == 8)
       scribe.info(s"Got Res: ${res.toHex}")
@@ -75,6 +75,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
   }
 
+  
   test("Dev Fiat Amount Value") {
     val fixture =
       """
@@ -89,33 +90,26 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
     case class TData(bin: String, mant: String, exp: Int, value: String)
 
+    TestLoggingConfig.setAll(Level.Debug)
     val td: Either[RippleCodecError, List[TData]] =
       JsonUtils
         .parseAsJson(fixture)
         .flatMap(j ⇒ JsonUtils.decode(j, Decoder[List[TData]]))
-
+       
+    
     RippleCodecError.log(td, "Error Parsing Test Data: ")
     val testData: List[TData] = td.right.value
 
+    // Note that I return (0,0) for value 0.0 but encodes the same
     testData.foreach { fix: TData ⇒
-      val bd                  = BigDecimal(fix.value)
-      val step1: (ULong, Int) = MoneyCodecs.normalizeToIntegral(bd)
-      scribe.debug(s"Step 1 $step1")
-
-      val res = MoneyCodecs.normalizeAmount2MantissaAndExp(bd)
-      RippleCodecError.log(res)
-      val (mant, exp) = res.right.value
-      scribe.info(s"Fully Normalized: $mant -> $exp")
-
-      val fiatAmount = BigDecimal(fix.value)
-      val amtRes     = getOrLog(MoneyCodecs.rippleEncodingOfFiatAmount(fiatAmount))
-      amtRes.toHex shouldEqual fix.bin
-
+      val fiatAmount  = BigDecimal(fix.value)
+      val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+      bin.toHex shouldEqual fix.bin
     }
   }
   def testOne(v: Json, expected: Json): Assertion = {
     val expectedHex = expected.asString.get
-    val bytes       = getOrLog(MoneyCodecs.encodeFiatValue(v))
+    val bytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(v))
     bytes.toHex shouldEqual expectedHex
   }
 

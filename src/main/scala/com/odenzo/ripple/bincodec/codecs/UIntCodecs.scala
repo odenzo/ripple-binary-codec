@@ -28,7 +28,7 @@ trait UIntCodecs extends CodecUtils {
 
       val unsigned = Either.fromOption(number, RippleCodecError(s"JSON ${v.spaces2} was not a Unisgned Long Number"))
 
-      val ans: Either[OErrorRipple, RawValue] = unsigned.flatMap(v ⇒ encodeULong(v, dataType))
+      val ans: Either[RippleCodecError, RawValue] = unsigned.flatMap(v ⇒ encodeULong(v, dataType))
       ans
     }
   }

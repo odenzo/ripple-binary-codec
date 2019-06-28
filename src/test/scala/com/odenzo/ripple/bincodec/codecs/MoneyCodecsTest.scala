@@ -1,29 +1,26 @@
-package com.odenzo.ripple.bincodec.encoding
+package com.odenzo.ripple.bincodec.codecs
 
 import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
-import io.circe.syntax._
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, MoneyCodecs}
+import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import io.circe.syntax._
+import scribe.Level
 
-class CurrencyEncodersTest extends FunSuite with OTestSpec {
+class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
+
+  // Ripple method working, but we can make more concise using Java Math
+  // This tries to compare the two.
 
   import com.odenzo.ripple.bincodec.syntax.debugging._
 
-  test("Fiat Amount") {
-    val amt = BigDecimal("1.234")
-    val res = MoneyCodecs.rippleEncodingOfFiatAmount(amt)
-    RippleCodecError.dump(res).foreach { e ⇒
-      scribe.error("Error: " + e)
-    }
-  }
+
 
   test("Fixture") {
 
@@ -47,11 +44,12 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
 
   }
 
-  val justAmount = """{
-                     |  "currency" : "USD",
-                     |  "value" : "10",
-                     |  "issuer" : "rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui"
-                     |}""".stripMargin
+  val justAmount =
+    """{
+      |  "currency" : "USD",
+      |  "value" : "10",
+      |  "issuer" : "rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui"
+      |}""".stripMargin
 
   val nzAmount =
     """{
@@ -90,7 +88,7 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     scribe.debug(s"$currency => $hex")
 
     val amount: Json      = Json.fromString("10")
-    val amountBytes       = getOrLog(MoneyCodecs.encodeFiatValue(amount))
+    val amountBytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(amount))
     val amountHex: String = amountBytes.toHex
     scribe.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
 
@@ -104,11 +102,35 @@ class CurrencyEncodersTest extends FunSuite with OTestSpec {
     amountHex shouldEqual amountExpected
   }
 
-  test("Normalizing") {
+  test("XRP"){
 
-    val ans: Either[RippleCodecError, (ULong, Int)] = MoneyCodecs.properNormalize(ULong(1L), 2)
-    RippleCodecError.dump(ans).foreach(msg ⇒ scribe.error("Error: " + msg))
+    val min: ULong = ULong(0)
+    val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
+    scribe.info(s"Min - Max $min $max")
 
+    t(max)
+    t(max - ULong(1))
+    t(ULong(370000000))
+
+    def t(v: ULong): String = {
+      val jsonV: String = v.toString()
+      val json: Json = Json.fromString(jsonV)
+      scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
+      val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
+      val hex = res.toHex
+      scribe.debug(s"$v  => $hex")
+      hex
+    }
+
+  }
+
+
+  test("XRP Encode"){
+    val xrp: Json = Json.fromString("10000")
+    val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
+
+
+    scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 
 }

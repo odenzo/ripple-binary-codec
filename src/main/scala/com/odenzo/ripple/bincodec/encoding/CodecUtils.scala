@@ -12,33 +12,36 @@ import com.odenzo.ripple.bincodec.{DecodedField, RawValue}
 /**
   * Better dealing with definitions data ?
   */
-trait CodecUtils   {
+trait CodecUtils {
 
   val dd: DefinitionData = Definitions.fieldData
 
-
   /** TODO: Potentially overflow, check thus esp UInt64 */
-  def encodeULong(value: ULong, dataType: String): Either[Nothing, RawValue] = {
-    val fieldLength = dataType match {
-      case "UInt8"  ⇒ 1
-      case "UInt16" ⇒ 2
-      case "UInt32" ⇒ 4
-      case "UInt64" ⇒ 8
-      case other    ⇒ throw new IllegalArgumentException(s"$other was not a valid unsigned int type")
+  def encodeULong(value: ULong, dataType: String): Either[RippleCodecError, RawValue] = {
+     dataType match {
+      case "UInt8"  ⇒ encodeULong(value,1)
+      case "UInt16" ⇒ encodeULong(value, 2)
+      case "UInt32" ⇒ encodeULong(value, 4)
+      case "UInt64" ⇒ encodeULong(value, 8)
+      case other    ⇒ RippleCodecError(s"$other was not a valid unsigned int type").asLeft
     }
 
-    val bytes: Either[Nothing, List[UByte]] = (0 until fieldLength)
+  }
+
+
+  def encodeULong(value: ULong, numBytes: Int): Either[RippleCodecError, RawValue] = {
+    val bytes: Either[RippleCodecError, List[UByte]] = (0 until numBytes)
       .map{ i: Int ⇒
         val calcUnsigned: ULong = value >>> (i * 8)
         UByte(calcUnsigned.toByte)
       }
       .toList
       .reverse
-      .asRight
-    bytes.foreach(bl ⇒ assert(bl.length === fieldLength))
+      .asRight[RippleCodecError]
+
+    bytes.foreach(bl ⇒ assert(bl.length === numBytes))
     bytes.map(RawValue)
   }
-
 
   /** Decodes field bytes to hex with no padding */
   def decodeToUBytes(numBytes: Int,

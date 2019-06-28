@@ -14,10 +14,15 @@ object TestLoggingConfig {
   
   val x = setTestLogging
 
+  def debugLevel(): Unit = setAll(Level.Debug)
+
+  def setAll(l:Level): Unit = if (!bincodec.inCI) bincodec.setAllToLevel(l)
+
+
   lazy val setTestLogging: Unit = {
     if (!bincodec.inCI) {
       scribe.warn(s"****** Calling setAllLevel with ${Level.Debug}")
-      bincodec.setAllToLevel(Level.Warn)
+              setAll(Level.Warn)
 //      scribe.debug(s"DEBUG is on")
 //      scribe.info("INFO is on")
 //      scribe.warn("WARN is on")
@@ -36,6 +41,8 @@ object TestLoggingConfig {
 
       // Not added as a Modifier yet
       bincodec.LoggingConfig.excludeByClass(clz,Level.Debug)
+    }  else {
+      debugLevel()
     }
   }
 }
