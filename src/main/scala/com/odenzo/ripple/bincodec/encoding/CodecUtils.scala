@@ -5,7 +5,7 @@ import cats.data._
 import cats.implicits._
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldInfo}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.{DecodedField, RawValue}
 
@@ -46,7 +46,7 @@ trait CodecUtils {
   /** Decodes field bytes to hex with no padding */
   def decodeToUBytes(numBytes: Int,
                      v: List[UByte],
-                     info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
+                     info: FieldMetaData): Either[OErrorRipple, (DecodedField, List[UByte])] = {
     if (numBytes > v.length) RippleCodecError(s"$numBytes exceeded length ${v.length} decoding").asLeft
     else {
       val (taken: List[UByte], remaining) = v.splitAt(numBytes)

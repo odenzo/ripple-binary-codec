@@ -9,19 +9,19 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
+import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedNestedVals, RawValue}
+import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedPathSet, EncodedSTObject, RawValue}
 
 trait PathCodecs  extends JsonUtils {
 
   /** These is really a container. Inside is a list of  datasteps and delimeters **/
-  def encodePathSet(data: FieldData): Either[RippleCodecError, EncodedNestedVals] = {
+  def encodePathSet(data: FieldData): Either[RippleCodecError, EncodedPathSet] = {
 
     // Another array of arrays. List of PathSet, each PathSet has Paths, each Path has  PathSteps
 
-    val pathList: Either[RippleCodecError, List[Json]] = json2array(data.v)
+    val pathList: Either[RippleCodecError, List[Json]] = json2array(data.json)
 
     val another = DefinitionData.pathSetAnother
     val end = DefinitionData.pathSetEnd
@@ -39,7 +39,7 @@ trait PathCodecs  extends JsonUtils {
 
       val subFields: List[RawValue] = rest ::: endList
 
-      EncodedNestedVals(subFields)
+      EncodedPathSet(subFields)
 
     }
   }
@@ -98,7 +98,7 @@ trait PathCodecs  extends JsonUtils {
   }
 
 
-  def decodePathSet(v: List[UByte], info: FieldInfo): Either[Nothing, (DecodedNestedField, List[UByte])] = {
+  def decodePathSet(v: List[UByte], info: FieldMetaData): Either[Nothing, (DecodedNestedField, List[UByte])] = {
     // Array of Arrays
 
     def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {

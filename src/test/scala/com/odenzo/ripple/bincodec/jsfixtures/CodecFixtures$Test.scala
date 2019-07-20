@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.codecs.ContainerFields
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{EncodedNestedVals, OTestSpec, OTestUtils}
+import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, OTestUtils}
 
 class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
 
@@ -49,7 +49,7 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
   def oneFixture(json: JsonObject, expected: String): Unit = {
     scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")
     scribe.info(s"Expecting: $expected")
-    val fields: EncodedNestedVals =    getOrLog(ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true))
+    val fields: EncodedSTObject = getOrLog(ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true))
 
     scribe.info(s"Field Order: ${fields.show}")
 

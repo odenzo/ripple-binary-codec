@@ -10,7 +10,7 @@ import org.scalatest.FunSuite
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils}
-import com.odenzo.ripple.bincodec.{Decoded, EncodedNestedVals, OTestSpec}
+import com.odenzo.ripple.bincodec.{Decoded, EncodedSTObject, OTestSpec}
 
 /** This test is designed to process Transaction Request and Response files */
 class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with FixtureUtils {
@@ -43,7 +43,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
 
   }
 
-  def dumpNestedFieldsInfo(nested: EncodedNestedVals): Unit = {
+  def dumpNestedFieldsInfo(nested: EncodedSTObject): Unit = {
     import com.odenzo.ripple.bincodec.syntax.debugging._
     scribe.info(s"The tree: ${nested.show}")
   }

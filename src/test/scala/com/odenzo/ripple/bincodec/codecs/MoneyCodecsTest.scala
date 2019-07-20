@@ -20,8 +20,6 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
   import com.odenzo.ripple.bincodec.syntax.debugging._
 
-
-
   test("Fixture") {
 
     val f =
@@ -62,8 +60,8 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
   test("NZ Amount") {
     val iou    = getOrLog(JsonUtils.parseAsJsonObject(nzAmount))
-    val iouEnc = MoneyCodecs.encodeIOU(iou)
-    val amtEnc = MoneyCodecs.encodeAmount(iou.asJson)
+    val iouEnc = getOrLog(MoneyCodecs.encodeIOU(iou))
+    val amtEnc = getOrLog(MoneyCodecs.encodeAmount(iou.asJson))
     scribe.info(s"Encoded IOU: ${iouEnc.show}")
     iouEnc shouldEqual amtEnc
   }
@@ -102,7 +100,7 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     amountHex shouldEqual amountExpected
   }
 
-  test("XRP"){
+  test("XRP") {
 
     val min: ULong = ULong(0)
     val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
@@ -114,21 +112,19 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
     def t(v: ULong): String = {
       val jsonV: String = v.toString()
-      val json: Json = Json.fromString(jsonV)
+      val json: Json    = Json.fromString(jsonV)
       scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
       val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(json))
-      val hex = res.toHex
+      val hex           = res.toHex
       scribe.debug(s"$v  => $hex")
       hex
     }
 
   }
 
-
-  test("XRP Encode"){
-    val xrp: Json = Json.fromString("10000")
+  test("XRP Encode") {
+    val xrp: Json     = Json.fromString("10000")
     val res: RawValue = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
-
 
     scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }

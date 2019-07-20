@@ -3,19 +3,18 @@ package com.odenzo.ripple.bincodec
 import java.net.URL
 import scala.io.{BufferedSource, Source}
 
-import cats.implicits._
-import io.circe.Json
-import spire.math.{UByte, ULong}
-
-import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
 import cats._
 import cats.data._
 import cats.implicits._
+import io.circe.syntax._
+import io.circe.{Json, JsonObject}
+import spire.math.{UByte, ULong}
 
-trait OTestUtils  {
+import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 
+trait OTestUtils extends JsonUtils {
 
   /**
     * This will load from resources/test/fixtures/...
@@ -34,28 +33,26 @@ trait OTestUtils  {
   }
 
   def loadJsonResource(path: String): Either[RippleCodecError, Json] = {
-    BinCodecExeption.wrap(s"Getting Resource $path"){
-      val resource: URL = getClass.getResource(path)
+    BinCodecExeption.wrap(s"Getting Resource $path") {
+      val resource: URL          = getClass.getResource(path)
       val source: BufferedSource = Source.fromURL(resource)
-      val data: String = source.getLines().mkString("\n")
+      val data: String           = source.getLines().mkString("\n")
       JsonUtils.parseAsJson(data)
     }
   }
 
-
-
-
   /**
     *
-    * @param got  Value of field, without field marker
+    * @param got      Value of field, without field marker
     * @param expected Expected value of fields without field marker
+    *
     * @return
     */
   def analyzeAmount(got: String, expected: String) = {
 
     val isXRP: Either[RippleCodecError, Boolean] = ByteUtils
-                                                   .hex2ubyte("0" + got.drop(2).head)
-                                                   .map(b ⇒ (b | UByte(8)) === UByte(0))
+      .hex2ubyte("0" + got.drop(2).head)
+      .map(b ⇒ (b | UByte(8)) === UByte(0))
 
     isXRP.map {
       case true => scribe.info("XRP Value Deal With IT")
@@ -71,9 +68,9 @@ trait OTestUtils  {
   def breakFiat(hex: String): Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])] = {
 
     val all: Either[RippleCodecError, List[UByte]] = ByteUtils.hex2ubytes(hex)
-    val amount                             = all.map(_.take(8)) // Top 64 is amount in sign and flag
-    val currency                           = all.map(_.slice(8, 28)) // 160 bits
-    val issuer                             = all.map(_.slice(32, 52)) // another 160 bits
+    val amount                                     = all.map(_.take(8)) // Top 64 is amount in sign and flag
+    val currency                                   = all.map(_.slice(8, 28)) // 160 bits
+    val issuer                                     = all.map(_.slice(32, 52)) // another 160 bits
     (amount, currency, issuer).mapN((_, _, _))
   }
 
@@ -97,6 +94,14 @@ trait OTestUtils  {
     val mantissa = fields & mantissaMask
 
     List(top2, exp, mantissa)
+  }
+
+  def findResult(obj: JsonObject): Either[RippleCodecError, JsonObject] = findFieldDeepAsObject("result", obj.asJson)
+
+  def findTxJson(obj: JsonObject): Either[RippleCodecError, JsonObject] = findFieldDeepAsObject("tx_json", obj.asJson)
+
+  def findResultTxBlob(obj: JsonObject): Either[RippleCodecError, String] = {
+    findResult(obj).flatMap(findField("tx_blob", _)).flatMap(json2string)
   }
 
 }

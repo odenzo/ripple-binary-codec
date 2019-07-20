@@ -5,14 +5,14 @@ import scala.io.{BufferedSource, Source}
 
 import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.{EitherValues, FunSuiteLike, Matchers, OptionValues}
-import scribe.Level
+import scribe.{Level, Logging}
 
 import com.odenzo.ripple.bincodec
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
 
-trait OTestSpec extends FunSuiteLike with Matchers with EitherValues with OptionValues with OTestUtils {
+trait OTestSpec extends FunSuiteLike with Logging with  Matchers with EitherValues with OptionValues with OTestUtils {
 
   val touch  = TestLoggingConfig.setTestLogging
 

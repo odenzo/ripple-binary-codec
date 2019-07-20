@@ -3,16 +3,15 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
+import com.odenzo.ripple.bincodec._
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
 import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldInfo}
+import com.odenzo.ripple.bincodec.reference.{FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
-import com.odenzo.ripple.bincodec._
 
 trait STObjectCodec extends CodecUtils with JsonUtils {
 
@@ -26,7 +25,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     *
     * @return List of each of the named fields in the object with their encoded information
     */
-  def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
+  def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[RippleCodecError, EncodedSTObject] = {
     // Well, first lets try and get the fields and order them if needed.
     scribe.debug(s"Encoding STObject to Bytes: nested $isNested  Signing $isSigning")
 
@@ -34,18 +33,20 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
 
     val ans: Either[RippleCodecError, List[EncodedField]] = jobj
       .flatMap(prepareJsonObject(_, isSigning))
-      .flatMap(lf ⇒ lf.traverse(TypeSerializers.encodeFieldAndValue(_, isNested, isSigning)))
+      .flatMap(
+        lf ⇒
+          lf.traverse(
+            TypeSerializers
+              .encodeFieldAndValue(_, true, isSigning)
+        )
+      )
 
     // Only at objectEndMarker when? Not for top level
-    val optMarker = if (isNested) {
-      ans.map((v: List[EncodedField]) => v :+ DefinitionData.objectEndMarker)
-    } else ans
-
-    optMarker.fmap(EncodedNestedVals)
+    ans.fmap(EncodedSTObject(_, isNested))
 
   }
 
-  def decodeSTObject(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+  def decodeSTObject(v: List[UByte], info: FieldMetaData): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
     val endOfSTObjectMarker = UByte(0xE1)
 
     // info is for the top level array
@@ -63,8 +64,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     }
 
     subfields(v, List.empty[Decoded]).fmap {
-      case (fields, rest) ⇒
-        (DecodedNestedField(info, fields), rest)
+      case (fields, rest) ⇒ (DecodedNestedField(info, fields), rest)
     }
   }
 
@@ -72,6 +72,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     *
     * Canonically sorts a json object and removes non-serializable or non-signing fields
     * TODO: Should just do this as a deep traverse once at the begining and avoid passing isSigning around.
+    *
     * @param o
     * @param isSigning Remove all non-signing fields if true, else serialized
     *
@@ -93,37 +94,34 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
 
 }
 
+/**
+  * Kind of special case now until proven wrong. Array is always an array of objects.
+  * Each object has exactly one named field. The field can be any type, including object or array.
+  * Account is VLEncoded in here.
+  */
 trait STArrayCodec extends CodecUtils with JsonUtils {
-  def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
-    scribe.debug(s"STArray:\n${data.v.spaces2}")
+  def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedSTArray] = {
+    scribe.info(s"STArray:\n${data.json.spaces2}")
 
-    def handleOneVar(v: JsonObject, isSigning: Boolean): Either[RippleCodecError, EncodedField] = {
-      v.toList match {
-        case (fieldName: String, value: Json) :: Nil ⇒
-          dd.getFieldData(fieldName, value)
-            .flatMap(fd ⇒ TypeSerializers.encodeFieldAndValue(fd, isNestedObject = true, isSigning))
-
-        case other ⇒ RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
-      }
+    def handleOneArrayElement(v: Json): Either[RippleCodecError, EncodedSTObject] = {
+      STObjectCodec.encodeSTObject(v, isNested = false, isSigning = isSigning) // This bytes... need End of Object
+      // but not VLEncoded.
+      //      json2object(v).map(_.toList).flatMap {
+//        case (fieldName: String, value: Json) :: Nil ⇒
+//          dd.getFieldData(fieldName, value)
+//            .flatMap(fd ⇒ TypeSerializers.encodeFieldAndValue(fd, isNestedObject = false, isSigning))
+//            .map(encField ⇒ EncodedNestedVals(List(encField)))
+//        case _ ⇒ RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
+//      }
     }
 
-    // TODO FIXME: Decide the best structure for this, nesting down or flattened.
-    val arr    = json2array(data.v)
-    val nested = Nested(arr).map(json2object).value.flatMap(_.sequence)
-
-    val allAnwers: Either[RippleCodecError, List[EncodedField]] = nested.flatMap(_.traverse(handleOneVar(_, isSigning)))
-
-    val noMetaData: Either[RippleCodecError, List[List[Encoded]]] =
-      Nested(allAnwers).map(_.encoded).value
-
-    val foo: Either[RippleCodecError, List[List[Encoded]]] =
-      noMetaData.map((v: List[List[Encoded]]) => v :+ List(DefinitionData.arrayEndMarker))
-    val bar: Either[RippleCodecError, List[EncodedNestedVals]] = Nested(foo).map(EncodedNestedVals).value
-    bar.fmap((v: List[EncodedNestedVals]) ⇒ EncodedNestedVals(v))
-
+    // Sticking to one encoded field per array elem. Even though each field is actually nested in an object.
+    val objects = json2array(data.json).flatMap(lj ⇒ lj.traverse(j ⇒ handleOneArrayElement(j)))
+    val array   = objects.map(fields ⇒ EncodedSTArray(fields))
+    array
   }
 
-  def decodeSTArray(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+  def decodeSTArray(v: List[UByte], info: FieldMetaData): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
     val endOfFieldsMarker = UByte(0xF1)
 
     // info is for the top level array
@@ -155,24 +153,26 @@ trait Vector256Codec extends CodecUtils with JsonUtils {
     *
     * @return
     */
-  def encodeVector256(data: FieldData): Either[RippleCodecError, EncodedNestedVals] = {
-// Like Indexes, these all seems to be 64 hex bytes in quotes 256 bits
+  def encodeVector256(data: FieldData): Either[RippleCodecError, EncodedVector256] = {
+    // Like Indexes, these all seems to be 64 hex bytes in quotes 256 bits
 
     def encodeListOfHash(jsonList: List[Json]): Either[RippleCodecError, List[EncodedDataType]] =
       jsonList.traverse(HashHexCodecs.encodeHash256)
 
-    val list = for {
-      arr      ← json2array(data.v)
+    for {
+      arr      ← json2array(data.json)
       hashes   ← encodeListOfHash(arr)
       totalLen = hashes.map(_.value.rawBytes.length).sum
       vl       ← VLEncoding.encodeVL(totalLen)
+    } yield EncodedVector256(vl, hashes)
 
-    } yield vl +: hashes
-    list.map(EncodedNestedVals)
   }
 }
 
-object STArrayCodec    extends STArrayCodec
-object STObjectCodec   extends STObjectCodec
-object Vector256Codec  extends Vector256Codec
+object STArrayCodec extends STArrayCodec
+
+object STObjectCodec extends STObjectCodec
+
+object Vector256Codec extends Vector256Codec
+
 object ContainerFields extends STArrayCodec with STObjectCodec with Vector256Codec

@@ -4,11 +4,11 @@ import cats.data._
 import cats.implicits._
 import io.circe.Json
 
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, HashHexCodecs, MoneyCodecs, PathCodecs, UIntCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, HashHexCodecs, MiscCodecs, MoneyCodecs, PathCodecs, UIntCodecs, VLEncoding}
 import com.odenzo.ripple.bincodec.reference.FieldData
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, EncodedVL, RawValue}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedSTObject, EncodedVL, RawValue}
 
 /**
   * I am not building these based on pure JSON rather
@@ -16,7 +16,7 @@ import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, Enc
   */
 object TypeSerializers  extends JsonUtils with CodecUtils {
 
-  def encodeTopLevel(json: Json, isSigning: Boolean): Either[RippleCodecError, EncodedNestedVals] = {
+  def encodeTopLevel(json: Json, isSigning: Boolean): Either[RippleCodecError, EncodedSTObject] = {
 
     ContainerFields.encodeSTObject(json, isNested = false, isSigning = isSigning)
   }
@@ -68,14 +68,16 @@ object TypeSerializers  extends JsonUtils with CodecUtils {
                           isNestedObject: Boolean,
                           signingModeOn: Boolean): Either[RippleCodecError, EncodedField] = {
     val fieldName: String = fieldData.fieldName
-    val fieldValue: Json  = fieldData.v
+    val fieldValue: Json  = fieldData.json
 
     scribe.debug(s"Encoding FieldValue: $fieldData")
 
     val valueBytes: Either[RippleCodecError, Encoded] = fieldData.fi.fieldTypeName match {
-      case "UInt16" if fieldName === "LedgerEntryType" ⇒ encodeLedgerEntryType(fieldValue)
-      case "UInt16" if fieldName === "TransactionType" ⇒ encodeTransactionType(fieldValue)
-      case "AccountID" if isNestedObject               ⇒ AccountIdCodecs.encodeAccountNoVL(fieldValue)
+      case "UInt16" if fieldName === "LedgerEntryType" ⇒ MiscCodecs.encodeLedgerEntryType(fieldValue)
+      case "UInt16" if fieldName === "TransactionType" ⇒ MiscCodecs.encodeTransactionType(fieldValue)
+      // Inside IOU Amount account is not encoded as a VL. Not sure other cases.
+        // Sticking case now is Array of Signer's
+      case "AccountID" if isNestedObject               ⇒ AccountIdCodecs.encodeAccount(fieldValue)
       case "AccountID" if !isNestedObject              ⇒ AccountIdCodecs.encodeAccount(fieldValue)
 
       case "UInt8"     ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt8")
@@ -84,7 +86,7 @@ object TypeSerializers  extends JsonUtils with CodecUtils {
       case "UInt64"    ⇒ UIntCodecs.encodeUInt64(fieldValue)
       case "Hash160"   ⇒ HashHexCodecs.encodeHash160(fieldValue)
       case "Hash256"   ⇒ HashHexCodecs.encodeHash256(fieldValue)
-      case "Blob"      ⇒ encodeBlob(fieldValue)
+      case "Blob"      ⇒ MiscCodecs.encodeBlob(fieldValue)
       case "Amount"    ⇒ MoneyCodecs.encodeAmount(fieldValue)
       case "PathSet"   ⇒ PathCodecs.encodePathSet(fieldData)
       case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
@@ -99,34 +101,6 @@ object TypeSerializers  extends JsonUtils with CodecUtils {
     val full: Either[RippleCodecError, EncodedField] = valueBytes.map(EncodedField(_, fieldData))
     full
 
-  }
-
-  /** Encodes the hex including the Variable Length info */
-  def encodeBlob(json: Json): Either[RippleCodecError, EncodedVL] = {
-    for {
-      str    <- json2string(json)
-      ubytes ← ByteUtils.hex2ubytes(str)
-      rev    ← VLEncoding.prependVL(ubytes)
-    } yield rev
-
-  }
-
-  def encodeTransactionType(json: Json): Either[RippleCodecError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getTransactionType)
-      .flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
-  }
-
-  def encodeLedgerEntryType(json: Json): Either[RippleCodecError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getLedgerEntryType)
-      .flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
-  }
-
-  def encodeTxnResultType(json: Json): Either[RippleCodecError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getTxnResultType)
-      .flatMap(l ⇒ UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
   }
 
 }

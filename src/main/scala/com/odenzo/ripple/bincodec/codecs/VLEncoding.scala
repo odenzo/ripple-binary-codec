@@ -10,6 +10,11 @@ import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 
 trait VLEncoding {
 
+  /** Prepend Variable Length encoding the the list of Bytes.
+    * Special case is empty list, which returns encoded with length 0 and empty rawvalue
+    * @param bytes
+    * @return
+    */
   def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
     encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))
 
@@ -18,7 +23,7 @@ trait VLEncoding {
   /** We are going to encode the len in an array of bytes betwen 0 and 4 bytes long.
     * UInt8 array is used in Javascript. Length is unsigned of course
     * This is not EncodedValue because a sub-value
-    *
+    *  Multisigning sends in SigningPubKey which is VLEncoded Blob but empty, so cannot be VLEncoded.
     * @param lengthToEnc
     *
     * @return The encodedVL, which 1, 2, or 3 bytes. There is no RiplpleType for this
@@ -27,7 +32,7 @@ trait VLEncoding {
     val vl = lengthToEnc match {
 
       // Is this really inclusive 192 = 11000000
-      case l if Range(1, 192).inclusive.contains(l) => (UByte(l) :: Nil).asRight
+      case l if Range(0, 192).inclusive.contains(l) => (UByte(l) :: Nil).asRight
       case l if Range(193, 12480).inclusive.contains(l) ⇒
         val l2: Int = l - 193
         List(UByte(193 + (l2 >>> 8)), UByte(l2 & 0xff)).asRight

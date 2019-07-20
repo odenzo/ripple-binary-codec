@@ -21,7 +21,7 @@ object RippleCodecAPI  {
     *
     * @return Hex string representing the serialization in total.
     */
-  def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
+  def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
@@ -33,7 +33,7 @@ object RippleCodecAPI  {
     *
     * @param tx_json
     */
-  def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
+  def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
   }
 

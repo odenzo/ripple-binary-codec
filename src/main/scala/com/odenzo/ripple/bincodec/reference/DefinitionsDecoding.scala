@@ -104,14 +104,14 @@ object DefinitionsDecoding extends JsonUtils {
   }
 
   protected def mergeFieldInfoWithDataType(fields: Map[String, FieldType],
-                                           types: Map[String, Long]): Either[OErrorRipple, Map[String, FieldInfo]] = {
+                                           types: Map[String, Long]): Either[OErrorRipple, Map[String, FieldMetaData]] = {
     val tuples = fields.toList
       .traverse {
         case (name: String, ft: FieldType) =>
           types
             .get(ft.tipe)
             .map(RippleDataType(ft.tipe, _))
-            .map(rt ⇒ (name, FieldInfo(name, ft.nth, ft.isVLEncoded, ft.isSerialized, ft.isSigningField, rt)))
+            .map(rt ⇒ (name, FieldMetaData(name, ft.nth, ft.isVLEncoded, ft.isSerialized, ft.isSigningField, rt)))
       }
       .map(_.toMap)
 

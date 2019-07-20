@@ -10,17 +10,15 @@ import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import org.scalatest.{Assertion, FunSuite}
-import scribe.Level
-import spire.math.{UByte, ULong}
+import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.codecs.{ContainerFields, IssuedAmountCodec, MoneyCodecs}
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers
-import com.odenzo.ripple.bincodec.reference.FieldInfo
+import com.odenzo.ripple.bincodec.codecs.{ContainerFields, IssuedAmountCodec, MiscCodecs, MoneyCodecs}
+import com.odenzo.ripple.bincodec.reference.FieldMetaData
 import com.odenzo.ripple.bincodec.syntax.debugging._
 import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedNestedVals, OTestSpec, OTestUtils, RawValue, TestLoggingConfig}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedSTObject, OTestSpec, OTestUtils, RawValue, TestLoggingConfig}
 
 class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with FixtureUtils {
 
@@ -94,7 +92,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
         scribe.info(s"\n\n\n*************** DOING  FIXTURE ${d._2}\n")
         val fix: FieldTest = d._1
         scribe.info(s"FT: $fix")
-        val res: List[UByte] = FieldInfo.encodeFieldID(fix.nth_of_type, fix.tipe)
+        val res: List[UByte] = FieldMetaData.encodeFieldID(fix.nth_of_type, fix.tipe)
         val hex: String      = ByteUtils.ubytes2hex(res)
         if (fix.tipe == 16 && fix.nth_of_type == 16) {
           hex shouldEqual "001010" // Test case has "01010" from formatting
@@ -141,7 +139,7 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
         scribe.info("Expected: " + fields.map(v ⇒ v._1 + v._2.toString).mkString("\n\t", "\n\t", "\n\n"))
 
         // Then we do the whole thing for fun.
-        val res: EncodedNestedVals = getOrLog(ContainerFields.encodeSTObject(json.asJson, true, false))
+        val res: EncodedSTObject = getOrLog(ContainerFields.encodeSTObject(json.asJson, true, false))
 
         scribe.info(s"Full Hexz: ${res.toHex}")
         scribe.info(s"Full Dump ${res.show}")
@@ -223,15 +221,15 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
 
     val gotBytes: RawValue = v.type_specialisation_field match {
       case "LedgerEntryType" ⇒
-        getOrLog(TypeSerializers.encodeLedgerEntryType(testVal))
+        getOrLog(MiscCodecs.encodeLedgerEntryType(testVal))
 
       case "TransactionType" ⇒
-        getOrLog(TypeSerializers.encodeTransactionType(testVal))
+        getOrLog(MiscCodecs.encodeTransactionType(testVal))
 
       // TODO: Add this functionality for TransactionResult Codes. in TRANSACTION_RESULTS section of definitions
       case "TransactionResult" ⇒
         scribe.debug(s"Testing Txn Result Codes: $testVal")
-        getOrLog(TypeSerializers.encodeTxnResultType(testVal))
+        getOrLog(MiscCodecs.encodeTxnResultType(testVal))
 
     }
 
@@ -302,9 +300,9 @@ class DataDrivenTests$Test extends FunSuite with OTestSpec with OTestUtils with 
   }
 
   /** This does no checking, just a manual JSON Object encoding for later verification */
-  def oneFixtureByField(json: JsonObject): EncodedNestedVals = {
+  def oneFixtureByField(json: JsonObject): EncodedSTObject = {
     scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")
-    val bound: EncodedNestedVals = getOrLog(
+    val bound: EncodedSTObject = getOrLog(
       ContainerFields.encodeSTObject(json.asJson, false, false)
     )
     scribe.debug(s"Full Dump: ${bound.show}")

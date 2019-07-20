@@ -9,7 +9,7 @@ import MyCompileOptions._
 //})
 ThisBuild / organization := "com.odenzo"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "0.2.2"
+ThisBuild / version := "0.2.3"
 
 name := "ripple-binary-codec"
 

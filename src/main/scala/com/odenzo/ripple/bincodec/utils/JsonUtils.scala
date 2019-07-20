@@ -30,9 +30,30 @@ private[bincodec] trait JsonUtils {
     Either.fromOption(json(name), RippleCodecError(s"Field $name not found ", json.asJson))
   }
 
+  /** Finds top level field */
   def findFieldAsObject(name: String, json: JsonObject): Either[RippleCodecError, JsonObject] = {
     findField(name, json).flatMap(json2object)
   }
+
+
+  /**
+    * Finds the first (nested) field of given name which is expected to be a JsonObject.
+    *
+    * @param field Field name, deep search done.
+    * @param obj   Json to search on, this is typically but no always a JsonObject
+    *
+    * @return Error if field not found, or *first* found field is not JsonObject, Success is the JsonObject.
+    */
+  def findFieldDeepAsObject(field: String, obj: Json): Either[RippleCodecError, JsonObject] = {
+    obj.findAllByKey(field).collectFirst{
+      case obj if obj.isObject ⇒ json2object(obj)
+      case other               ⇒ RippleCodecError(s"First $field field was not JsonObject").asLeft
+    }.getOrElse{
+      RippleCodecError(s"FieldName $field was not found").asLeft
+    }
+  }
+
+
 
   def json2object(json: Json): Either[RippleCodecError, JsonObject] = {
     Either.fromOption(json.asObject, RippleCodecError("Expected JSON Object", json))

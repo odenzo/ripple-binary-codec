@@ -4,7 +4,7 @@ import cats.implicits._
 import io.circe.Json
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.RawValue
+import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
 import com.odenzo.ripple.bincodec.utils.RippleBase58
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
@@ -35,13 +35,12 @@ trait AccountIdCodecs  {
   /**
     *  encodes an Account field with VL Header (variable length field)
     *  When not nested, this form is useed.
-    *  Really should have a special EndodedVLStyle(fi, vl, value)
     */
-  def encodeAccount(json: Json): Either[OErrorRipple, RawValue] = {
+  def encodeAccount(json: Json): Either[OErrorRipple, EncodedVL] = {
     for {
       bits160 ← encodeAccountNoVL(json)
       vl      ← VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
-      fused   = RawValue(vl.ubytes ++ bits160.ubytes)
+      fused   = EncodedVL(vl, bits160)
     } yield fused
 
   }

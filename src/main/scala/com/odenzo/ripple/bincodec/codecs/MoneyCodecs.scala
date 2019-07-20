@@ -5,10 +5,10 @@ import io.circe.{Json, JsonObject}
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.reference.FieldInfo
-import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonError, BinCodecExeption, OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.reference.{FieldData, FieldMetaData}
+import com.odenzo.ripple.bincodec.utils.caterrors.{AppJsonError, OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{DecodedField, Encoded, EncodedNestedVals, RawValue}
+import com.odenzo.ripple.bincodec.{DecodedField, Encoded, EncodedField, EncodedNestedValue, EncodedSTObject, RawValue}
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
@@ -19,7 +19,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   private val maxXRP: BigInt = spire.math.pow(BigInt(10), BigInt(17))
 
-  /**  0x8000000000000000000000000000000000000000 to represent special case encoding of 0 fiat amount xrp */
+  /** 0x8000000000000000000000000000000000000000 to represent special case encoding of 0 fiat amount xrp */
   // private val zeroFiatAmount: List[UByte] = UByte(0x80) :: List.fill(19)(UByte(0))
 
   /** Valid currency characters */
@@ -44,9 +44,10 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     *
     * @param v
     * @param info
+    *
     * @return XRP Hex with the 63th bit set to 1 (not checked) or 48 bytes of fiat amount
     */
-  def decodeAmount(v: List[UByte], info: FieldInfo): Either[OErrorRipple, (DecodedField, List[UByte])] = {
+  def decodeAmount(v: List[UByte], info: FieldMetaData): Either[OErrorRipple, (DecodedField, List[UByte])] = {
 
     val TOP_BIT_MASK: UByte = UByte(128)
     val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
@@ -58,7 +59,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   }
 
-  /** This is actually drops btw.**/
+  /** This is actually drops btw. **/
   def encodeXrpAmount(v: Json): Either[RippleCodecError, RawValue] = {
 
     val mask: ULong = ULong.fromLong(0x4000000000000000L)
@@ -72,24 +73,37 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   }
 
-  def encodeIOU(v: JsonObject): Either[RippleCodecError, EncodedNestedVals] = {
+  def extract(metadata: FieldMetaData, obj: JsonObject): Either[RippleCodecError, FieldData] = {
+    findField(metadata.name, obj).map(json ⇒ FieldData(json, metadata))
+  }
+
+  /** Encoded IOU / Issued Amount , in this case account has VL encoding */
+  def encodeIOU(v: JsonObject): Either[RippleCodecError, EncodedNestedValue] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned... TODO: Check if correct
+    def pipeline(fieldName: String,
+                 decoder: Json ⇒ Either[RippleCodecError, Encoded],
+                 obj: JsonObject): Either[RippleCodecError, Encoded] = {
+      for {
+        json ← findField(fieldName, obj)
+        enc  ← decoder(json)
+      } yield enc
+    }
 
     for {
-      value    ← findField("value", v).flatMap(IssuedAmountCodec.encodeFiatValue)
-      currency ← findField("currency", v).flatMap(encodeCurrency)
-      issuer   ← findField("issuer", v).flatMap(AccountIdCodecs.encodeAccountNoVL)
-    } yield EncodedNestedVals(List(value, currency, issuer))
+      value    ← pipeline("value", IssuedAmountCodec.encodeFiatValue, v)
+      currency ← pipeline("currency", MoneyCodecs.encodeCurrency, v)
+      issuer   ← pipeline("issuer", AccountIdCodecs.encodeAccountNoVL, v)
+    } yield EncodedNestedValue(List(value, currency, issuer))
   }
 
   /**
-    *  Encodes non-XRP currency.
-    *  Currency must be three ASCII characters. could pad left if short I guess
-    *  Note that "00000000000..." is used for currency XRP in some places.
-    *  TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
+    * Encodes non-XRP currency.
+    * Currency must be three ASCII characters. could pad left if short I guess
+    * Note that "00000000000..." is used for currency XRP in some places.
+    * TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
     **/
   def encodeCurrency(json: Json): Either[RippleCodecError, RawValue] = {
     // TODO: Look what the first 2 bits and format are for pure hex.
@@ -118,9 +132,6 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   }
 
-
-
-
   /**
     * Used to check if ISO currency codes are ok.
     *
@@ -129,8 +140,6 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     * @return true is valid
     */
   protected def isRippleAscii(s: String): Boolean = { s.forall(c ⇒ rippleAscii.contains(c)) }
-
-
 
 }
 

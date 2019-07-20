@@ -66,7 +66,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
   }
 
   def encodeField(name: String) = {
-    val fi: FieldInfo                     = getOrLog(defdata.getFieldInfo(name))
+    val fi: FieldMetaData                     = getOrLog(defdata.getFieldInfo(name))
     val fieldId: Encoded = fi.fieldID
     scribe.debug(s"$name => ${fieldId.toHex}")
   }
@@ -100,7 +100,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
     ftd.map { lst ⇒
       lst.foreach { fix: FieldTestData ⇒
         scribe.debug(s"FieldTestData $fix")
-        val res: List[UByte] = FieldInfo.encodeFieldID(fix.nth_of_type, fix.tipe)
+        val res: List[UByte] = FieldMetaData.encodeFieldID(fix.nth_of_type, fix.tipe)
         val hex              = res.map(ByteUtils.ubyte2hex).mkString
         scribe.info("Result: " + hex)
         if (fix.name == "TickSize") hex shouldEqual ("0" + fix.expected_hex)
@@ -118,7 +118,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
       scribe.debug(s"Type      : $rt")
       // Special cases, including Amount?
       if (ft.isSigningField || ft.isSerialized) {
-        val res = FieldInfo.encodeFieldID(ft.nth.toInt, rt.value.toInt)
+        val res = FieldMetaData.encodeFieldID(ft.nth.toInt, rt.value.toInt)
       }
 
     // THe odballs include: rt.value >= 0 && rt.value < 1000 && ft.nth != 258 &&

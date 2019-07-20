@@ -7,7 +7,7 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, PathCodecs, STArrayCodec, STObjectCodec, VLEncoding}
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.reference.{Definitions, FieldInfo}
+import com.odenzo.ripple.bincodec.reference.{Definitions, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{Decoded, DecodedField}
@@ -49,7 +49,7 @@ trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
   }
 
   /** First cut just do to hex */
-  def decodeField(info: FieldInfo, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
+  def decodeField(info: FieldMetaData, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
     if (info.isVLEncoded) { // TODO: Special case for AccountID, not nested then vl encoded else not
       // Decode the VL then just leave it as hex for now.
       //   case "Blob"   ⇒ encodeBlob(fieldValue) is VL Encoded
@@ -61,7 +61,7 @@ trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
 
   }
 
-  def decodePlainField(info: FieldInfo, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
+  def decodePlainField(info: FieldMetaData, blob: List[UByte]): Either[OErrorRipple, (Decoded, List[UByte])] = {
     info.datatype.name match {
       case "AccountID" ⇒ decodeToUBytes(20, blob, info)
       case "UInt8"     ⇒ decodeToUBytes(1, blob, info)
@@ -91,7 +91,7 @@ trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
     * @param blob Array of unsigned bytes
     * @return FieldInfomation and the remaining UBytes that were not fieldid
     */
-  def decodeNextFieldId(blob: List[UByte]): Either[OErrorRipple, (FieldInfo, List[UByte])] = {
+  def decodeNextFieldId(blob: List[UByte]): Either[OErrorRipple, (FieldMetaData, List[UByte])] = {
     scribe.info(s"Decoding Field ID from ${blob.take(6)}...")
 
     val first  = blob.head
@@ -121,11 +121,11 @@ trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
     }
 
     
-    val fieldMarker: List[UByte] = FieldInfo.encodeFieldID(fCode.toInt, tCode.toInt)
+    val fieldMarker: List[UByte] = FieldMetaData.encodeFieldID(fCode.toInt, tCode.toInt)
     
     Definitions.fieldData.findByFieldMarker(fieldMarker) match {
-      case None                     ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft
-      case Some((_, fi: FieldInfo)) ⇒ (fi, blobRemaining).asRight
+      case None                         ⇒ RippleCodecError(s"No FieldData found for Marker $fieldMarker").asLeft
+      case Some((_, fi: FieldMetaData)) ⇒ (fi, blobRemaining).asRight
     }
   }
 

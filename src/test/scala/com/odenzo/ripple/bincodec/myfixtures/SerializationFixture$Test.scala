@@ -6,18 +6,28 @@ import cats.implicits._
 import io.circe.JsonObject
 import io.circe.syntax._
 import org.scalatest.FunSuite
-import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedNestedVals, OTestSpec, RippleCodecAPI}
+import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, RippleCodecAPI, TestLoggingConfig}
 
 /** This test is designed to process Transaction Request and Response files */
 class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils with FixtureUtils {
 
+  import com.odenzo.ripple.bincodec.syntax.debugging._
+
   val mixed: List[(JsonObject, JsonObject)] = loadTransactions("/mytests/all_txns.json")
   val allTxn                                = mixed
+
+  def dumpNestedFieldsInfo(nested: EncodedSTObject): Unit = {
+
+    scribe.info(s"The tree: ${nested.show}")
+  }
+
+  test("ALL") {
+    TestLoggingConfig.debugLevel()
+    val done                      = allTxn.traverse(v ⇒ testViaAPI(v._1, v._2))
+    val ok: List[EncodedSTObject] = getOrLog(done)
+  }
 
   /** See if we can get the correct Signing Public Key and Hash to start */
   private def testViaAPI(rq: JsonObject, rs: JsonObject) = {
@@ -36,17 +46,20 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     //val encoded: EncodedNestedVals = getOrLog(TypeSerializers.encodeTopLevel(txjson.asJson, isSigning = false))
     val encoded               = getOrLog(RippleCodecAPI.binarySerialize(txjson))
     val objBytes: Array[Byte] = getOrLog(RippleCodecAPI.serializedTxBlob(txjson))
-    val strBytes: Array[Byte] = getOrLog(RippleCodecAPI.serializedTxBlob(txjson.asJson.noSpaces))
     val genTxBlob             = encoded.toHex
 
-    objBytes shouldEqual strBytes
     objBytes shouldEqual encoded.toBytes
 
+    if (encoded.toHex =!= txblob) {
+      import com.odenzo.ripple.bincodec.syntax
+      logger.warn(s"Encoded: ${encoded.show}")
+      logger.warn(s"MisMatch:\n ${encoded.toHex} \n ${txblob}")
+    }
     encoded.toHex shouldEqual txblob
 
-    val signedBytes: Array[Byte] = getOrLog(RippleCodecAPI.signingTxBlob(txjson))
-    val signedStrBytes: Array[Byte] = getOrLog(RippleCodecAPI.signingTxBlob(txjson.asJson.noSpaces))
-    val signedEncoded: EncodedNestedVals = getOrLog(RippleCodecAPI.binarySerializeForSigning(txjson))
+    val signedBytes: Array[Byte]       = getOrLog(RippleCodecAPI.signingTxBlob(txjson))
+    val signedStrBytes: Array[Byte]    = getOrLog(RippleCodecAPI.signingTxBlob(txjson.asJson.noSpaces))
+    val signedEncoded: EncodedSTObject = getOrLog(RippleCodecAPI.binarySerializeForSigning(txjson))
 
     signedBytes shouldEqual signedStrBytes
     signedEncoded.toBytes shouldEqual signedBytes
@@ -54,19 +67,6 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     // Nothing in message to compare without actually signing.
 
     encoded.asRight
-  }
-
-  test("ALL") {
-    val done =
-      allTxn.traverse(v ⇒ testViaAPI(v._1, v._2))
-
-    val ok: List[EncodedNestedVals] = getOrLog(done)
-
-  }
-
-  def dumpNestedFieldsInfo(nested: EncodedNestedVals): Unit = {
-    import com.odenzo.ripple.bincodec.syntax.debugging._
-    scribe.info(s"The tree: ${nested.show}")
   }
 
   test("Specific Cases") {

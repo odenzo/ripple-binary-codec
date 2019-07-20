@@ -23,18 +23,17 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
   val topOfRange3: Int = 918744
 
   test("Out of Range EncodeVL") {
-    VLEncoding.encodeVL(0).isLeft shouldBe true
+    VLEncoding.encodeVL(0).isLeft shouldBe false
     VLEncoding.encodeVL(918755).isLeft shouldBe true
     VLEncoding.encodeVL(-10).isLeft shouldBe true
   }
 
-
   def javascriptArrayResToMyBytes(res: String): ErrorOr[List[UByte]] = {
     val json: ErrorOr[Json] = JsonUtils.parseAsJson(res)
     val ans: ErrorOr[List[UByte]] = json.flatMap { j: Json ⇒
-      val ar: List[Json]                      = j.asArray.map(_.toList).getOrElse(List.empty)
-      val asInts: Result[List[Int]]           = ar.traverse(_.as[Int])
-      val wrapped: ErrorOr[List[Int]]         = AppJsonDecodingError.wrapResult(asInts, j, "Decoding JS")
+      val ar: List[Json]                              = j.asArray.map(_.toList).getOrElse(List.empty)
+      val asInts: Result[List[Int]]                   = ar.traverse(_.as[Int])
+      val wrapped: ErrorOr[List[Int]]                 = AppJsonDecodingError.wrapResult(asInts, j, "Decoding JS")
       val done: Either[RippleCodecError, List[UByte]] = wrapped.map(l ⇒ l.map(i ⇒ UByte(i)))
       done
     }
