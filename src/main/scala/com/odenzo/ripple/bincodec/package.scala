@@ -13,10 +13,8 @@ package object bincodec {
   // Need to apply these by package scope for library mode.
   // APply to com.odenzo.ripple.bincodec.*
 
-
   scribe.warn("*********** bincodec package initialization **************")
   private val touch: Unit = defaultSetup
-
 
   /** This sets the handler filter level,  all settings to modifiers are essentially overridden on level,
     * althought the modifiers may filter out additional things.
@@ -47,11 +45,11 @@ package object bincodec {
   // This experiment has scribe.Logger.root set at DEBUG.
   // We want to filter the debug messages just for com.odenzo.ripple.bincodec.reference.FieldInfo
   // method encodeFieldID but do just for package s
-  def replaceModifiers(packages: List[String], l: Level): Unit = {
+  def addModifiers(packages: List[String], l: Level): Unit = {
     scribe.info(s"Setting Packages Level to $l")
     val pri = Priority.Normal // unnecessary since clearing existing modifiers, but handy for future.
-    scribe.Logger.root.clearModifiers().withModifier(LoggingConfig.excludePackageSelction(packages, l,pri)).replace()
-    
+    scribe.Logger.root.withModifier(LoggingConfig.excludePackageSelction(packages, l, pri)).replace()
+
   }
 
 }

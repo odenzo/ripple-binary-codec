@@ -4,21 +4,7 @@ import cats.Show
 
 import com.odenzo.ripple.bincodec.reference.DefinitionData
 import com.odenzo.ripple.bincodec.utils.ByteUtils
-import com.odenzo.ripple.bincodec.{
-  Decoded,
-  DecodedField,
-  DecodedNestedField,
-  EmptyValue,
-  Encoded,
-  EncodedDataType,
-  EncodedField,
-  EncodedPathSet,
-  EncodedSTArray,
-  EncodedSTObject,
-  EncodedVL,
-  EncodedVector256,
-  RawValue
-}
+import com.odenzo.ripple.bincodec._
 import cats._
 import cats.data._
 import cats.implicits._
@@ -28,15 +14,16 @@ object compact {
 
   // Compact we can use toHex on all but NestedVal?
   implicit val showEncoded: Show[Encoded] = Show.show {
-    case x: EncodedSTObject  ⇒ x.show
-    case x: EncodedSTArray   ⇒ x.show
-    case x: EncodedField     ⇒ x.show
-    case x: EncodedDataType  ⇒ x.toHex
-    case x: EncodedPathSet   ⇒ x.show
-    case x: EncodedVL        ⇒ x.toHex
-    case x: EncodedVector256 ⇒ x.toHex
-    case x: RawValue         ⇒ x.toHex
-    case EmptyValue          ⇒ "{Empty Value}"
+    case x: EncodedSTObject    ⇒ x.show
+    case x: EncodedSTArray     ⇒ x.show
+    case x: EncodedField       ⇒ x.show
+    case x: EncodedNestedValue ⇒ x.show
+    case x: EncodedDataType    ⇒ x.toHex
+    case x: EncodedPathSet     ⇒ x.show
+    case x: EncodedVL          ⇒ x.toHex
+    case x: EncodedVector256   ⇒ x.toHex
+    case x: RawValue           ⇒ x.toHex
+    case EmptyValue            ⇒ "{Empty Value}"
   }
 
   implicit val showRaw: Show[RawValue] = Show.show[RawValue] { v ⇒
@@ -66,7 +53,11 @@ object compact {
     case EmptyValue            ⇒ "<Empty Value>"
   }
 
-  implicit val showEncNested: Show[EncodedSTObject] = Show.show { nev ⇒
+  implicit val showEncSTObj: Show[EncodedSTObject] = Show.show { nev ⇒
+    "STObject: \n" +
+      nev.enclosed.map((v: Encoded) ⇒ v.show).mkString("\n\t", "\n\t", "\n\n")
+  }
+  implicit val showEncNested: Show[EncodedNestedValue] = Show.show { nev ⇒
     "Nested: \n" +
       nev.enclosed.map((v: Encoded) ⇒ v.show).mkString("\n\t", "\n\t", "\n\n")
   }

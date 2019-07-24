@@ -20,7 +20,7 @@ debugging
 Best place to start on documentation is:
  https://developers.ripple.com/serialization.html
 
-Main use case is just signing transaction, but should handle more although not tested as much.
+Main use case is just signing and multi-signing transactions locally.
 
 External API is in RippleCodecAPI and returns encoded values now, and byte array form.
 
@@ -52,9 +52,7 @@ Binaries are hosted at BinTray, using SBT, update the version based on download 
 
 ```
      resolvers +=   Resolver.bintrayRepo("odenzooss", "maven")
-     resolvers +=   Resolver.jcenterRepo   // Will be moving there soon
-        
-     libraryDependencies +=  "com.odenzo" %% "ripple-binary-codec" % "0.2.1" 
+     libraryDependencies +=  "com.odenzo" %% "ripple-binary-codec" % "0.2.4" // Or whatever is in the badge above :-) 
         
 ```
 
@@ -71,3 +69,13 @@ Binaries are hosted at BinTray, using SBT, update the version based on download 
 * Add more test cases, particularly of Ripple transactions
 * Cross-compile to Javascript
 * Maven publish
+
+
+
+# Release Notes
+
+
+## 0.2.5
+
++ Test routines with SignFor multisign serialization
++ Addition of RippleCodecAPI.serializeAddress for use by local-signing for multisignature signing. 

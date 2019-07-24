@@ -9,7 +9,7 @@ import MyCompileOptions._
 //})
 ThisBuild / organization := "com.odenzo"
 ThisBuild / scalaVersion := "2.12.8"
-ThisBuild / version := "0.2.3"
+ThisBuild / version := "0.2.5"
 
 name := "ripple-binary-codec"
 
@@ -41,11 +41,10 @@ val devSettings = Seq(
   Test / parallelExecution := false
 )
 
-// TODO: Switch to Scribe for logging.
 val libs = {
   Seq(
-    "org.scalatest"              %% "scalatest"      % "3.0.8" % Test,
-    "org.scalacheck"             %% "scalacheck"     % "1.14.0" % Test,
+    "org.scalatest"  %% "scalatest"  % "3.0.8"  % Test,
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
   )
 }
 
@@ -77,5 +76,5 @@ val lib_spire = {
 }
 
 val lib_scribe = {
-   Seq( "com.outr" %% "scribe" % "2.7.7" )
+  Seq("com.outr" %% "scribe" % "2.7.9")
 }
