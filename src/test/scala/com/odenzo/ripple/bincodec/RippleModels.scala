@@ -26,8 +26,6 @@ TODO: Define base types like these in seperate file.
  *
  */
 
-
-
 /**
   * I use signature to normalize the different types of keys and associated information required in requests
   * Also to mask the values in toString here, if the secret if > 4 since I have hacky tests .
@@ -47,7 +45,6 @@ object AccountAddr {
   implicit val show: Show[AccountAddr]       = Show.show[AccountAddr](v => v.address.v)
 
 }
-
 
 case class Base58(v: String) extends AnyVal {
   def toHex: String = RippleBase58.base58ToHex(v)
@@ -204,7 +201,6 @@ object TxSignature {
 }
 
 object AccountKeys {
-  implicit val encoder: ObjectEncoder[AccountKeys] = deriveEncoder[AccountKeys]
-  implicit val decoder: Decoder[AccountKeys]       = deriveDecoder[AccountKeys]
+  implicit val encoder: Encoder.AsObject[AccountKeys] = deriveEncoder[AccountKeys]
+  implicit val decoder: Decoder[AccountKeys]          = deriveDecoder[AccountKeys]
 }
-

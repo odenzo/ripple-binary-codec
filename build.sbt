@@ -8,7 +8,7 @@ import MyCompileOptions._
 //  case _                       => Seq("-Yno-adapted-args")
 //})
 ThisBuild / organization := "com.odenzo"
-ThisBuild / scalaVersion := "2.12.8"
+ThisBuild / scalaVersion := "2.13"
 ThisBuild / version := "0.2.5"
 
 name := "ripple-binary-codec"
@@ -50,19 +50,18 @@ val libs = {
 
 /** JSON Libs == Circe and Associated Support Libs */
 val lib_circe = {
-  val circeVersion = "0.11.1"
+  val circeVersion = "0.12.0-M4"
 
   Seq(
     "io.circe" %% "circe-core"    % circeVersion,
     "io.circe" %% "circe-generic" % circeVersion,
-    "io.circe" %% "circe-java8"   % circeVersion,
     "io.circe" %% "circe-parser"  % circeVersion
   )
 
 }
 
 val lib_cats = {
-  val catsVersion = "1.6.1"
+  val catsVersion = "2.0.0-M4"
   Seq(
     "org.typelevel" %% "cats-core"   % catsVersion,
     "org.typelevel" %% "cats-effect" % "1.3.1"
