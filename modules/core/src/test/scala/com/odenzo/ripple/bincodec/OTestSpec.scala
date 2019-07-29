@@ -1,5 +1,6 @@
 package com.odenzo.ripple.bincodec
 
+import cats.Eval
 import io.circe.{Decoder, JsonObject}
 import org.scalatest.{EitherValues, FunSuiteLike, Matchers, OptionValues}
 import scribe.Logging
@@ -9,12 +10,12 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 trait OTestSpec extends FunSuiteLike with Logging with Matchers with EitherValues with OptionValues with OTestUtils {
 
-  val touch = TestLoggingConfig.setTestLogging
+  private val touch = TestLoggingConfig.setTestLogging.value
 
   def getOrLog[T](ee: ErrorOr[T], msg: String = "Error: "): T = {
 
     RippleCodecError.dump(ee) match {
-      case None       => scribe.debug("No Errors Found")
+      case None       => //scribe.debug("No Errors Found")
       case Some(emsg) => scribe.error(s"$msg\t=> $emsg ")
     }
 

@@ -1,13 +1,9 @@
 import MyCompileOptions._
 
-lazy val supportedScalaVersions = List("2.13.0", "2.12.6")
+lazy val supportedScalaVersions = List("2.13.0", "2.12.8")
 //scalaVersion := crossScalaVersions.value.head
 
-scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-  case Some((2, n)) if n == 12 => optsV12 ++ warningsV12 ++ lintersV12
-  case Some((2, n)) if n >= 13 => optsV13 ++ warningsV13 ++ lintersV13
-  case _                       => Seq("-Yno-adapted-args")
-})
+
 
 ThisBuild / organization := "com.odenzo"
 ThisBuild / version := "0.2.6"
@@ -26,10 +22,15 @@ lazy val root = (project in file("."))
 
 
 
-lazy val bincodec = (project in file("."))
+lazy val bincodec = (project in file("modules/core"))
   .settings(
     crossScalaVersions := supportedScalaVersions,
     name:= "ripple-binary-codec",
+    scalacOptions := (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n <= 12 => optsV12 ++ warningsV12 ++ lintersV12
+      case Some((2, n)) if n >= 13 => optsV13 ++ warningsV13 ++ lintersV13
+      case _                       => Seq("-Yno-adapted-args")
+    }),
     commonSettings,
     devSettings,
     )

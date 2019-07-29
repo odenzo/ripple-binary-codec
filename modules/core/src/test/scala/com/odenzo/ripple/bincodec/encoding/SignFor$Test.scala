@@ -15,7 +15,7 @@ import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, RippleCodecAPI, T
   */
 class SignFor$Test extends OTestSpec {
 
-  val finalResponse =
+  private val finalResponse =
     """
       | {
       |    "id" : "4fbc685a-ce06-48a4-84c4-b50caebee456",
@@ -78,7 +78,6 @@ class SignFor$Test extends OTestSpec {
     * do a diff on the signingEncoded vs binarySerialized (latter for TxBlob)
     */
   test("Correct Serialization and Hash") {
-    TestLoggingConfig.debugLevel()
     val json = getOrLog(JsonUtils.parseAsJsonObject(finalResponse))
 
     val txblob: String      = getOrLog(findResultTxBlob(json))
@@ -89,10 +88,10 @@ class SignFor$Test extends OTestSpec {
     import com.odenzo.ripple.bincodec.syntax.debugging._
 
     val signingEncoded: EncodedSTObject = getOrLog(RippleCodecAPI.binarySerializeForSigning(tx_json))
-    logger.warn(s"Signing ${signingEncoded.show}")
+    logger.debug(s"Signing ${signingEncoded.show}")
 
     val binaryEncoded = getOrLog(RippleCodecAPI.binarySerialize(tx_json))
-    logger.warn(s"Binary ${binaryEncoded.show}")
+    logger.debug(s"Binary ${binaryEncoded.show}")
     val hex = binaryEncoded.toHex
     logger.info(s"Lengths ${txblob.length} == ${hex.length}")
     logger.info(s"Expexted and  Bin :\n $txblob \n $hex")

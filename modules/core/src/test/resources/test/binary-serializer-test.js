@@ -1,6 +1,6 @@
 /* eslint-disable func-style */
 
-const BN = require('bn.js');
+const BN = require('bn.js/lib/bn');
 const assert = require('assert-diff');
 const lib = require('../src/coretypes');
 const encode = require('../src').encode;
@@ -8,45 +8,45 @@ const {binary: {makeParser, BytesList, BinarySerializer}} = lib;
 const {UInt8, UInt16, UInt32, UInt64, STObject} = lib;
 const {loadFixture} = require('./utils');
 const fixtures = loadFixture('data-driven-tests.json');
-const deliverMinTx = require('./fixtures/delivermin-tx.json');
-const deliverMinTxBinary = require('./fixtures/delivermin-tx-binary.json');
+const deliverMinTx = require('test/fixtures/delivermin-tx.json');
+const deliverMinTxBinary = require('test/fixtures/delivermin-tx-binary.json');
 const SignerListSet = {
-  tx: require('./fixtures/signerlistset-tx.json'),
-  binary: require('./fixtures/signerlistset-tx-binary.json'),
-  meta: require('./fixtures/signerlistset-tx-meta-binary.json')
+  tx: require('test/fixtures/signerlistset-tx.json'),
+  binary: require('test/fixtures/signerlistset-tx-binary.json'),
+  meta: require('test/fixtures/signerlistset-tx-meta-binary.json')
 };
 const DepositPreauth = {
-  tx: require('./fixtures/deposit-preauth-tx.json'),
-  binary: require('./fixtures/deposit-preauth-tx-binary.json'),
-  meta: require('./fixtures/deposit-preauth-tx-meta-binary.json')
+  tx: require('test/fixtures/deposit-preauth-tx.json'),
+  binary: require('test/fixtures/deposit-preauth-tx-binary.json'),
+  meta: require('test/fixtures/deposit-preauth-tx-meta-binary.json')
 };
 const Escrow = {
   create: {
-    tx: require('./fixtures/escrow-create-tx.json'),
-    binary: require('./fixtures/escrow-create-binary.json')
+    tx: require('test/fixtures/escrow-create-tx.json'),
+    binary: require('test/fixtures/escrow-create-binary.json')
   },
   finish: {
-    tx: require('./fixtures/escrow-finish-tx.json'),
-    binary: require('./fixtures/escrow-finish-binary.json'),
-    meta: require('./fixtures/escrow-finish-meta-binary.json')
+    tx: require('test/fixtures/escrow-finish-tx.json'),
+    binary: require('test/fixtures/escrow-finish-binary.json'),
+    meta: require('test/fixtures/escrow-finish-meta-binary.json')
   },
   cancel: {
-    tx: require('./fixtures/escrow-cancel-tx.json'),
-    binary: require('./fixtures/escrow-cancel-binary.json')
+    tx: require('test/fixtures/escrow-cancel-tx.json'),
+    binary: require('test/fixtures/escrow-cancel-binary.json')
   }
 }
 const PaymentChannel = {
   create: {
-    tx: require('./fixtures/payment-channel-create-tx.json'),
-    binary: require('./fixtures/payment-channel-create-binary.json')
+    tx: require('test/fixtures/payment-channel-create-tx.json'),
+    binary: require('test/fixtures/payment-channel-create-binary.json')
   },
   fund: {
-    tx: require('./fixtures/payment-channel-fund-tx.json'),
-    binary: require('./fixtures/payment-channel-fund-binary.json')
+    tx: require('test/fixtures/payment-channel-fund-tx.json'),
+    binary: require('test/fixtures/payment-channel-fund-binary.json')
   },
   claim: {
-    tx: require('./fixtures/payment-channel-claim-tx.json'),
-    binary: require('./fixtures/payment-channel-claim-binary.json')
+    tx: require('test/fixtures/payment-channel-claim-tx.json'),
+    binary: require('test/fixtures/payment-channel-claim-binary.json')
   }
 }
 

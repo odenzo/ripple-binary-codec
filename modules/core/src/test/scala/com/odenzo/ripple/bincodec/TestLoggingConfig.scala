@@ -13,14 +13,14 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 // This should be touched once to config the Scribe logging system prior to testing.
 object TestLoggingConfig {
 
-  com.odenzo.ripple.bincodec.defaultSetup.value
+  com.odenzo.ripple.bincodec.ScribeLoggingConfig.defaultSetup.value
 
   def debugLevel(): Unit = setAll(Level.Debug)
 
-  def setAll(l: Level): Unit = if (!bincodec.inCI) bincodec.setAllToLevel(l)
+  def setAll(l: Level): Unit = if (!ScribeLoggingConfig.inCI) ScribeLoggingConfig.setAllToLevel(l)
 
   val setTestLogging: Eval[Any] = Eval.always {
-    if (!bincodec.inCI) {
+    if (!ScribeLoggingConfig.inCI) {
       scribe.warn(s"****** Calling setAllLevel with ${Level.Debug}")
       setAll(Level.Warn)
 //      scribe.debug(s"DEBUG is on")
@@ -34,12 +34,12 @@ object TestLoggingConfig {
         "com.odenzo.ripple.bincodec.reference",
         "com.odenzo.ripple.bincodec.codecs.STObjectCodec",
       )
-      bincodec.addModifiers(packagesToMute, Level.Warn)
+      ScribeLoggingConfig.addModifiers(packagesToMute, Level.Warn)
 
       val clz: List[Class[_ >: ByteUtils with JsonUtils <: Object]] = List(classOf[ByteUtils], classOf[JsonUtils])
 
       // Not added as a Modifier yet
-      bincodec.LoggingConfig.excludeByClass(clz, Level.Debug)
+      bincodec.ScribeLoggingConfig.excludeByClass(clz, Level.Debug)
     } else {
       debugLevel()
     }
