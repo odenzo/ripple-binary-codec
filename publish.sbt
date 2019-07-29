@@ -8,10 +8,7 @@
 enablePlugins(JavaAppPackaging)
 
 /*
- publish and publishLocal Tasks are reasonable for developmnet.
-
- publishTo can go to Maven and there is a seperate JFrog/Bintray plugin to publish too
-
+  publishTo can go to Maven and there is a seperate JFrog/Bintray plugin to publish too
  */
 
 licenses += ("Apache-2.0" , url("http://www.apache.org/licenses/LICENSE-2.0"))
@@ -36,6 +33,7 @@ credentials ++= (
 //publishArtifact in Test := true // to add the tests JAR
 publishArtifact in Test := true
 publishMavenStyle := true
+
 bintrayOrganization := Some("odenzoorg")
 bintrayRepository := "odenzooss"
 bintrayPackage := "ripple-binary-codec"

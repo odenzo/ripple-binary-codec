@@ -22,7 +22,7 @@ trait IssuedAmountCodec extends CodecUtils {
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
   protected val minExponent: Int    = -96
   protected val maxExponent: Int    = 80
-  protected val minMantissa: BigInt = BigDecimal("1e15") toBigInt // For normalizing not input
+  protected val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
   protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
 
   // 64 bits!=  20 * 8  160 bits which  doesn't match 2*160 or 3*160

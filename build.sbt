@@ -1,75 +1,66 @@
 import MyCompileOptions._
 
-//crossScalaVersions := Seq("2.13.0-M4-pre-20d3c21", "2.12.6")
+lazy val supportedScalaVersions = List("2.13.0", "2.12.6")
 //scalaVersion := crossScalaVersions.value.head
-//scalacOptions ++=
-//(CrossVersion.partialVersion(scalaVersion.value) match {
-//  case Some((2, n)) if n >= 13 => Seq("-Xsource:2.14")
-//  case _                       => Seq("-Yno-adapted-args")
-//})
+
+scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, n)) if n == 12 => optsV12 ++ warningsV12 ++ lintersV12
+  case Some((2, n)) if n >= 13 => optsV13 ++ warningsV13 ++ lintersV13
+  case _                       => Seq("-Yno-adapted-args")
+})
+
 ThisBuild / organization := "com.odenzo"
-ThisBuild / scalaVersion := "2.13.0"
-ThisBuild / version := "0.2.5"
+ThisBuild / version := "0.2.6"
+ThisBuild / scalaVersion := supportedScalaVersions.head
+ThisBuild / name := "ripple-binary-codec"
 
-name := "ripple-binary-codec"
 
-scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked", "-language:postfixOps", "-language:higherKinds")
+
+lazy val root = (project in file("."))
+  .aggregate(bincodec)
+  .settings(
+    // crossScalaVersions must be set to Nil on the aggregating project
+    crossScalaVersions := Nil,
+    publish / skip := true
+    )
+
+
 
 lazy val bincodec = (project in file("."))
   .settings(
+    crossScalaVersions := supportedScalaVersions,
+    name:= "ripple-binary-codec",
     commonSettings,
     devSettings,
-    scalacOptions ++= opts ++ warnings ++ linters
-  )
+    )
 
 lazy val commonSettings = Seq(
   coverageHighlighting := true,
-  libraryDependencies ++= libs ++ lib_circe ++ lib_cats ++ lib_spire ++ lib_scribe,
+  libraryDependencies ++= libs,
   resolvers ++= Seq(
     Resolver.bintrayIvyRepo("odenzo", "ripple-binary-codec"),
     Resolver.defaultLocal, // Usual I pulishLocal to Ivy not maven
     Resolver.jcenterRepo // This is JFrogs Maven Repository for reading
+    )
   )
-)
-val devSettings = Seq(
+val devSettings   = Seq(
   Test / logBuffered := true,
   Test / parallelExecution := false
-)
-
-val libs = {
-  Seq(
-    "org.scalatest"  %% "scalatest"  % "3.0.8"  % Test,
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
   )
-}
+val circeVersion  = "0.12.0-M4"
+val catsVersion   = "2.0.0-M4"
+val spireVersion  = "0.17.0-M1"
+val scribeVersion = "2.7.9"
 
-/** JSON Libs == Circe and Associated Support Libs */
-val lib_circe = {
-  val circeVersion = "0.12.0-M4"
-
-  Seq(
-    "io.circe" %% "circe-core"    % circeVersion,
-    "io.circe" %% "circe-generic" % circeVersion,
-    "io.circe" %% "circe-parser"  % circeVersion
+val libs = Seq(
+  "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "org.scalacheck" %% "scalacheck" % "1.14.0" % Test,
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "org.typelevel" %% "cats-core" % catsVersion,
+  "org.typelevel" %% "cats-effect" % catsVersion,
+  "org.typelevel" %% "spire" % spireVersion,
+  "com.outr" %% "scribe" % scribeVersion
   )
 
-}
-
-val lib_cats = {
-  val catsVersion = "2.0.0-M4"
-  Seq(
-    "org.typelevel" %% "cats-core"   % catsVersion,
-    "org.typelevel" %% "cats-effect" % catsVersion
-  )
-}
-
-val lib_spire = {
-  val spireVersion = "0.17.0-M1"
-  Seq(
-    "org.typelevel" %% "spire" % spireVersion
-  )
-}
-
-val lib_scribe = {
-  Seq("com.outr" %% "scribe" % "2.7.9")
-}

@@ -10,6 +10,7 @@
 ## Overview
 
 This project is a library written in Scala for use with Ripple XRP ledger.
+Cross-compiled to Scala 2.12.8 and Scala 2.13.0 currently.
 It takes 
 
 1. JSON and serialization into Ripple binary format, e.g. TxBlob
@@ -74,6 +75,8 @@ Binaries are hosted at BinTray, using SBT, update the version based on download 
 
 # Release Notes
 
+## 0.2.6
+Added cross-scala build
 
 ## 0.2.5
 
