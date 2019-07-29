@@ -6,7 +6,7 @@ lazy val supportedScalaVersions = List("2.13.0", "2.12.8")
 
 
 ThisBuild / organization := "com.odenzo"
-ThisBuild / version := "0.2.6"
+ThisBuild / version := "0.2.7"
 ThisBuild / scalaVersion := supportedScalaVersions.head
 ThisBuild / name := "ripple-binary-codec"
 

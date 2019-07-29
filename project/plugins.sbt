@@ -26,7 +26,7 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
 //     https://github.com/sbt/sbt-bintray
 // ~/.bintray/.credentials
 // bintrayWhoami
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.5")
 
 
 
