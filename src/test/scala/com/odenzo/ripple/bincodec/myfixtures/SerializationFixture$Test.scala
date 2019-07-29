@@ -25,7 +25,7 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
 
   test("ALL") {
     TestLoggingConfig.debugLevel()
-    val done                      = allTxn.traverse(v ⇒ testViaAPI(v._1, v._2))
+    val done                      = allTxn.traverse(v => testViaAPI(v._1, v._2))
     val ok: List[EncodedSTObject] = getOrLog(done)
   }
 
@@ -73,7 +73,7 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
     allTxn
       .drop(1)
       .take(1)
-      .traverse(v ⇒ testViaAPI(v._1, v._2))
+      .traverse(v => testViaAPI(v._1, v._2))
   }
 
 }

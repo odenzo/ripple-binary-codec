@@ -2,8 +2,6 @@ package com.odenzo.ripple.bincodec.codecs
 
 import scala.annotation.tailrec
 
-import cats._
-import cats.data._
 import cats.implicits._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -11,10 +9,10 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedPathSet, EncodedSTObject, RawValue}
+import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
+import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedPathSet, RawValue}
 
-trait PathCodecs  extends JsonUtils {
+trait PathCodecs extends JsonUtils {
 
   /** These is really a container. Inside is a list of  datasteps and delimeters **/
   def encodePathSet(data: FieldData): Either[RippleCodecError, EncodedPathSet] = {
@@ -24,18 +22,18 @@ trait PathCodecs  extends JsonUtils {
     val pathList: Either[RippleCodecError, List[Json]] = json2array(data.json)
 
     val another = DefinitionData.pathSetAnother
-    val end = DefinitionData.pathSetEnd
+    val end     = DefinitionData.pathSetEnd
 
-    val encodedPaths = pathList.flatMap{ path: List[Json] ⇒
+    val encodedPaths = pathList.flatMap{ path: List[Json] =>
       path.traverse(encodePathStep)
     }
 
     // No for each of the paths we need to put in deliminers
-    encodedPaths.map{ listOfPaths: List[RawValue] ⇒
-      val rest: List[RawValue] = listOfPaths.dropRight(1).flatMap(path ⇒ List(path, another))
+    encodedPaths.map{ listOfPaths: List[RawValue] =>
+      val rest: List[RawValue] = listOfPaths.dropRight(1).flatMap(path => List(path, another))
 
-      val lastPath: RawValue = listOfPaths.takeRight(1).head
-      val endList: List[RawValue] = List(lastPath, end)
+      val lastPath: RawValue       = listOfPaths.takeRight(1).head
+      val endList : List[RawValue] = List(lastPath, end)
 
       val subFields: List[RawValue] = rest ::: endList
 
@@ -58,9 +56,9 @@ trait PathCodecs  extends JsonUtils {
 
     // In a step the following fields are serialized in the order below
     // FIXME: Move to reference data
-    val accountType: UByte = UByte(1)
-    val currencyType: UByte = UByte(16)
-    val issuerType: UByte = UByte(32)
+    val accountType      : UByte = UByte(1)
+    val currencyType     : UByte = UByte(16)
+    val issuerType       : UByte = UByte(32)
     val currencyAndIssuer: UByte = currencyType | issuerType
 
     def combine2(amtType: UByte, amt: RawValue): RawValue = {
@@ -71,25 +69,26 @@ trait PathCodecs  extends JsonUtils {
       RawValue(amtType +: (curr.ubytes ++ issuer.ubytes))
     }
 
-    val ans = arr.flatMap{ obj: JsonObject ⇒
+    val ans = arr.flatMap{ obj: JsonObject =>
       scribe.debug(s"JOBJ: ${obj.asJson.spaces2}")
+      val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => obj(k))
 
-      val fields: Seq[Option[Json]] = Seq("account", "currency", "issuer").map(k ⇒ obj(k))
       fields match {
-        case Seq(Some(account), None, None) ⇒
-          AccountIdCodecs.encodeAccountNoVL(account).map(ac ⇒ combine2(accountType, ac))
+        case Some(account) :: None :: None :: Nil =>
+          AccountIdCodecs.encodeAccountNoVL(account).map(ac => combine2(accountType, ac))
 
-        case Seq(None, Some(curr), None) ⇒
+        case None :: Some(curr) :: None :: Nil =>
           MoneyCodecs.encodeCurrency(curr).map(combine2(currencyType, _))
 
-        case Seq(None, None, Some(issuer)) ⇒
+        case None :: None :: Some(issuer) :: Nil =>
           AccountIdCodecs.encodeAccountNoVL(issuer).map(combine2(issuerType, _))
 
-        case Seq(None, Some(curr), Some(issuer)) ⇒
+        case None :: Some(curr) :: Some(issuer) :: Nil =>
           // TODO: Validate currency is not XRP , with special currency encoding TBC
           (MoneyCodecs.encodeCurrency(curr), AccountIdCodecs.encodeAccountNoVL(issuer))
             .mapN(combine3(currencyAndIssuer, _, _))
 
+        case _ => RippleCodecError("Illegal Path", obj.asJson).asLeft
       }
     }
 
@@ -97,13 +96,11 @@ trait PathCodecs  extends JsonUtils {
 
   }
 
-
   def decodePathSet(v: List[UByte], info: FieldMetaData): Either[Nothing, (DecodedNestedField, List[UByte])] = {
     // Array of Arrays
 
     def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {
       val (path, remaining) = decodePath(v)
-
 
       if (path.head.ubytes.head === UByte.MinValue) {
         (path.reverse :: acc, remaining)
@@ -113,27 +110,27 @@ trait PathCodecs  extends JsonUtils {
     }
 
     val (lld: List[List[RawValue]], tail) = loop(v, List.empty[List[RawValue]])
-    val flat: List[RawValue] = lld.flatten // Not ideal for no Nested w/o Field yet
+    val flat: List[RawValue]              = lld.flatten // Not ideal for no Nested w/o Field yet
     (com.odenzo.ripple.bincodec.DecodedNestedField(info, flat), tail).asRight
   }
 
   /**
-    *
-    * @param path
-    *
-    * @return A list of decoded ubytes for the path, in reverse order.
-    */
+   *
+   * @param path
+   *
+   * @return A list of decoded ubytes for the path, in reverse order.
+   */
   def decodePath(path: List[UByte]): (List[RawValue], List[UByte]) = {
     // Composed of N Path Steps , first always has implied account
     val endPathWithMorePaths = UByte(0xFF)
-    val endPathAndPathSet = UByte(0x00)
+    val endPathAndPathSet    = UByte(0x00)
 
     @tailrec
     def loop(v: List[UByte], acc: List[RawValue]): (List[RawValue], List[UByte]) = {
       v match {
-        case h :: tail if h === endPathWithMorePaths ⇒ (RawValue(List(h)) :: acc, tail)
-        case h :: tail if h === endPathAndPathSet    ⇒ (RawValue(List(h)) :: acc, tail)
-        case step                                    ⇒
+        case h :: tail if h === endPathWithMorePaths => (RawValue(List(h)) :: acc, tail)
+        case h :: tail if h === endPathAndPathSet    => (RawValue(List(h)) :: acc, tail)
+        case step                                    =>
           val (decoded, rest) = decodePathStep(v)
           loop(rest, decoded :: acc)
       }
@@ -143,26 +140,25 @@ trait PathCodecs  extends JsonUtils {
   }
 
   def decodePathStep(v: List[UByte]): (RawValue, List[UByte]) = {
-    val kZERO = UByte(0)
-    val kAddressStep = UByte(1)
-    val kCurrencyStep = UByte(16)
-    val kIssuerStep = UByte(32)
-
     // Since just going to Hex and address currency and issuer all 20 we cheat
     val stepType = v.head
 
     val numBits = List(
-                        (stepType & kAddressStep) > kZERO,
-                        (stepType & kCurrencyStep) > kZERO,
-                        (stepType & kIssuerStep) > kZERO
-                        ).filterNot(_ === true).length
+      (stepType & PathCodecs.kAddressStep) >  PathCodecs.kZERO,
+      (stepType & PathCodecs.kCurrencyStep) > PathCodecs.kZERO,
+      (stepType & PathCodecs.kIssuerStep) > PathCodecs.kZERO
+      ).filterNot(_ === true).length
 
-    val len = 1 + (numBits * 20) // Including the marker
+    val len             = 1 + (numBits * 20) // Including the marker
     val (decoded, tail) = v.splitAt(len)
     (RawValue(decoded), tail)
   }
 
-
 }
 
-object PathCodecs extends PathCodecs
+object PathCodecs extends PathCodecs {
+  val kZERO         = UByte(0)
+  val kAddressStep  = UByte(1)
+  val kCurrencyStep = UByte(16)
+  val kIssuerStep   = UByte(32)
+}

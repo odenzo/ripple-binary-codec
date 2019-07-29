@@ -35,7 +35,6 @@ private[bincodec] trait JsonUtils {
     findField(name, json).flatMap(json2object)
   }
 
-
   /**
     * Finds the first (nested) field of given name which is expected to be a JsonObject.
     *
@@ -45,15 +44,16 @@ private[bincodec] trait JsonUtils {
     * @return Error if field not found, or *first* found field is not JsonObject, Success is the JsonObject.
     */
   def findFieldDeepAsObject(field: String, obj: Json): Either[RippleCodecError, JsonObject] = {
-    obj.findAllByKey(field).collectFirst{
-      case obj if obj.isObject ⇒ json2object(obj)
-      case other               ⇒ RippleCodecError(s"First $field field was not JsonObject").asLeft
-    }.getOrElse{
-      RippleCodecError(s"FieldName $field was not found").asLeft
-    }
+    obj
+      .findAllByKey(field)
+      .collectFirst {
+        case obj if obj.isObject => json2object(obj)
+        case other               => RippleCodecError(s"First $field field was not JsonObject").asLeft
+      }
+      .getOrElse {
+        RippleCodecError(s"FieldName $field was not found").asLeft
+      }
   }
-
-
 
   def json2object(json: Json): Either[RippleCodecError, JsonObject] = {
     Either.fromOption(json.asObject, RippleCodecError("Expected JSON Object", json))
@@ -93,12 +93,12 @@ private[bincodec] trait JsonUtils {
     *
     * @return
     */
-  def parseKeyValuesList[T](json: Json, fn: (String, Json) ⇒ Either[RippleCodecError, T]): ErrorOr[List[T]] = {
+  def parseKeyValuesList[T](json: Json, fn: (String, Json) => Either[RippleCodecError, T]): ErrorOr[List[T]] = {
     val kvs: ErrorOr[List[(String, Json)]] = extractAsKeyValueList(json)
-    kvs.flatMap { theList ⇒
-      theList.traverse { case (key: String, value: Json) ⇒ fn(key, value) }
+    kvs.flatMap { theList =>
+      theList.traverse { case (key: String, value: Json) => fn(key, value) }
     }
-    
+
   }
 
   /** Ripled doesn't like objects like { x=null } */
@@ -109,12 +109,12 @@ private[bincodec] trait JsonUtils {
   def pruneNullFields(obj: JsonObject): JsonObject = {
     obj
       .filter {
-        case (field, value) ⇒ !value.isNull
+        case (field, value) => !value.isNull
       }
-      .mapValues { js: Json ⇒
+      .mapValues { js: Json =>
         js.asObject match {
-          case Some(obj) ⇒ pruneNullFields(obj).asJson
-          case None      ⇒ js
+          case Some(obj) => pruneNullFields(obj).asJson
+          case None      => js
         }
       }
       .asJsonObject
@@ -128,7 +128,7 @@ private[bincodec] trait JsonUtils {
     * @return JSON or an exception if problems parsing, error holds the original String.
     */
   def parseAsJson(m: String): ErrorOr[Json] = {
-    io.circe.parser.parse(m).leftMap { pf ⇒
+    io.circe.parser.parse(m).leftMap { pf =>
       new AppJsonParsingError("Error Parsing String to Json", m, pf)
     }
   }
@@ -143,7 +143,7 @@ private[bincodec] trait JsonUtils {
 
   def parseAsJson(f: File): ErrorOr[Json] = {
     scribe.info(s"Parsing FIle $f")
-    new JawnParser().parseFile(f).leftMap { pf ⇒
+    new JawnParser().parseFile(f).leftMap { pf =>
       new BinCodecExeption(s"Error Parsing File $f to Json", pf)
     }
   }
@@ -154,7 +154,7 @@ private[bincodec] trait JsonUtils {
 
     val decoderInfo = decoder.toString
     val errmsg      = msg.getOrElse(s"Using Decoder $decoderInfo for Type")
-    decoder.decodeJson(json).leftMap((e: DecodingFailure) ⇒ new AppJsonDecodingError(json, e, errmsg))
+    decoder.decodeJson(json).leftMap((e: DecodingFailure) => new AppJsonDecodingError(json, e, errmsg))
   }
 }
 

@@ -8,17 +8,12 @@ import MyCompileOptions._
 //  case _                       => Seq("-Yno-adapted-args")
 //})
 ThisBuild / organization := "com.odenzo"
-ThisBuild / scalaVersion := "2.13"
+ThisBuild / scalaVersion := "2.13.0"
 ThisBuild / version := "0.2.5"
 
 name := "ripple-binary-codec"
 
-scalacOptions ++= Seq("-feature",
-                      "-deprecation",
-                      "-unchecked",
-                      "-language:postfixOps",
-                      "-language:higherKinds",
-                      "-Ypartial-unification")
+scalacOptions ++= Seq("-feature", "-deprecation", "-unchecked", "-language:postfixOps", "-language:higherKinds")
 
 lazy val bincodec = (project in file("."))
   .settings(
@@ -64,13 +59,14 @@ val lib_cats = {
   val catsVersion = "2.0.0-M4"
   Seq(
     "org.typelevel" %% "cats-core"   % catsVersion,
-    "org.typelevel" %% "cats-effect" % "1.3.1"
+    "org.typelevel" %% "cats-effect" % catsVersion
   )
 }
 
 val lib_spire = {
+  val spireVersion = "0.17.0-M1"
   Seq(
-    "org.typelevel" %% "spire" % "0.16.2"
+    "org.typelevel" %% "spire" % spireVersion
   )
 }
 

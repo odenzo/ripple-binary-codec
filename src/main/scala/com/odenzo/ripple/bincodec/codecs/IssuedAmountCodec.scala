@@ -17,16 +17,16 @@ trait IssuedAmountCodec extends CodecUtils {
   protected val maxVal: BigDecimal       = BigDecimal("9999999999999999e80")
   protected val minAbsAmount: BigDecimal = BigDecimal("1000000000000000e-95")
 
-  protected val maxPrecision: Int        = 15
+  protected val maxPrecision: Int = 15
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
   protected val minExponent: Int    = -96
   protected val maxExponent: Int    = 80
-  protected val minMantissa: BigInt = BigDecimal("1e15")toBigInt() // For normalizing not input
-  protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt()-1 // For normalizing not input
+  protected val minMantissa: BigInt = BigDecimal("1e15") toBigInt // For normalizing not input
+  protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
 
   // 64 bits!=  20 * 8  160 bits which  doesn't match 2*160 or 3*160
-  val ZERO_SPECIAL_CASE =  "0x8000000000000000000000000000000000000000"
+  val ZERO_SPECIAL_CASE = "0x8000000000000000000000000000000000000000"
 
   /** This is closest number to zero that is valid, ie smallest absolute value  */
   /**
@@ -43,7 +43,7 @@ trait IssuedAmountCodec extends CodecUtils {
       for {
         str         <- JsonUtils.json2string(json)
         amt         = BigDecimal(str)
-        norm        ← newEncodeFiatAmount(amt)
+        norm        <- newEncodeFiatAmount(amt)
         (mant, exp) = norm
         isNeg       = amt.signum < 0
         enc         <- binaryFormatFiatAmount(isNeg, mant, exp)
@@ -138,7 +138,7 @@ trait IssuedAmountCodec extends CodecUtils {
           RippleCodecError(s"System Error with Amount ${mantissa} * 10 ^ ${exponent}").asLeft
         }
       }
-    res.foreach(v ⇒ scribe.info(s"NEW FINAL NORMALIZED: $v"))
+    res.foreach(v => scribe.info(s"NEW FINAL NORMALIZED: $v"))
     res
   }
 
@@ -169,14 +169,14 @@ trait IssuedAmountCodec extends CodecUtils {
   def validateFiatAmount(amount: BigDecimal): Either[OErrorRipple, BigDecimal] = {
 
     amount match {
-      case amt if amt < minVal ⇒
+      case amt if amt < minVal =>
         scribe.info(s"$amt less than min - underflow to ZERO")
         BigDecimal(0).asRight
 
-      case amt if amt > maxVal ⇒
+      case amt if amt > maxVal =>
         RippleCodecError(s"Overflow FiatAmount $amt < $maxVal").asLeft
 
-      case amt if amt.precision > maxPrecision ⇒
+      case amt if amt.precision > maxPrecision =>
         // Too much precision, some will be ignored. But if close to zero make zero?
         // FIXME: Max Precision check hacked ... add cases to round down to ZERO on underflow
         //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
@@ -185,7 +185,7 @@ trait IssuedAmountCodec extends CodecUtils {
         scribe.debug(s"Too Much Precision $amt was ${amt.precision} w/ Scale ${amt.scale}")
         //RippleCodecError(s"Too Much Precision $amt was ${amt.precision} w/ Scale ${amt.scale}").asLeft
         amt.asRight // Test CAses seem to pass this
-      case amountInBounds ⇒ amountInBounds.asRight
+      case amountInBounds => amountInBounds.asRight
     }
   }
 

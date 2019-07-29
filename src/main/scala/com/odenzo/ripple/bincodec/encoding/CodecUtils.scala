@@ -18,20 +18,19 @@ trait CodecUtils {
 
   /** TODO: Potentially overflow, check thus esp UInt64 */
   def encodeULong(value: ULong, dataType: String): Either[RippleCodecError, RawValue] = {
-     dataType match {
-      case "UInt8"  ⇒ encodeULong(value,1)
-      case "UInt16" ⇒ encodeULong(value, 2)
-      case "UInt32" ⇒ encodeULong(value, 4)
-      case "UInt64" ⇒ encodeULong(value, 8)
-      case other    ⇒ RippleCodecError(s"$other was not a valid unsigned int type").asLeft
+    dataType match {
+      case "UInt8"  => encodeULong(value, 1)
+      case "UInt16" => encodeULong(value, 2)
+      case "UInt32" => encodeULong(value, 4)
+      case "UInt64" => encodeULong(value, 8)
+      case other    => RippleCodecError(s"$other was not a valid unsigned int type").asLeft
     }
 
   }
 
-
   def encodeULong(value: ULong, numBytes: Int): Either[RippleCodecError, RawValue] = {
     val bytes: Either[RippleCodecError, List[UByte]] = (0 until numBytes)
-      .map{ i: Int ⇒
+      .map { i: Int =>
         val calcUnsigned: ULong = value >>> (i * 8)
         UByte(calcUnsigned.toByte)
       }
@@ -39,7 +38,7 @@ trait CodecUtils {
       .reverse
       .asRight[RippleCodecError]
 
-    bytes.foreach(bl ⇒ assert(bl.length === numBytes))
+    bytes.foreach(bl => assert(bl.length === numBytes))
     bytes.map(RawValue)
   }
 

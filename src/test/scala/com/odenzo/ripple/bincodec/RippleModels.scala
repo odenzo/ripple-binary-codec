@@ -41,7 +41,7 @@ final case class AccountAddr(address: Base58) {
 
 object AccountAddr {
   implicit val encoder: Encoder[AccountAddr] = Encoder.encodeString.contramap[AccountAddr](_.address.v.toString)
-  implicit val decoder: Decoder[AccountAddr] = Decoder.decodeString.map(v ⇒ AccountAddr(Base58(v)))
+  implicit val decoder: Decoder[AccountAddr] = Decoder.decodeString.map(v => AccountAddr(Base58(v)))
   implicit val show: Show[AccountAddr]       = Show.show[AccountAddr](v => v.address.v)
 
 }

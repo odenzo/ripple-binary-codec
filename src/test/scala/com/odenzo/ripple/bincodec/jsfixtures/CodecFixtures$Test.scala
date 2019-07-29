@@ -21,21 +21,20 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
     val accountState: Json = dobj("accountState").get
     val transactions: Json = dobj("transactions").get
     val ledgerData         = dobj("ledgerData").get
-    val accounts           = JsonUtils.decode(accountState, Decoder[List[TestFixData]])
-    val txn                = JsonUtils.decode(transactions, Decoder[List[TestFixData]])
-    val ledger             = JsonUtils.decode(ledgerData, Decoder[List[TestFixData]])
+    val accounts           = getOrLog(decode(accountState, Decoder[List[TestFixData]]))
+    val txn                = getOrLog(decode(transactions, Decoder[List[TestFixData]]))
+    val ledger             = getOrLog(decode(ledgerData, Decoder[List[TestFixData]]))
 
-    val letsGo: List[TestFixData] = accounts.right.value ::: txn.right.value ::: ledger.right.value
+    val letsGo: List[TestFixData] = accounts ::: txn ::: ledger
 
     val badTests = Seq(
       262 // Appears to be testsing a ledger or something with field account_hash which is not in definitions
     )
     scribe.debug(s"TOTAL Number of Fixtures ${letsGo.length}")
-    scribe.debug("First One: " + letsGo.head.toString)
     letsGo.zipWithIndex
       .drop(0)
-      .filterNot(v ⇒ badTests.contains(v._2))
-      .foreach { d ⇒
+      .filterNot(v => badTests.contains(v._2))
+      .foreach { d =>
         scribe.info(s"\n\n\n*************** DOING  FIXTURE ${d._2}\n")
         val fix              = d._1
         val json: JsonObject = fix.json
@@ -49,7 +48,9 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
   def oneFixture(json: JsonObject, expected: String): Unit = {
     scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")
     scribe.info(s"Expecting: $expected")
-    val fields: EncodedSTObject = getOrLog(ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true))
+    val fields: EncodedSTObject = getOrLog(
+      ContainerFields.encodeSTObject(json.asJson, isSigning = false, isNested = true)
+    )
 
     scribe.info(s"Field Order: ${fields.show}")
 

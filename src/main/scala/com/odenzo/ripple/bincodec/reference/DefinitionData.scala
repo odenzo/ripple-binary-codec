@@ -56,16 +56,16 @@ object FieldMetaData {
   def encodeFieldID(fName: Int, fType: Int): List[UByte] = {
     scribe.debug(s"Encoding Field $fName and Data Type: $fType")
     val fieldCode = UByte(fName)
-    val typeCode = UByte(fType)
+    val typeCode  = UByte(fType)
 
     val fcBig = fieldCode >= UByte(16)
     val tcBig = typeCode >= UByte(16)
 
     val packed: List[UByte] = (fcBig, tcBig) match {
-      case (false, false) ⇒ ((typeCode << 4) | fieldCode) :: Nil
-      case (true, false)  ⇒ (typeCode << 4) :: fieldCode :: Nil
-      case (false, true)  ⇒ fieldCode :: typeCode :: Nil
-      case (true, true)   ⇒ UByte(0) :: typeCode :: fieldCode :: Nil
+      case (false, false) => ((typeCode << 4) | fieldCode) :: Nil
+      case (true, false)  => (typeCode << 4) :: fieldCode :: Nil
+      case (false, true)  => fieldCode :: typeCode :: Nil
+      case (true, true)   => UByte(0) :: typeCode :: fieldCode :: Nil
     }
     packed
   }
@@ -107,11 +107,11 @@ case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
     * @return
     */
   def optFieldData(fieldName: String, fieldValue: Json): Option[FieldData] = {
-    findFieldInfo(fieldName).map(fi ⇒ FieldData(fieldValue, fi))
+    findFieldInfo(fieldName).map(fi => FieldData(fieldValue, fi))
   }
 
   def getFieldsByNth(nth: Long): Iterable[FieldMetaData] = {
-    fieldsInfo.filter{ case (_: String, fi: FieldMetaData) ⇒ fi.nth === nth }.values
+    fieldsInfo.filter { case (_: String, fi: FieldMetaData) => fi.nth === nth }.values
   }
 
   def getFieldData(fieldName: String, fieldValue: Json): Either[OErrorRipple, FieldData] = {
@@ -138,7 +138,7 @@ case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
   /** Each field has a marker, for debugging I find the fieldinfo from that
     * Meh, easier to do this via bytes */
   def findByFieldMarker(ub: List[UByte]): Option[(String, FieldMetaData)] = {
-    val ms = fieldsInfo.filter{ case (v: String, fi: FieldMetaData) ⇒ fi.fieldID.ubytes === ub }
+    val ms = fieldsInfo.filter { case (v: String, fi: FieldMetaData) => fi.fieldID.ubytes === ub }
     ms.foreach(ms => scribe.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
     ms.headOption
   }
@@ -150,21 +150,21 @@ case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
 }
 
 object DefinitionData {
-  val pathSetAnother = RawValue(List(UByte(0xFF))) //  FF indicates another path follows
-  val pathSetEnd = RawValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
+  val pathSetAnother  = RawValue(List(UByte(0xFF))) //  FF indicates another path follows
+  val pathSetEnd      = RawValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
   val objectEndMarker = RawValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
-  val arrayEndMarker = RawValue(List(UByte(0xF1)))
+  val arrayEndMarker  = RawValue(List(UByte(0xF1)))
 
-  implicit val showFieldInfo: Show[FieldMetaData]  = Show[FieldMetaData]{ fi ⇒
+  implicit val showFieldInfo: Show[FieldMetaData] = Show[FieldMetaData] { fi =>
     s"${fi.fieldID.toHex} : ${fi.name} ${fi.datatype.name} : VL ${fi.isVLEncoded} " +
-    s" Serialized/Signing ${fi.isSerialized}/${fi.isSigningField} "
+      s" Serialized/Signing ${fi.isSerialized}/${fi.isSigningField} "
   }
-  implicit val show         : Show[DefinitionData] = Show[DefinitionData]{ dd ⇒
+  implicit val show: Show[DefinitionData] = Show[DefinitionData] { dd =>
     val sortedFields: String =
       dd.fieldsInfo.values.toList
-      .sortBy(e ⇒ (e.fieldID.toHex.length, e.fieldID.toHex))
-      .map(info ⇒ info.show)
-      .mkString("\n")
+        .sortBy(e => (e.fieldID.toHex.length, e.fieldID.toHex))
+        .map(info => info.show)
+        .mkString("\n")
 
     sortedFields
 

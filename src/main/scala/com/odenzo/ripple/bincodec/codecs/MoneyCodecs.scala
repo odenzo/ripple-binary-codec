@@ -35,8 +35,8 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     */
   def encodeAmount(json: Json): Either[RippleCodecError, Encoded] = {
     json.asObject match {
-      case None      ⇒ encodeXrpAmount(json)
-      case Some(obj) ⇒ encodeIOU(obj)
+      case None      => encodeXrpAmount(json)
+      case Some(obj) => encodeIOU(obj)
     }
   }
 
@@ -53,8 +53,8 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
 
     v match {
-      case h :: t if (h & TOP_BIT_MASK) === UByte(0) ⇒ decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
-      case other                                     ⇒ decodeToUBytes(48, other, info) // Fiat
+      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
+      case other                                     => decodeToUBytes(48, other, info) // Fiat
     }
 
   }
@@ -64,17 +64,17 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
     val mask: ULong = ULong.fromLong(0x4000000000000000L)
 
-    json2string(v).map(t ⇒ BigInt(t)) match {
-      case Left(err)                ⇒ AppJsonError("Could not decode as Xrp Amount BigInt", v).asLeft
-      case Right(bi) if bi < 0      ⇒ AppJsonError(s"XRP Cant Be <0  $bi", v).asLeft
-      case Right(bi) if bi > maxXRP ⇒ AppJsonError(s"XRP > $maxXRP  $bi", v).asLeft
-      case Right(bi)                ⇒ encodeULong(ULong(bi.toLong) | mask, "UInt64")
+    json2string(v).map(t => BigInt(t)) match {
+      case Left(err)                => AppJsonError("Could not decode as Xrp Amount BigInt", v).asLeft
+      case Right(bi) if bi < 0      => AppJsonError(s"XRP Cant Be <0  $bi", v).asLeft
+      case Right(bi) if bi > maxXRP => AppJsonError(s"XRP > $maxXRP  $bi", v).asLeft
+      case Right(bi)                => encodeULong(ULong(bi.toLong) | mask, "UInt64")
     }
 
   }
 
   def extract(metadata: FieldMetaData, obj: JsonObject): Either[RippleCodecError, FieldData] = {
-    findField(metadata.name, obj).map(json ⇒ FieldData(json, metadata))
+    findField(metadata.name, obj).map(json => FieldData(json, metadata))
   }
 
   /** Encoded IOU / Issued Amount , in this case account has VL encoding */
@@ -84,18 +84,18 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned... TODO: Check if correct
     def pipeline(fieldName: String,
-                 decoder: Json ⇒ Either[RippleCodecError, Encoded],
+                 decoder: Json => Either[RippleCodecError, Encoded],
                  obj: JsonObject): Either[RippleCodecError, Encoded] = {
       for {
-        json ← findField(fieldName, obj)
-        enc  ← decoder(json)
+        json <- findField(fieldName, obj)
+        enc  <- decoder(json)
       } yield enc
     }
 
     for {
-      value    ← pipeline("value", IssuedAmountCodec.encodeFiatValue, v)
-      currency ← pipeline("currency", MoneyCodecs.encodeCurrency, v)
-      issuer   ← pipeline("issuer", AccountIdCodecs.encodeAccountNoVL, v)
+      value    <- pipeline("value", IssuedAmountCodec.encodeFiatValue, v)
+      currency <- pipeline("currency", MoneyCodecs.encodeCurrency, v)
+      issuer   <- pipeline("issuer", AccountIdCodecs.encodeAccountNoVL, v)
     } yield EncodedNestedValue(List(value, currency, issuer))
   }
 
@@ -121,13 +121,13 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
     json2string(json)
       .flatMap {
-        case s if isRippleAscii(s) && s.length === 3 ⇒
+        case s if isRippleAscii(s) && s.length === 3 =>
           val curr = ByteUtils.bytes2ubytes(s.getBytes("UTF-8")).toList
           RawValue(bit90Zero ::: curr ::: bit40Zero).asRight
 
-        case s if s.length === 40 ⇒ ByteUtils.hex2ubytes(s).map(RawValue)
+        case s if s.length === 40 => ByteUtils.hex2ubytes(s).map(RawValue)
 
-        case other ⇒ RippleCodecError(s"Currency $other not three ascii").asLeft
+        case other => RippleCodecError(s"Currency $other not three ascii").asLeft
       }
 
   }
@@ -139,7 +139,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     *
     * @return true is valid
     */
-  protected def isRippleAscii(s: String): Boolean = { s.forall(c ⇒ rippleAscii.contains(c)) }
+  protected def isRippleAscii(s: String): Boolean = { s.forall(c => rippleAscii.contains(c)) }
 
 }
 

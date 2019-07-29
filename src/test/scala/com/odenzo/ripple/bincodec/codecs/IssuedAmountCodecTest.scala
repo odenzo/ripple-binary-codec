@@ -21,7 +21,7 @@ class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with Issued
   import com.odenzo.ripple.bincodec.syntax.debugging._
 
   override def beforeAll(): Unit = {
-   TestLoggingConfig.debugLevel()
+    TestLoggingConfig.debugLevel()
   }
 
   override def afterAll(): Unit = {
@@ -45,7 +45,7 @@ class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with Issued
       "0000.111234",
       "1123.0",
       "11002200"
-    ).map(v ⇒ BigDecimal(v)).map(ensureSame)
+    ).map(v => BigDecimal(v)).map(ensureSame)
 
     def ensureSame(amount: BigDecimal) = {
       scribe.info(s"\n\nEnsuring Fiat Amount $amount")
@@ -57,32 +57,29 @@ class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with Issued
 
   test("BigD Scaling") {
 
-    
-
     List(
       "123.123",
       "0000.00111234",
       "1123.0",
       "11002200",
-    ).map(v ⇒ BigDecimal(v)).map(testOne)
+    ).map(v => BigDecimal(v)).map(testOne)
 
   }
 
   def backToBigDecimal(mant: ULong, exp: Int): BigDecimal = {
     exp match {
-      case ex if ex > 0 ⇒ BigDecimal(mant.toBigInt.bigInteger) * BigDecimal(10).pow(exp)
-      case ex if ex < 0 ⇒ BigDecimal(mant.toBigInt.bigInteger) / BigDecimal(10).pow(exp.abs)
-      case 0            ⇒ BigDecimal(mant.toBigInt.bigInteger)
+      case ex if ex > 0 => BigDecimal(mant.toBigInt.bigInteger) * BigDecimal(10).pow(exp)
+      case ex if ex < 0 => BigDecimal(mant.toBigInt.bigInteger) / BigDecimal(10).pow(exp.abs)
+      case 0            => BigDecimal(mant.toBigInt.bigInteger)
     }
   }
-
 
   test("Error Cases") {
 
     List(
       maxVal + 100,
       minVal - 100,
-    ).map { bd: BigDecimal ⇒
+    ).map { bd: BigDecimal =>
       val v2: Either[RippleCodecError, (ULong, Int)] = newEncodeFiatAmount(bd)
       scribe.debug(s"New $v2")
       v2.isLeft shouldBe true
@@ -94,7 +91,7 @@ class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with Issued
 
     List(
       "0000.00000000",
-    ).map(v ⇒ BigDecimal(v)).map(testOne)
+    ).map(v => BigDecimal(v)).map(testOne)
 
   }
 
@@ -106,11 +103,11 @@ class IssuedAmountCodecTest extends OTestSpec with BeforeAndAfterAll with Issued
     scribe.debug(s"Max Long: ${Long.MaxValue}  Max ULong ${ULong.MaxValue}")
     List(
       minAbsAmount.toString(),
-    ).map(v ⇒ BigDecimal(v)).map(testOne)
+    ).map(v => BigDecimal(v)).map(testOne)
 
   }
 
-  def testOne(bd: BigDecimal) {
+  def testOne(bd: BigDecimal): Unit = {
 
     val v2: (ULong, Int) = getOrLog(newEncodeFiatAmount(bd))
 

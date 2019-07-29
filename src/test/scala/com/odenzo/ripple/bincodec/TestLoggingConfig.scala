@@ -2,6 +2,10 @@ package com.odenzo.ripple.bincodec
 
 import scribe.Level
 
+import cats._
+import cats.data._
+import cats.implicits._
+
 import com.odenzo.ripple.bincodec
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
@@ -9,15 +13,13 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 // This should be touched once to config the Scribe logging system prior to testing.
 object TestLoggingConfig {
 
-  com.odenzo.ripple.bincodec.defaultSetup
-
-  val x = setTestLogging
+  com.odenzo.ripple.bincodec.defaultSetup.value
 
   def debugLevel(): Unit = setAll(Level.Debug)
 
   def setAll(l: Level): Unit = if (!bincodec.inCI) bincodec.setAllToLevel(l)
 
-  lazy val setTestLogging: Unit = {
+  val setTestLogging: Eval[Any] = Eval.always {
     if (!bincodec.inCI) {
       scribe.warn(s"****** Calling setAllLevel with ${Level.Debug}")
       setAll(Level.Warn)

@@ -20,7 +20,6 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   /** See if we can get the correct Signing Public Key and Hash to start */
   def decodeOne(rq: JsonObject, rs: JsonObject): Either[RippleCodecError, List[Decoded]] = {
 
-    
     scribe.info(s"Response: ${rs.asJson.spaces4}")
 
     val result         = findRequiredObject("result", rs)
@@ -34,7 +33,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   test("ALL") {
     val done =
       txnFixt.zipWithIndex.traverse {
-        case ((rq: JsonObject, rs: JsonObject), indx: Int) ⇒
+        case ((rq: JsonObject, rs: JsonObject), indx: Int) =>
           scribe.info(s"\n\n\n====== Executing Case $indx =======")
           decodeOne(rq, rs)
       }
@@ -51,7 +50,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   test("Specific Cases") {
     val done =
       txnFixt.zipWithIndex.drop(10).take(1).traverse {
-        case ((rq: JsonObject, rs: JsonObject), indx: Int) ⇒
+        case ((rq: JsonObject, rs: JsonObject), indx: Int) =>
           scribe.info(s"\n\n\n====== Executing Case $indx =======")
           decodeOne(rq, rs)
       }

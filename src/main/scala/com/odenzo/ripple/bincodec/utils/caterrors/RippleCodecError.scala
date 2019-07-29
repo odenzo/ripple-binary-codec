@@ -57,7 +57,7 @@ class AppJsonDecodingError(val json: Json, val err: DecodingFailure, note: Strin
   * Base Error is never instanciated, but the apply is up here as convenience
   * and delegates down. These will go away soon.
   */
-object RippleCodecError  {
+object RippleCodecError {
 
   type MonadAppError[F[_]] = MonadError[F, RippleCodecError]
 
@@ -73,14 +73,13 @@ object RippleCodecError  {
   lazy implicit val showThrowables: Show[Throwable] = Show.show[Throwable] { t =>
     s"Showing Throwable ${t.getMessage} :" + Option(t.getCause)
       .map(_.toString)
-      .getOrElse( "<No Cause>")
+      .getOrElse("<No Cause>")
   }
-  
 
   def dump[A](err: Either[RippleCodecError, A]): Option[String] = {
     err match {
-      case Left(e)  ⇒ Some(dumpErr(e))
-      case Right(_) ⇒ None
+      case Left(e)  => Some(dumpErr(e))
+      case Right(_) => None
     }
   }
 
@@ -95,14 +94,14 @@ object RippleCodecError  {
     */
   def log(ee: ErrorOr[_], msg: String = "Error: "): Unit = {
     dump(ee) match {
-      case None       ⇒ scribe.debug("No Errors Found")
-      case Some(emsg) ⇒ scribe.error(s"$msg\t=> $emsg ")
+      case None       => scribe.debug("No Errors Found")
+      case Some(emsg) => scribe.error(s"$msg\t=> $emsg ")
     }
   }
 
   def nonImplShow(failure: RippleCodecError): String = {
     val base                   = ShowHack.showBaseError.show(failure)
-    val nested: Option[String] = failure.cause.map(sub ⇒ ShowHack.showBaseError.show(sub))
+    val nested: Option[String] = failure.cause.map(sub => ShowHack.showBaseError.show(sub))
     val cause                  = nested.getOrElse("\tNo Nested Cause")
 
     base + "\n\t" + cause
@@ -136,15 +135,15 @@ object RippleCodecError  {
 object OErrorRipple {
 
   /** Ignore the compimle error in IntelliJ, but not the crappy coding needs redo */
-  lazy implicit val showOError: Show[OErrorRipple] = Show.show[OErrorRipple] { (failure: OErrorRipple) =>
-    val top = s"OError -> ${failure.msg}"
-    val sub = failure.cause.map((x: RippleCodecError) ⇒ x.show)
+  implicit val showOError: Show[OErrorRipple] = Show.show[OErrorRipple] { (failure: OErrorRipple) =>
+    val top = s"OError => ${failure.msg}"
+    val sub = failure.cause.map((x: RippleCodecError) => x.show)
     top + " Cause: " + sub
   }
 
   def catchNonFatal[A](f: => A): Either[RippleCodecError, A] = {
     val ex: Either[Throwable, A]         = Either.catchNonFatal(f)
-    val res: Either[BinCodecExeption, A] = ex.leftMap(e ⇒ new BinCodecExeption("Wrapped Exception", e))
+    val res: Either[BinCodecExeption, A] = ex.leftMap(e => new BinCodecExeption("Wrapped Exception", e))
     res
   }
 
@@ -157,18 +156,18 @@ object OErrorRipple {
 object BinCodecExeption extends StackUtils {
 
   implicit val show: Show[BinCodecExeption] = Show.show[BinCodecExeption] { errorException =>
-    s"OErrorException -->  ${errorException.msg} \n\t\t " +
+    s"OErrorException -=>  ${errorException.msg} \n\t\t " +
       s"Exception Message: ${errorException.err}\n\t\t" +
       s"Exception Class: \t${errorException.err.getClass}\n\t\t" +
       s"StackTrace As String: ${stackAsString(errorException.err)}"
 
   }
 
-  def wrap[A](msg: String)(fn: ⇒ Either[RippleCodecError, A]): Either[RippleCodecError, A] = {
+  def wrap[A](msg: String)(fn: => Either[RippleCodecError, A]): Either[RippleCodecError, A] = {
     Try {
       fn
     } match {
-      case Success(v: Either[RippleCodecError, A]) ⇒ v
+      case Success(v: Either[RippleCodecError, A]) => v
       case Failure(exception)                      => BinCodecExeption(msg, exception).asLeft
     }
   }
@@ -182,7 +181,7 @@ object BinCodecExeption extends StackUtils {
 
 object AppJsonDecodingError {
   implicit val show: Show[AppJsonDecodingError] = Show.show[AppJsonDecodingError] { failure: AppJsonDecodingError =>
-    val base          = s"ODecodingError -->  ${failure.err.show} \n\t\t On JSON: ${failure.json.spaces2}"
+    val base          = s"ODecodingError -=>  ${failure.err.show} \n\t\t On JSON: ${failure.json.spaces2}"
     val stackAsString = "\n\nStack as String: " + StackUtils.stackAsString(failure.err)
     // val stackTrace = "\n\nStack Trace " + StackUtils.printStackTrace(failure.err)
     base + "\n DecodingFailure History: " + failure.err.history + stackAsString
@@ -192,7 +191,7 @@ object AppJsonDecodingError {
     * Wrap the Decoding error if there was one, and return as Either
     */
   def wrapResult[T](v: Result[T], json: Json, note: String = "No Clues"): Either[RippleCodecError, T] = {
-    v.leftMap { err: DecodingFailure ⇒
+    v.leftMap { err: DecodingFailure =>
       new AppJsonDecodingError(json, err, note)
     }
   }
@@ -201,13 +200,13 @@ object AppJsonDecodingError {
 
 object AppJsonError {
 
-  lazy implicit val show: Show[AppJsonError] = Show.show { failure =>
+  implicit val show: Show[AppJsonError] = Show.show { failure =>
     s"""
        | OErrorJson:
        | Error:\t ${failure.msg}
        | JSON :\t  ${failure.json.spaces2}
        | CAUSE:\t\n ${failure.cause
-         .map((x: RippleCodecError) ⇒ x.show)
+         .map((x: RippleCodecError) => x.show)
          .getOrElse("<Nothing>")}""".stripMargin
   }
 

@@ -36,16 +36,16 @@ class JsonUtilsTest extends FunSuite with OTestSpec with JsonUtils {
   }
 
   test("Monoid") {
-   val sum =  for {
+    val sum = for {
       a <- parseAsJsonObject(aJson)
-      b ← parseAsJsonObject(bJson)
+      b <- parseAsJsonObject(bJson)
 
     } yield a |+| b
 
     val s = getOrLog(sum)
     scribe.info(s"Sum  ${s.asJson.spaces4}")
 
-    s("b").value shouldEqual  "2b".asJson
+    s("b").value shouldEqual "2b".asJson
     s.size shouldEqual 3
   }
 

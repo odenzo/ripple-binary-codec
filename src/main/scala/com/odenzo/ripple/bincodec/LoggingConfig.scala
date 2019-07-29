@@ -27,18 +27,16 @@ object LoggingConfig extends Logger {
     * }}}
     * @return a filter that can be used with .withModifier() */
   def excludePackageSelction(packages: List[String], atOrAboveLevel: Level, priority: Priority): FilterBuilder = {
-    val ps: List[Filter] = packages.map(p ⇒ packageName.startsWith(p))
+    val ps: List[Filter] = packages.map(p => packageName.startsWith(p))
     val fb               = select(ps: _*).exclude(level < atOrAboveLevel).includeUnselected.copy(priority = priority)
     fb
   }
 
-  def excludeByClass(clazzes:List[Class[_]], minLevel: Level): FilterBuilder = {
+  def excludeByClass(clazzes: List[Class[_]], minLevel: Level): FilterBuilder = {
     val names = clazzes.map(_.getName)
     scribe.info(s"Filtering Classes: $names to $minLevel")
-    val filters = names.map(n⇒ className(n))
-    select(filters:_* ).include(level >= minLevel)
+    val filters = names.map(n => className(n))
+    select(filters: _*).include(level >= minLevel)
   }
-
-
 
 }

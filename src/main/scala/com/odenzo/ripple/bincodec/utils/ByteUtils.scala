@@ -27,7 +27,7 @@ private[bincodec] trait ByteUtils extends Logging {
 
   def byte2ubyte(b: Byte): UByte = UByte(b)
 
-  def bytes2ubytes(bytes: Traversable[Byte]): Traversable[UByte] = bytes.map(byte2ubyte)
+  def bytes2ubytes(bytes: Iterable[Byte]): Iterable[UByte] = bytes.map(byte2ubyte)
 
   def bytes2bigint(a: Array[Byte]): BigInt = BigInt(1, a)
 
@@ -53,9 +53,14 @@ private[bincodec] trait ByteUtils extends Logging {
   /**
     * Takes an arbitrary length string and returns an listed of unsigned bytes
     * If the number of hex digits is odd, is padded with zero on left.
+    * FIX: 2.13 fix needed
     */
   def hex2ubytes(v: String): Either[RippleCodecError, List[UByte]] = {
-    zeroEvenPadHex(v).sliding(2, 2).toList.traverse(hex2ubyte)
+    val padded: String = v.length % 2 match {
+      case 0 => v
+      case 1 => '0' +: v
+    }
+    padded.grouped(2).map(hex2ubyte).toList.sequence
   }
 
   /**
@@ -66,8 +71,8 @@ private[bincodec] trait ByteUtils extends Logging {
     */
   def unsafeHex2ubytes(v: String): List[UByte] = {
     hex2ubytes(v) match {
-      case Right(list) ⇒ list
-      case Left(err)   ⇒ throw new IllegalArgumentException(s"Bad Hex $v ", err)
+      case Right(list) => list
+      case Left(err)   => throw new IllegalArgumentException(s"Bad Hex $v ", err)
     }
   }
 
@@ -105,8 +110,8 @@ private[bincodec] trait ByteUtils extends Logging {
 
   def zeroEvenPadHex(hex: String): String = {
     hex.length % 2 match {
-      case 1 ⇒ "0" + hex
-      case 0 ⇒ hex
+      case 1 => "0" + hex
+      case 0 => hex
     }
   }
 
@@ -114,10 +119,10 @@ private[bincodec] trait ByteUtils extends Logging {
   final def trimLeftZeroBytes(a: List[Byte]): List[Byte] = {
 
     a match {
-      case h :: t if h != ZEROBYTE ⇒ a
-      case Nil                     ⇒ a
-      case h :: t if h == ZEROBYTE ⇒ trimLeftZeroBytes(t)
-    }                     
+      case h :: t if h != ZEROBYTE => a
+      case Nil                     => a
+      case h :: t if h == ZEROBYTE => trimLeftZeroBytes(t)
+    }
 
   }
 
@@ -126,19 +131,19 @@ private[bincodec] trait ByteUtils extends Logging {
 
     if (bytes.length != 8) RippleCodecError("ulong requires exactly 4 ubytes").asLeft
     else {
-      val ul: List[ULong]      = bytes.map(ub ⇒ ULong(ub.toLong)).toList.reverse
-      val shifted: List[ULong] = ul.mapWithIndex((v: ULong, i: Int) ⇒ v << (i * 8))
+      val ul: List[ULong]      = bytes.map(ub => ULong(ub.toLong)).toList.reverse
+      val shifted: List[ULong] = ul.mapWithIndex((v: ULong, i: Int) => v << (i * 8))
       val res: ULong           = shifted.fold(ULong(0))(_ | _)
       res.asRight
     }
   }
 
   /**
-  *
+    *
     * @param v
     * @return Hex padded with zeros out to full 8 bytes
     */
-  def ulong2hex(v: ULong): String =  zeroPadLeft(v.toHexString(),16)
+  def ulong2hex(v: ULong): String = zeroPadLeft(v.toHexString(), 16)
 
   /** Quicky to take 16 hex chars and turn into ULong. Hex prefixed with 0x if missing */
   def hex2ulong(hex: String): Either[RippleCodecError, ULong] = {
@@ -152,17 +157,17 @@ private[bincodec] trait ByteUtils extends Logging {
   def longBytesToULong(bytes: List[UByte]): Either[OErrorRipple, ULong] = {
 
     bytes.length match {
-      case 8 ⇒
+      case 8 =>
         val shifted: List[ULong] = bytes.mapWithIndex {
-          case (b, indx) ⇒
+          case (b, indx) =>
             ULong(b.toLong) << ((7 - indx) * 8)
         }
 
         val ulong: ULong = shifted.foldLeft(ULong(0))(_ | _)
         ulong.asRight
 
-      case x if x < 8 ⇒ RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}, pleaase pad").asLeft
-      case _          ⇒ RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
+      case x if x < 8 => RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}, pleaase pad").asLeft
+      case _          => RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
     }
 
   }
@@ -192,14 +197,14 @@ private[bincodec] trait ByteUtils extends Logging {
   }
 
   def bytes2uint(bytes: Seq[Byte]): UInt = {
-    val ints  = bytes.map(v ⇒ UInt(v.toLong))
+    val ints  = bytes.map(v => UInt(v.toLong))
     val shift = Seq(24, 16, 8, 0)
 
     (ints(0) << 24) + (ints(1) << 16) + (ints(2) << 8) + ints(3)
   }
 
   def bytes2ulong(bytes: Seq[Byte]): UInt = {
-    val ints  = bytes.map(v ⇒ UInt(v.toLong))
+    val ints  = bytes.map(v => UInt(v.toLong))
     val shift = Seq(24, 16, 8, 0)
 
     (ints(0) << 24) + (ints(1) << 16) + (ints(2) << 8) + ints(3)
@@ -213,11 +218,11 @@ private[bincodec] trait ByteUtils extends Logging {
     val b1       = mask & (v >> 24)
 
     val longBytes: List[UInt] = List(b4, b3, b2, b1)
-    val ans: List[Byte]       = longBytes.map(v ⇒ v.signed.toByte)
+    val ans: List[Byte]       = longBytes.map(v => v.signed.toByte)
     ans
   }
 
-  def bytes2hex(bytes: Traversable[Byte]): String = {
+  def bytes2hex(bytes: Iterable[Byte]): String = {
     bytes.map(byte2hex).mkString
   }
 

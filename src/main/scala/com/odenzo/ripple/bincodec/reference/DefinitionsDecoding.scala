@@ -27,9 +27,9 @@ object DefinitionsDecoding extends JsonUtils {
     val topJson: Either[RippleCodecError, JsonObject] = json2object(json)
 
     val typesMap: Either[RippleCodecError, Map[String, Map[String, Long]]] = topLevelTpeKeys
-      .traverse { typeKey ⇒
-        val tpeData: Either[RippleCodecError, Map[String, Long]] = topJson.flatMap(v ⇒ decodeDataTypes(v, typeKey))
-        tpeData.map(v ⇒ (typeKey, v))
+      .traverse { typeKey =>
+        val tpeData: Either[RippleCodecError, Map[String, Long]] = topJson.flatMap(v => decodeDataTypes(v, typeKey))
+        tpeData.map(v => (typeKey, v))
       }
       .map(_.toMap)
 
@@ -38,14 +38,14 @@ object DefinitionsDecoding extends JsonUtils {
       .flatMap(decodeFields)
 
     val normalized = for {
-      allTypes   ← typesMap
-      types      ← getMapEntry(allTypes, "TYPES")
-      fields     ← fieldData
-      jsonFields = fields.filter(v ⇒ v._2.isSerialized || v._2.isSigningField)
-      info       ← mergeFieldInfoWithDataType(jsonFields, types)
-      ledger     ← getMapEntry(allTypes, "LEDGER_ENTRY_TYPES")
-      txn        ← getMapEntry(allTypes, "TRANSACTION_TYPES")
-      txnres     ← getMapEntry(allTypes, "TRANSACTION_RESULTS")
+      allTypes   <- typesMap
+      types      <- getMapEntry(allTypes, "TYPES")
+      fields     <- fieldData
+      jsonFields = fields.filter(v => v._2.isSerialized || v._2.isSigningField)
+      info       <- mergeFieldInfoWithDataType(jsonFields, types)
+      ledger     <- getMapEntry(allTypes, "LEDGER_ENTRY_TYPES")
+      txn        <- getMapEntry(allTypes, "TRANSACTION_TYPES")
+      txnres     <- getMapEntry(allTypes, "TRANSACTION_RESULTS")
 
     } yield DefinitionData(info, fields, types, ledger, txn, txnres)
 
@@ -59,15 +59,15 @@ object DefinitionsDecoding extends JsonUtils {
   protected def rippleDataTypeFromKey(key: String, json: Json): Either[RippleCodecError, (String, Long)] = {
     AppJsonDecodingError
       .wrapResult(json.as[Long], json, s"Getting Key $key value")
-      .map(l ⇒ (key, l))
+      .map(l => (key, l))
   }
 
   /** ALl the different types have the same format. field: signed int  */
   protected def decodeDataTypes(json: JsonObject, name: String): ErrorOr[Map[String, Long]] = {
     JsonUtils
       .extractFieldFromObject(json, name)
-      .flatMap(v ⇒ JsonUtils.parseKeyValuesList(v, rippleDataTypeFromKey))
-      .map(l ⇒ l.toMap)
+      .flatMap(v => JsonUtils.parseKeyValuesList(v, rippleDataTypeFromKey))
+      .map(l => l.toMap)
   }
 
   /**
@@ -83,35 +83,37 @@ object DefinitionsDecoding extends JsonUtils {
 
     val fields: Either[RippleCodecError, List[Json]] = json2array(fieldsRaw)
     val all: Either[RippleCodecError, List[(String, FieldType)]] =
-      fields.flatMap(ljson ⇒ ljson.traverse(decodeEachField))
-    val ans: ErrorOr[Map[String, FieldType]] = all.map(v ⇒ v.toMap)
+      fields.flatMap(ljson => ljson.traverse(decodeEachField))
+    val ans: ErrorOr[Map[String, FieldType]] = all.map(v => v.toMap)
     ans
   }
 
   /** Each field in the Field Type array */
   def decodeEachField(field: Json): Either[RippleCodecError, (String, FieldType)] = {
     val arr: Either[RippleCodecError, List[Json]] = json2array(field)
-    arr.flatMap { vec: List[Json] ⇒ // This is array with head the field name and second the field data
+    arr.flatMap { vec: List[Json] => // This is array with head the field name and second the field data
       vec match {
         case fieldName :: obj :: Nil =>
           val name: Result[String]  = fieldName.as[String]
           val ft: Result[FieldType] = obj.as[FieldType]
           AppJsonDecodingError.wrapResult(name.product(ft), obj, "Definitions Bottom Field")
 
-        case other ⇒ RippleCodecError("Bottom Field Array Length != 2").asLeft // Should never happen
+        case other => RippleCodecError("Bottom Field Array Length != 2").asLeft // Should never happen
       }
     }
   }
 
-  protected def mergeFieldInfoWithDataType(fields: Map[String, FieldType],
-                                           types: Map[String, Long]): Either[OErrorRipple, Map[String, FieldMetaData]] = {
+  protected def mergeFieldInfoWithDataType(
+      fields: Map[String, FieldType],
+      types: Map[String, Long]
+  ): Either[OErrorRipple, Map[String, FieldMetaData]] = {
     val tuples = fields.toList
       .traverse {
         case (name: String, ft: FieldType) =>
           types
             .get(ft.tipe)
             .map(RippleDataType(ft.tipe, _))
-            .map(rt ⇒ (name, FieldMetaData(name, ft.nth, ft.isVLEncoded, ft.isSerialized, ft.isSigningField, rt)))
+            .map(rt => (name, FieldMetaData(name, ft.nth, ft.isVLEncoded, ft.isSerialized, ft.isSigningField, rt)))
       }
       .map(_.toMap)
 

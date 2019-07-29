@@ -19,16 +19,16 @@ trait UIntCodecs extends CodecUtils {
     * Redo with one UInt Decoder and a function for each type.
     * */
   def encodeUIntN(v: Json, dataType: String): Either[RippleCodecError, RawValue] = {
-    BinCodecExeption.wrap(s"Binary Encoding JSON # $v"){
+    BinCodecExeption.wrap(s"Binary Encoding JSON # $v") {
 
       val number: Option[ULong] = for {
         numeric <- v.asNumber
-        ulong <- numeric.toLong.map(ULong(_))
+        ulong   <- numeric.toLong.map(ULong(_))
       } yield ulong
 
       val unsigned = Either.fromOption(number, RippleCodecError(s"JSON ${v.spaces2} was not a Unisgned Long Number"))
 
-      val ans: Either[RippleCodecError, RawValue] = unsigned.flatMap(v ⇒ encodeULong(v, dataType))
+      val ans: Either[RippleCodecError, RawValue] = unsigned.flatMap(v => encodeULong(v, dataType))
       ans
     }
   }
@@ -37,25 +37,23 @@ trait UIntCodecs extends CodecUtils {
     parseUInt64(json).flatMap(encodeULong(_, "UInt64"))
   }
 
-
-
   /** Not sure what the Ripple spec, but we should assume all numbers are Base 10 in ""
     * for UInt64. This is as opposed to BigInt for some other numbers in quotes (e.g. Drops) */
   def parseUInt64(json: Json): Either[RippleCodecError, ULong] = {
-    BinCodecExeption.wrap(s"Decoding JSON as UInt64"){
+    BinCodecExeption.wrap(s"Decoding JSON as UInt64") {
 
       val raw: Either[OErrorRipple, String] =
         Either.fromOption(json.asString, RippleCodecError(s"$json wasnt a string"))
 
-      val longer: Either[RippleCodecError, ULong] = raw.flatMap{ v ⇒
-        Try{
+      val longer: Either[RippleCodecError, ULong] = raw.flatMap { v =>
+        Try {
           BigInt(v, 10)
-        }.recover{
-          case e: java.lang.NumberFormatException ⇒ BigInt(v, 16)
-        }
-        .toEither
-        .leftMap((t: Throwable) ⇒ BinCodecExeption(t))
-        .flatMap(ByteUtils.bigInt2ulong)
+        }.recover {
+            case e: java.lang.NumberFormatException => BigInt(v, 16)
+          }
+          .toEither
+          .leftMap((t: Throwable) => BinCodecExeption(t))
+          .flatMap(ByteUtils.bigInt2ulong)
 
       }
       longer

@@ -13,7 +13,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecErro
   * For now lets stick with encoding.
   * [[[https://developers.ripple.com/accounts.html#address-encoding]] is good reference point.
   */
-trait AccountIdCodecs  {
+trait AccountIdCodecs {
 
   /*
    * Quick Overview:
@@ -38,8 +38,8 @@ trait AccountIdCodecs  {
     */
   def encodeAccount(json: Json): Either[OErrorRipple, EncodedVL] = {
     for {
-      bits160 ← encodeAccountNoVL(json)
-      vl      ← VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
+      bits160 <- encodeAccountNoVL(json)
+      vl      <- VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
       fused   = EncodedVL(vl, bits160)
     } yield fused
 
@@ -50,10 +50,10 @@ trait AccountIdCodecs  {
     * This is special case so stick with raw encoded value
     */
   def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawValue] = {
-     val account: Either[OErrorRipple, String] =
+    val account: Either[OErrorRipple, String] =
       Either.fromOption(json.asString, RippleCodecError("Account JSON Not String"))
 
-    val asBytes: Either[OErrorRipple, List[UByte]] = account.map { s ⇒
+    val asBytes: Either[OErrorRipple, List[UByte]] = account.map { s =>
       val allBytes: List[UByte] = RippleBase58.decode(s).map(UByte(_)).toList
       val padded = if (allBytes.length < 24) {
         List.fill(24 - allBytes.length)(UByte(0)) ::: allBytes
@@ -62,7 +62,7 @@ trait AccountIdCodecs  {
       val ans: List[UByte] = padded.take(160 / 8)
       ans
     }
-    asBytes.map(v ⇒ RawValue(v))
+    asBytes.map(v => RawValue(v))
   }
 
 }

@@ -27,7 +27,7 @@ trait OTestUtils extends JsonUtils {
 
     for {
       inJson <- loadJsonResource(s"/test/fixtures/$in")
-      okJson ← loadJsonResource(s"/test/fixtures/$out")
+      okJson <- loadJsonResource(s"/test/fixtures/$out")
     } yield (inJson, okJson)
 
   }
@@ -52,11 +52,11 @@ trait OTestUtils extends JsonUtils {
 
     val isXRP: Either[RippleCodecError, Boolean] = ByteUtils
       .hex2ubyte("0" + got.drop(2).head)
-      .map(b ⇒ (b | UByte(8)) === UByte(0))
+      .map(b => (b | UByte(8)) === UByte(0))
 
     isXRP.map {
       case true => scribe.info("XRP Value Deal With IT")
-      case false ⇒
+      case false =>
         scribe.info("Analyzing Suspected Fiat Amount")
         val gotFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])]      = breakFiat(got)
         val expectedFields: Either[RippleCodecError, (List[UByte], List[UByte], List[UByte])] = breakFiat(expected)

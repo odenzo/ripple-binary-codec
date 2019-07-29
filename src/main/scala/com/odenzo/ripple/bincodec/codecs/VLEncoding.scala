@@ -16,7 +16,7 @@ trait VLEncoding {
     * @return
     */
   def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
-    encodeVL(bytes.length).map(v ⇒ EncodedVL(v, RawValue(bytes)))
+    encodeVL(bytes.length).map(v => EncodedVL(v, RawValue(bytes)))
 
   }
 
@@ -33,10 +33,10 @@ trait VLEncoding {
 
       // Is this really inclusive 192 = 11000000
       case l if Range(0, 192).inclusive.contains(l) => (UByte(l) :: Nil).asRight
-      case l if Range(193, 12480).inclusive.contains(l) ⇒
+      case l if Range(193, 12480).inclusive.contains(l) =>
         val l2: Int = l - 193
         List(UByte(193 + (l2 >>> 8)), UByte(l2 & 0xff)).asRight
-      case l if Range(12481, 918744).inclusive.contains(l) ⇒
+      case l if Range(12481, 918744).inclusive.contains(l) =>
         val length = l - 12481
         List(
           UByte(241 + (length >>> 16)),
@@ -58,11 +58,11 @@ trait VLEncoding {
     // The length is data.length - 1 , 2 or 3 cheating.
     // Better to do the full decode
     val left: Either[OErrorRipple, (Int, List[UByte])] = data match {
-      case h :: t if h <= UByte(192) ⇒ (h.toInt, data.drop(1)).asRight
-      case h :: t if h <= UByte(240) ⇒ (0, data.drop(2)).asRight
-      case h :: t if h <= UByte(254) ⇒ (0.toInt, data.drop(3)).asRight
-      case other                     ⇒ RippleCodecError(s"Illegal VL Encoding").asLeft
-      }
+      case h :: t if h <= UByte(192) => (h.toInt, data.drop(1)).asRight
+      case h :: t if h <= UByte(240) => (0, data.drop(2)).asRight
+      case h :: t if h <= UByte(254) => (0.toInt, data.drop(3)).asRight
+      case other                     => RippleCodecError(s"Illegal VL Encoding").asLeft
+    }
 
     left
   }

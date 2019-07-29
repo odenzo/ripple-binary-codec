@@ -34,7 +34,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     val ans: Either[RippleCodecError, List[EncodedField]] = jobj
       .flatMap(prepareJsonObject(_, isSigning))
       .flatMap(
-        lf ⇒
+        lf =>
           lf.traverse(
             TypeSerializers
               .encodeFieldAndValue(_, true, isSigning)
@@ -53,18 +53,18 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     @scala.annotation.tailrec
     def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
       ub match {
-        case h :: t if h === endOfSTObjectMarker ⇒ (acc.reverse, ub.drop(1)).asRight
-        case Nil                                 ⇒ RippleCodecError("Badly Formed STObject").asLeft
-        case other ⇒ // The next bytes have another field
+        case h :: t if h === endOfSTObjectMarker => (acc.reverse, ub.drop(1)).asRight
+        case Nil                                 => RippleCodecError("Badly Formed STObject").asLeft
+        case other => // The next bytes have another field
           TxBlobBuster.decodeNextField(ub) match {
-            case Left(err)            ⇒ err.asLeft
-            case Right((field, tail)) ⇒ subfields(tail, field :: acc)
+            case Left(err)            => err.asLeft
+            case Right((field, tail)) => subfields(tail, field :: acc)
           }
       }
     }
 
     subfields(v, List.empty[Decoded]).fmap {
-      case (fields, rest) ⇒ (DecodedNestedField(info, fields), rest)
+      case (fields, rest) => (DecodedNestedField(info, fields), rest)
     }
   }
 
@@ -81,7 +81,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
   def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[RippleCodecError, List[FieldData]] = {
 
     val bound: List[FieldData] = o.toList.flatMap {
-      case (fieldName, fieldVal) ⇒ dd.optFieldData(fieldName, fieldVal)
+      case (fieldName, fieldVal) => dd.optFieldData(fieldName, fieldVal)
     }
     val filtered = if (isSigning) {
       bound.filter(_.fi.isSigningField)
@@ -107,17 +107,17 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
       STObjectCodec.encodeSTObject(v, isNested = false, isSigning = isSigning) // This bytes... need End of Object
       // but not VLEncoded.
       //      json2object(v).map(_.toList).flatMap {
-//        case (fieldName: String, value: Json) :: Nil ⇒
+//        case (fieldName: String, value: Json) :: Nil =>
 //          dd.getFieldData(fieldName, value)
-//            .flatMap(fd ⇒ TypeSerializers.encodeFieldAndValue(fd, isNestedObject = false, isSigning))
-//            .map(encField ⇒ EncodedNestedVals(List(encField)))
-//        case _ ⇒ RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
+//            .flatMap(fd => TypeSerializers.encodeFieldAndValue(fd, isNestedObject = false, isSigning))
+//            .map(encField => EncodedNestedVals(List(encField)))
+//        case _ => RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
 //      }
     }
 
     // Sticking to one encoded field per array elem. Even though each field is actually nested in an object.
-    val objects = json2array(data.json).flatMap(lj ⇒ lj.traverse(j ⇒ handleOneArrayElement(j)))
-    val array   = objects.map(fields ⇒ EncodedSTArray(fields))
+    val objects = json2array(data.json).flatMap(lj => lj.traverse(j => handleOneArrayElement(j)))
+    val array   = objects.map(fields => EncodedSTArray(fields))
     array
   }
 
@@ -131,14 +131,14 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
       } else {
         val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
         next match {
-          case Left(err)            ⇒ err.asLeft
-          case Right((field, tail)) ⇒ subfields(tail, field :: acc)
+          case Left(err)            => err.asLeft
+          case Right((field, tail)) => subfields(tail, field :: acc)
         }
       }
     }
 
     subfields(v, List.empty[DecodedField]).map {
-      case (fields, rest) ⇒
+      case (fields, rest) =>
         (DecodedNestedField(info, fields), rest)
     }
   }
@@ -160,10 +160,10 @@ trait Vector256Codec extends CodecUtils with JsonUtils {
       jsonList.traverse(HashHexCodecs.encodeHash256)
 
     for {
-      arr      ← json2array(data.json)
-      hashes   ← encodeListOfHash(arr)
+      arr      <- json2array(data.json)
+      hashes   <- encodeListOfHash(arr)
       totalLen = hashes.map(_.value.rawBytes.length).sum
-      vl       ← VLEncoding.encodeVL(totalLen)
+      vl       <- VLEncoding.encodeVL(totalLen)
     } yield EncodedVector256(vl, hashes)
 
   }

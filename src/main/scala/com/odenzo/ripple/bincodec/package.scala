@@ -14,7 +14,18 @@ package object bincodec {
   // APply to com.odenzo.ripple.bincodec.*
 
   scribe.warn("*********** bincodec package initialization **************")
-  private val touch: Unit = defaultSetup
+
+  /** Scala test should manuall control after this */
+  val defaultSetup: Eval[Unit] = Eval.later {
+
+    if (inCI) { // This should catch case when as a library in someone elses CI
+      scribe.info("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
+      setAllToLevel(Warn)
+    } else {
+      setAllToLevel(Warn) // On Assumption we are in library mode, not testing, which will override.
+    }
+    scribe.info("Done with Default")
+  }
 
   /** This sets the handler filter level,  all settings to modifiers are essentially overridden on level,
     * althought the modifiers may filter out additional things.
@@ -27,18 +38,6 @@ package object bincodec {
   }
 
   def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") === "true"
-
-  /** Scala test should manuall control after this */
-  lazy val defaultSetup: Unit = {
-
-    if (inCI) { // This should catch case when as a library in someone elses CI
-      scribe.info("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
-      setAllToLevel(Warn)
-    } else {
-      setAllToLevel(Warn) // On Assumption we are in library mode, not testing, which will override.
-    }
-    scribe.info("Done with Default")
-  }
 
   // Well, as far as I can tell the flow is: Logger => Modifiers => Handlers, The handlers write with Formatters
   // but the default console handler (at least) can also filter with minimumLogLevel

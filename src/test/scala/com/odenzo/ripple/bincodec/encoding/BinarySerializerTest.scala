@@ -30,11 +30,11 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
 
   def javascriptArrayResToMyBytes(res: String): ErrorOr[List[UByte]] = {
     val json: ErrorOr[Json] = JsonUtils.parseAsJson(res)
-    val ans: ErrorOr[List[UByte]] = json.flatMap { j: Json ⇒
+    val ans: ErrorOr[List[UByte]] = json.flatMap { j: Json =>
       val ar: List[Json]                              = j.asArray.map(_.toList).getOrElse(List.empty)
       val asInts: Result[List[Int]]                   = ar.traverse(_.as[Int])
       val wrapped: ErrorOr[List[Int]]                 = AppJsonDecodingError.wrapResult(asInts, j, "Decoding JS")
-      val done: Either[RippleCodecError, List[UByte]] = wrapped.map(l ⇒ l.map(i ⇒ UByte(i)))
+      val done: Either[RippleCodecError, List[UByte]] = wrapped.map(l => l.map(i => UByte(i)))
       done
     }
 
@@ -52,7 +52,7 @@ class BinarySerializerTest extends FunSuite with OTestSpec {
 
     val byteLens = Seq(1, 2, 4, 8)
 
-    byteLens.map { len ⇒
+    byteLens.map { len =>
       val maxUInt: BigInt = BigInt(len)
       Math.pow(2d, len.toLong * 8d) - 1d // FIXME: Integral Power?
       scribe.info(s"Bytes: $len max unsigned is: $maxUInt")

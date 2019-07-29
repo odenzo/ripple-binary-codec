@@ -4,7 +4,16 @@ import cats.data._
 import cats.implicits._
 import io.circe.Json
 
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, ContainerFields, HashHexCodecs, MiscCodecs, MoneyCodecs, PathCodecs, UIntCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.{
+  AccountIdCodecs,
+  ContainerFields,
+  HashHexCodecs,
+  MiscCodecs,
+  MoneyCodecs,
+  PathCodecs,
+  UIntCodecs,
+  VLEncoding
+}
 import com.odenzo.ripple.bincodec.reference.FieldData
 import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
@@ -14,17 +23,16 @@ import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedSTObject, Encod
   * I am not building these based on pure JSON rather
   * than the WSModel objects
   */
-object TypeSerializers  extends JsonUtils with CodecUtils {
+object TypeSerializers extends JsonUtils with CodecUtils {
 
   def encodeTopLevel(json: Json, isSigning: Boolean): Either[RippleCodecError, EncodedSTObject] = {
 
     ContainerFields.encodeSTObject(json, isNested = false, isSigning = isSigning)
   }
 
-
 //
 //  def deepFilterJsonObject(o:JsonObject, isSigning:Boolean):JsonObject = {
-//    o.toList.flatMap{ case (fieldName, fieldVal) ⇒
+//    o.toList.flatMap{ case (fieldName, fieldVal) =>
 //      dd.optFieldData(fieldName, fieldVal)
 //    }
 //  }
@@ -41,7 +49,7 @@ object TypeSerializers  extends JsonUtils with CodecUtils {
 //    */
 //  def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[RippleCodecError, List[FieldData]] = {
 //    logger.trace(s"prepareJsonObect ")
-//    val bound: List[FieldData] = o.toList.flatMap{   case (fieldName, fieldVal) ⇒
+//    val bound: List[FieldData] = o.toList.flatMap{   case (fieldName, fieldVal) =>
 //      dd.optFieldData(fieldName, fieldVal)
 //    }
 //    val filtered = if (isSigning) {
@@ -73,27 +81,27 @@ object TypeSerializers  extends JsonUtils with CodecUtils {
     scribe.debug(s"Encoding FieldValue: $fieldData")
 
     val valueBytes: Either[RippleCodecError, Encoded] = fieldData.fi.fieldTypeName match {
-      case "UInt16" if fieldName === "LedgerEntryType" ⇒ MiscCodecs.encodeLedgerEntryType(fieldValue)
-      case "UInt16" if fieldName === "TransactionType" ⇒ MiscCodecs.encodeTransactionType(fieldValue)
+      case "UInt16" if fieldName === "LedgerEntryType" => MiscCodecs.encodeLedgerEntryType(fieldValue)
+      case "UInt16" if fieldName === "TransactionType" => MiscCodecs.encodeTransactionType(fieldValue)
       // Inside IOU Amount account is not encoded as a VL. Not sure other cases.
-        // Sticking case now is Array of Signer's
-      case "AccountID" if isNestedObject               ⇒ AccountIdCodecs.encodeAccount(fieldValue)
-      case "AccountID" if !isNestedObject              ⇒ AccountIdCodecs.encodeAccount(fieldValue)
+      // Sticking case now is Array of Signer's
+      case "AccountID" if isNestedObject  => AccountIdCodecs.encodeAccount(fieldValue)
+      case "AccountID" if !isNestedObject => AccountIdCodecs.encodeAccount(fieldValue)
 
-      case "UInt8"     ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt8")
-      case "UInt16"    ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt16")
-      case "UInt32"    ⇒ UIntCodecs.encodeUIntN(fieldValue, "UInt32")
-      case "UInt64"    ⇒ UIntCodecs.encodeUInt64(fieldValue)
-      case "Hash160"   ⇒ HashHexCodecs.encodeHash160(fieldValue)
-      case "Hash256"   ⇒ HashHexCodecs.encodeHash256(fieldValue)
-      case "Blob"      ⇒ MiscCodecs.encodeBlob(fieldValue)
-      case "Amount"    ⇒ MoneyCodecs.encodeAmount(fieldValue)
-      case "PathSet"   ⇒ PathCodecs.encodePathSet(fieldData)
-      case "Vector256" ⇒ ContainerFields.encodeVector256(fieldData)
-      case "STArray"   ⇒ ContainerFields.encodeSTArray(fieldData, signingModeOn)
-      case "STObject"  ⇒ ContainerFields.encodeSTObject(fieldValue, isNestedObject, signingModeOn)
+      case "UInt8"     => UIntCodecs.encodeUIntN(fieldValue, "UInt8")
+      case "UInt16"    => UIntCodecs.encodeUIntN(fieldValue, "UInt16")
+      case "UInt32"    => UIntCodecs.encodeUIntN(fieldValue, "UInt32")
+      case "UInt64"    => UIntCodecs.encodeUInt64(fieldValue)
+      case "Hash160"   => HashHexCodecs.encodeHash160(fieldValue)
+      case "Hash256"   => HashHexCodecs.encodeHash256(fieldValue)
+      case "Blob"      => MiscCodecs.encodeBlob(fieldValue)
+      case "Amount"    => MoneyCodecs.encodeAmount(fieldValue)
+      case "PathSet"   => PathCodecs.encodePathSet(fieldData)
+      case "Vector256" => ContainerFields.encodeVector256(fieldData)
+      case "STArray"   => ContainerFields.encodeSTArray(fieldData, signingModeOn)
+      case "STObject"  => ContainerFields.encodeSTObject(fieldValue, isNestedObject, signingModeOn)
 
-      case other ⇒ RippleCodecError(s"Not handling Field Type $other").asLeft
+      case other => RippleCodecError(s"Not handling Field Type $other").asLeft
 
     }
 

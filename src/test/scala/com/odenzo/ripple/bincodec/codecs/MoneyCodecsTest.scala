@@ -88,10 +88,10 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     val amount: Json      = Json.fromString("10")
     val amountBytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(amount))
     val amountHex: String = amountBytes.toHex
-    scribe.info(s"Amount: ${amount.spaces2} ⇒ $amountHex")
+    scribe.info(s"Amount: ${amount.spaces2} => $amountHex")
 
     val issuer: Json = Json.fromString(issuerStr)
-    val issuerBytes  = AccountIdCodecs.encodeAccountNoVL(issuer).right.value
+    val issuerBytes  = getOrLog(AccountIdCodecs.encodeAccountNoVL(issuer))
     val issuerHex    = issuerBytes.toHex
     scribe.debug(s"Issuer [$issuer] Len ${issuerHex.length * 4} : $issuerHex")
 

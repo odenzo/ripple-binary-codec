@@ -13,12 +13,12 @@ import spire.math.UByte
   https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
   Note: This is restricted to bincodec.* packages
   */
-private[bincodec] trait RippleBase58  {
+private[bincodec] trait RippleBase58 {
 
   val std      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   val alphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
 
-  // char -> value
+  // char => value
   val base28Map: Map[Char, Int] = alphabet.zipWithIndex.toMap
 
   /**

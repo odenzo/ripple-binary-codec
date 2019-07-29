@@ -55,7 +55,7 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
   test("All") {
 
-    fixes.take(3).map { v: AmountFixture ⇒
+    fixes.take(3).map { v: AmountFixture =>
       scribe.debug(s"Fixture $v")
 
       scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
@@ -75,7 +75,8 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
 
   }
 
-  
+  case class TData(bin: String, mant: String, exp: Int, value: String)
+
   test("Dev Fiat Amount Value") {
     val fixture =
       """
@@ -88,21 +89,18 @@ class FiatAmountEncodingTest extends FunSuite with OTestSpec with OTestUtils {
         |]
       """.stripMargin
 
-    case class TData(bin: String, mant: String, exp: Int, value: String)
-
     TestLoggingConfig.setAll(Level.Debug)
     val td: Either[RippleCodecError, List[TData]] =
       JsonUtils
         .parseAsJson(fixture)
-        .flatMap(j ⇒ JsonUtils.decode(j, Decoder[List[TData]]))
-       
-    
+        .flatMap(j => JsonUtils.decode(j, Decoder[List[TData]]))
+
     RippleCodecError.log(td, "Error Parsing Test Data: ")
-    val testData: List[TData] = td.right.value
+    val testData: List[TData] = getOrLog(td)
 
     // Note that I return (0,0) for value 0.0 but encodes the same
-    testData.foreach { fix: TData ⇒
-      val fiatAmount  = BigDecimal(fix.value)
+    testData.foreach { fix: TData =>
+      val fiatAmount    = BigDecimal(fix.value)
       val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
       bin.toHex shouldEqual fix.bin
     }

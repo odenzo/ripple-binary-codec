@@ -15,11 +15,10 @@ import com.odenzo.ripple.bincodec.{EncodedDataType, RawValue}
 /** Deals with Blobs and Hashes and things that are plain hex encoded in Json */
 trait HashHexCodecs extends CodecUtils {
 
-
   def encodeHash(json: Json, byteLen: Int): Either[RippleCodecError, RawValue] = {
     // This looks like Hex Already... in fact just round tripping
     val str = JsonUtils.decode(json, Decoder[String])
-    val ans: Either[RippleCodecError, List[UByte]] = str.flatMap{ v ⇒
+    val ans: Either[RippleCodecError, List[UByte]] = str.flatMap { v =>
       ByteUtils.hex2ubytes(v)
     }
     val checked = ans.flatMap(ByteUtils.ensureMaxLength(_, byteLen))
@@ -42,7 +41,5 @@ trait HashHexCodecs extends CodecUtils {
   }
 
 }
-
-
 
 object HashHexCodecs extends HashHexCodecs
