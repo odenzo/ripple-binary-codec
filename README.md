@@ -1,7 +1,7 @@
 
 # ripple-binary-codec
 [ ![Download](https://api.bintray.com/packages/odenzooss/maven/ripple-binary-codec/images/download.svg
-) ](https://bintray.com/odenzoos/maven/ripple-binary-codec/0.2.9/link)
+) ](https://bintray.com/odenzoos/maven/ripple-binary-codec/0.1.0/link)
 [![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
 [![codecov](https://codecov.io/gh/odenzo/ripple-binary-codec/branch/master/graph/badge.svg)](https://codecov.io/gh/odenzo/ripple-binary-codec)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0ec6db4a57fc4de98a9f52f80a39dc1a)](https://www.codacy.com/app/odenzo/ripple-binary-codec?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=odenzo/ripple-binary-codec&amp;utm_campaign=Badge_Grade)
