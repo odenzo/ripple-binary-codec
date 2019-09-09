@@ -8,7 +8,7 @@ import spire.math.{UByte, UInt}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 /**
-* Ripple Hash Prefixes
+  * Ripple Hash Prefixes
   * @param v
   */
 case class HashPrefix(v: List[UByte]) {
@@ -18,7 +18,7 @@ case class HashPrefix(v: List[UByte]) {
 }
 
 /** These are all Four Bytes Long with bottom byte 00  */
-object HashPrefix  {
+object HashPrefix {
 
   val raw: HashPrefix = fromHex("54584E00")
 
@@ -35,7 +35,6 @@ object HashPrefix  {
   val innerNode: HashPrefix = fromHex("4D494E00")
   // ledger master data for signing
   val ledgerHeader: HashPrefix = fromHex("4C575200")
-
 
   /**  inner transaction to single signed, before signing */
   val transactionSig: HashPrefix = fromHex("53545800")
@@ -75,7 +74,7 @@ object HashPrefix  {
     val cIn = UInt(c.toInt) << 8
 
     val res: UInt = (aIn | bIn | cIn) << 8
-         res
+    res
 //
 //    m_prefix = a
 //    m_prefix = (m_prefix << 8) + b

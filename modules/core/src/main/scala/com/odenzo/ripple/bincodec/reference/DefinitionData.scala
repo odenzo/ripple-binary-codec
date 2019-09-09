@@ -4,6 +4,8 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.RawValue
@@ -21,6 +23,15 @@ case class RippleDataType(name: String, value: Long)
 
 /** Note that tipe is a String matching kv */
 case class FieldType(nth: Long, isVLEncoded: Boolean, isSerialized: Boolean, isSigningField: Boolean, tipe: String)
+
+object FieldType {
+
+  import io.circe._
+
+  implicit val config: Configuration =
+    Configuration.default.copy(transformMemberNames = (s: String) => if (s === "tipe") "type" else s)
+  implicit val codec: Codec.AsObject[FieldType] = deriveConfiguredCodec[FieldType]
+}
 
 /** FeildType merged with RippleDataType, with no data */
 case class FieldMetaData(name: String,
@@ -72,27 +83,17 @@ object FieldMetaData {
 
 }
 
-object FieldType {
-
-  import io.circe._
-
-  implicit val decodeFieldType: Decoder[FieldType] =
-    Decoder.forProduct5("nth", "isVLEncoded", "isSerialized", "isSigningField", "type")(FieldType.apply)
-
-}
-
 /**
   * Caution, plenty of room for error with same type signature.
   *
   * @param fieldsInfo
-  * @param fieldsData
+
   * @param types
   * @param ledgerTypes
   * @param txnTypes
   * @param txnResultTypes
   */
 case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
-                          fieldsData: Map[String, FieldType],
                           types: Map[String, Long],
                           ledgerTypes: Map[String, Long],
                           txnTypes: Map[String, Long],

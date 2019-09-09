@@ -8,7 +8,7 @@ import spire.math.UByte
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
-object BinarySerializer  extends ByteUtils {
+object BinarySerializer extends ByteUtils {
 
   val defns: DefinitionData = Definitions.fieldData
 
@@ -16,6 +16,5 @@ object BinarySerializer  extends ByteUtils {
   val objDel: List[UByte] = List(UByte(15))
 
   val arrDel: List[UByte] = List(UByte(14))
-
 
 }
