@@ -24,16 +24,16 @@ trait PathCodecs extends JsonUtils {
     val another = DefinitionData.pathSetAnother
     val end     = DefinitionData.pathSetEnd
 
-    val encodedPaths = pathList.flatMap{ path: List[Json] =>
+    val encodedPaths = pathList.flatMap { path: List[Json] =>
       path.traverse(encodePathStep)
     }
 
     // No for each of the paths we need to put in deliminers
-    encodedPaths.map{ listOfPaths: List[RawValue] =>
+    encodedPaths.map { listOfPaths: List[RawValue] =>
       val rest: List[RawValue] = listOfPaths.dropRight(1).flatMap(path => List(path, another))
 
-      val lastPath: RawValue       = listOfPaths.takeRight(1).head
-      val endList : List[RawValue] = List(lastPath, end)
+      val lastPath: RawValue      = listOfPaths.takeRight(1).head
+      val endList: List[RawValue] = List(lastPath, end)
 
       val subFields: List[RawValue] = rest ::: endList
 
@@ -56,9 +56,9 @@ trait PathCodecs extends JsonUtils {
 
     // In a step the following fields are serialized in the order below
     // FIXME: Move to reference data
-    val accountType      : UByte = UByte(1)
-    val currencyType     : UByte = UByte(16)
-    val issuerType       : UByte = UByte(32)
+    val accountType: UByte       = UByte(1)
+    val currencyType: UByte      = UByte(16)
+    val issuerType: UByte        = UByte(32)
     val currencyAndIssuer: UByte = currencyType | issuerType
 
     def combine2(amtType: UByte, amt: RawValue): RawValue = {
@@ -69,7 +69,7 @@ trait PathCodecs extends JsonUtils {
       RawValue(amtType +: (curr.ubytes ++ issuer.ubytes))
     }
 
-    val ans = arr.flatMap{ obj: JsonObject =>
+    val ans = arr.flatMap { obj: JsonObject =>
       scribe.debug(s"JOBJ: ${obj.asJson.spaces2}")
       val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => obj(k))
 
@@ -115,11 +115,11 @@ trait PathCodecs extends JsonUtils {
   }
 
   /**
-   *
-   * @param path
-   *
-   * @return A list of decoded ubytes for the path, in reverse order.
-   */
+    *
+    * @param path
+    *
+    * @return A list of decoded ubytes for the path, in reverse order.
+    */
   def decodePath(path: List[UByte]): (List[RawValue], List[UByte]) = {
     // Composed of N Path Steps , first always has implied account
     val endPathWithMorePaths = UByte(0xFF)
@@ -130,7 +130,7 @@ trait PathCodecs extends JsonUtils {
       v match {
         case h :: tail if h === endPathWithMorePaths => (RawValue(List(h)) :: acc, tail)
         case h :: tail if h === endPathAndPathSet    => (RawValue(List(h)) :: acc, tail)
-        case step                                    =>
+        case step =>
           val (decoded, rest) = decodePathStep(v)
           loop(rest, decoded :: acc)
       }
@@ -144,10 +144,10 @@ trait PathCodecs extends JsonUtils {
     val stepType = v.head
 
     val numBits = List(
-      (stepType & PathCodecs.kAddressStep) >  PathCodecs.kZERO,
+      (stepType & PathCodecs.kAddressStep) > PathCodecs.kZERO,
       (stepType & PathCodecs.kCurrencyStep) > PathCodecs.kZERO,
       (stepType & PathCodecs.kIssuerStep) > PathCodecs.kZERO
-      ).filterNot(_ === true).length
+    ).filterNot(_ === true).length
 
     val len             = 1 + (numBits * 20) // Including the marker
     val (decoded, tail) = v.splitAt(len)

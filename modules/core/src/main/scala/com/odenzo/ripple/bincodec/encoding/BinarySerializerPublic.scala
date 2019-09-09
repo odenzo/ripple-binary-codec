@@ -9,9 +9,7 @@ import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 /**
   * User level interfaces to this package.
   */
-object BinarySerializerPublic  {
-
-
+object BinarySerializerPublic {
 
   /**
     * Expects a top level JsonObject representing a JSON document
@@ -21,7 +19,7 @@ object BinarySerializerPublic  {
     * @return Hex string representing the serialization in total.
     */
   def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
-     TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
+    TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
   /**
@@ -36,6 +34,5 @@ object BinarySerializerPublic  {
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
 
   }
-
 
 }

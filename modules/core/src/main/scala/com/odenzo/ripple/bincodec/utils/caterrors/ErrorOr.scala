@@ -4,6 +4,4 @@ object ErrorOr {
 
   type ErrorOr[R] = Either[RippleCodecError, R]
 
-  
-
 }

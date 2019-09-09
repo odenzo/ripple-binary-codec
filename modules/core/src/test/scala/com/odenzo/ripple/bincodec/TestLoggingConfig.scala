@@ -21,8 +21,9 @@ object TestLoggingConfig {
 
   val setTestLogging: Eval[Any] = Eval.always {
     if (!ScribeLoggingConfig.inCI) {
-      scribe.warn(s"****** Calling setAllLevel with ${Level.Debug}")
-      setAll(Level.Warn)
+      val targetLevel = Level.Debug
+      scribe.warn(s"****** Calling setAllLevel with ${targetLevel}")
+      setAll(targetLevel)
 //      scribe.debug(s"DEBUG is on")
 //      scribe.info("INFO is on")
 //      scribe.warn("WARN is on")
@@ -31,7 +32,7 @@ object TestLoggingConfig {
 
       // This don't cut out by class or method.
       val packagesToMute: List[String] = List(
-        "com.odenzo.ripple.bincodec.reference",
+        //"com.odenzo.ripple.bincodec.reference",
         "com.odenzo.ripple.bincodec.codecs.STObjectCodec",
       )
       ScribeLoggingConfig.addModifiers(packagesToMute, Level.Warn)

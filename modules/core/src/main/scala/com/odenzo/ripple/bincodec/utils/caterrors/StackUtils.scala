@@ -12,12 +12,10 @@ private[bincodec] trait StackUtils {
     errors.toString
   }
 
-
   def printStackTrace(e: Throwable): String = {
     e.getStackTrace.slice(3, 19).map(_.toString).mkString("\n\t", "\n\t", "\n== .... ==\n")
   }
-  
-}
 
+}
 
 private[bincodec] object StackUtils extends StackUtils

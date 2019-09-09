@@ -16,8 +16,8 @@ class SerializerModels$Test extends FunSuite with OTestSpec {
   val bigVal: RawValue       = RawValue(someBytes)
   val emptyVal: RawValue     = RawValue(List.empty[UByte])
 
-  def testConsistentWithBase[T<:Encoded](sub:T): Assertion = {
-    val encoded :Encoded = sub
+  def testConsistentWithBase[T <: Encoded](sub: T): Assertion = {
+    val encoded: Encoded = sub
     sub.encoded shouldEqual encoded.encoded
     sub.rawBytes shouldEqual encoded.rawBytes
 
@@ -29,7 +29,7 @@ class SerializerModels$Test extends FunSuite with OTestSpec {
     bigVal.encoded.length shouldEqual 1
     emptyVal.encoded.length shouldEqual 1
 
-    Seq(bigVal,emptyVal).map(testConsistentWithBase)
+    Seq(bigVal, emptyVal).map(testConsistentWithBase)
 
   }
 }

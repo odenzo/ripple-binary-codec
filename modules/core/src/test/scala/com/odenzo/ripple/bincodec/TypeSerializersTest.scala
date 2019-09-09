@@ -110,22 +110,6 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   }
 
-  test("Full Range of Field / Type Encoding") {
-    defdata.fieldsData.values.foreach { ft =>
-      val rt: RippleDataType = getOrLog(defdata.getTypeObj(ft.tipe))
-
-      scribe.debug(s"Field Type: $ft")
-      scribe.debug(s"Type      : $rt")
-      // Special cases, including Amount?
-      if (ft.isSigningField || ft.isSerialized) {
-        val res = FieldMetaData.encodeFieldID(ft.nth.toInt, rt.value.toInt)
-      }
-
-    // THe odballs include: rt.value >= 0 && rt.value < 1000 && ft.nth != 258 &&
-    }
-
-  }
-
   test("XRP") {
 
     val min: ULong = ULong(0)

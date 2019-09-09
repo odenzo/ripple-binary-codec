@@ -35,7 +35,7 @@ object Definitions extends JsonUtils {
       case None => RippleCodecError(s"Couldn't Find Definitions Resource $resourceName").asLeft
       case Some(s) =>
         val txt = Source.fromInputStream(s, "UTF-8").getLines().mkString("\n")
-        JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitionFileJson)
+        JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitions)
     }
     // In Case I want to fetch directly next time.
     // val rippleSiteUrl: String = "https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json"

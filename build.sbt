@@ -41,28 +41,28 @@ lazy val commonSettings = Seq(
   coverageHighlighting := true,
   libraryDependencies ++= libs,
   resolvers ++= Seq(
-    //Resolver.bintrayIvyRepo("odenzo", "ripple-binary-codec"),
-    Resolver.defaultLocal, // Usual I pulishLocal to Ivy not maven
+    Resolver.defaultLocal,
     Resolver.jcenterRepo // This is JFrogs Maven Repository for reading
   )
 )
 
-val circeVersion      = "0.12.0-RC3"
-val catsVersion       = "2.0.0-RC1"
-val catsEffectVersion = "2.0.0-RC1"
+val circeVersion      = "0.12.0-RC4"
+val catsVersion       = "2.0.0-RC3"
+val catsEffectVersion = "2.0.0-RC2"
 val spireVersion      = "0.17.0-M1"
 val scribeVersion     = "2.7.9"
 val scalaTestVersion  = "3.0.8"
 val scalaCheckVersion = "1.14.0"
 
 val libs = Seq(
-  "org.scalatest"  %% "scalatest"     % scalaTestVersion % Test,
-  "org.scalacheck" %% "scalacheck"    % scalaCheckVersion % Test,
-  "io.circe"       %% "circe-core"    % circeVersion,
-  "io.circe"       %% "circe-generic" % circeVersion,
-  "io.circe"       %% "circe-parser"  % circeVersion,
-  "org.typelevel"  %% "cats-core"     % catsVersion,
-  "org.typelevel"  %% "cats-effect"   % catsEffectVersion,
-  "org.typelevel"  %% "spire"         % spireVersion,
-  "com.outr"       %% "scribe"        % scribeVersion
+  "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
+  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
+  "io.circe"       %% "circe-core"           % circeVersion,
+  "io.circe"       %% "circe-generic"        % circeVersion,
+  "io.circe"       %% "circe-generic-extras" % circeVersion,
+  "io.circe"       %% "circe-parser"         % circeVersion,
+  "org.typelevel"  %% "cats-core"            % catsVersion,
+  "org.typelevel"  %% "cats-effect"          % catsEffectVersion,
+  "org.typelevel"  %% "spire"                % spireVersion,
+  "com.outr"       %% "scribe"               % scribeVersion
 )

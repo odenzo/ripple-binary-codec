@@ -23,7 +23,8 @@ sealed trait RippleCodecError extends Throwable {
   def cause: Option[RippleCodecError]
 }
 
-class OErrorRipple(val msg: String = "No Message", val cause: Option[RippleCodecError] = None) extends RippleCodecError
+case class OErrorRipple(val msg: String = "No Message", val cause: Option[RippleCodecError] = None)
+    extends RippleCodecError
 
 /** This should be terminal node only */
 class BinCodecExeption(val msg: String = "Wrapping Root Exception", val err: Throwable) extends RippleCodecError {

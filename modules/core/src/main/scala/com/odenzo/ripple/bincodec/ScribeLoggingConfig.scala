@@ -39,7 +39,6 @@ object ScribeLoggingConfig extends Logger {
     select(filters: _*).include(level >= minLevel)
   }
 
-
   // When exactly does this get instanciated? Have to touch it.
 
   // Need to apply these by package scope for library mode.
@@ -48,21 +47,21 @@ object ScribeLoggingConfig extends Logger {
   scribe.warn("*********** logging config package initialization **************")
 
   /** Scala test should manuall control after this */
-  val defaultSetup: Eval[Unit] = Eval.later{
+  val defaultSetup: Eval[Unit] = Eval.later {
 
     if (inCI) { // This should catch case when as a library in someone elses CI
       scribe.info("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
       setAllToLevel(Warn)
     } else {
-      setAllToLevel(Warn) // On Assumption we are in library mode, not testing, which will override.
+      setAllToLevel(Debug) // On Assumption we are in library mode, not testing, which will override.
     }
     scribe.info("Done with Default")
   }
 
   /** This sets the handler filter level,  all settings to modifiers are essentially overridden on level,
-   * althought the modifiers may filter out additional things.
-   *
-   * */
+    * althought the modifiers may filter out additional things.
+    *
+    * */
   def setAllToLevel(l: Level): Unit = {
     scribe.warn(s"Setting all to log level $l")
     scribe.Logger.root.clearHandlers().withHandler(minimumLevel = Some(l)).replace()
