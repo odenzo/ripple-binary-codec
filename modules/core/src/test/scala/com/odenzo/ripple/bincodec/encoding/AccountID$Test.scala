@@ -5,12 +5,12 @@ import io.circe.Json
 import org.scalatest.FunSuite
 import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.codecs.{AccountIdCodecs, IssuedAmountCodec, MoneyCodecs, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, AccountIdCodecs, IssuedAmountCodec, VLEncoding}
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldMetaData}
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, FixtureUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{EncodedField, EncodedVL, OTestSpec, RawValue}
-
+import com.odenzo.ripple.bincodec.utils.{FixtureUtils, ByteUtils, CirceCodecUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.{RawValue, EncodedVL, EncodedField, BinCodecLibError, OTestSpec}
+import io.circe.literal._
+import io.circe.syntax._
 class AccountID$Test extends OTestSpec with FixtureUtils {
 
   val defdata: DefinitionData = Definitions.fieldData
@@ -37,11 +37,10 @@ class AccountID$Test extends OTestSpec with FixtureUtils {
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
   /** Pack up Data and go through more of the pipeline */
-  def encodeSingle(fieldName: String, data: Json, isNested: Boolean): Either[RippleCodecError, EncodedField] = {
+  def encodeSingle(fieldName: String, data: Json, isNested: Boolean): Either[BinCodecLibError, EncodedField] = {
     val req = defdata.getFieldData(fieldName, data)
     req.foreach(v => scribe.info(s"encoding Single Field: $v"))
     val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNested, false))
-    RippleCodecError.dump(ans).foreach(e => scribe.error(s"Trouble Encoding Field $fieldName $e "))
     ans
   }
 
@@ -50,7 +49,7 @@ class AccountID$Test extends OTestSpec with FixtureUtils {
       ("rnziParaNb8nsU4aruQdwYE3j5jUcqjzFm", "36D16F18B3AAC1868C1E3E8FA8EB7DDFD8ECCCAC"),
       ("rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui", "E14829DB4C6419A8EFCAC1EC21D891A1A4339871"),
       ("rrrrrrrrrrrrrrrrrrrrrhoLvTp", "0000000000000000000000000000000000000000"), // Account Zero
-      ("rrrrrrrrrrrrrrrrrrrrBZbvji", "0000000000000000000000000000000000000001") // Account One
+      ("rrrrrrrrrrrrrrrrrrrrBZbvji", "0000000000000000000000000000000000000001")   // Account One
       //       ("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "Genesis"),
       //     ("rrrrrrrrrrrrrrrrrNAMEtxvNvQ", "NAME RESERVATION BLACK HOLE"),
     )
@@ -74,7 +73,7 @@ class AccountID$Test extends OTestSpec with FixtureUtils {
   test("Public Account") {
 
     val ok             = "14EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA" // This seems to be the repeated account But get 1 19 1A 1B ED
-    val account        = Json.fromString("r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2")
+    val account: Json  = "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2".asJson
     val rev: EncodedVL = getOrLog(AccountIdCodecs.encodeAccount(account))
     scribe.info(s"Valid Result: $ok \n Length ${rev.rawBytes.length * 4} bites")
     scribe.info(s"Results Byte Len: ${rev.rawBytes.length}")

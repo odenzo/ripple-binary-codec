@@ -6,10 +6,9 @@ import cats.implicits._
 import io.circe.Json
 import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.RawValue
+import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
 
 trait IssuedAmountCodec extends CodecUtils {
 
@@ -38,31 +37,31 @@ trait IssuedAmountCodec extends CodecUtils {
     *
     * @param json
     */
-  def encodeFiatValue(json: Json): Either[RippleCodecError, RawValue] = {
-    BinCodecExeption.wrap(s"Error Normalizing Fiat Amount ${json.spaces4}") {
+  def encodeFiatValue(json: Json): Either[BinCodecLibError, RawValue] = {
+    BinCodecLibError.wrap(s"Error Normalizing Fiat Amount ${json.spaces4}") {
       for {
-        str         <- JsonUtils.json2string(json)
-        amt         = BigDecimal(str)
-        norm        <- newEncodeFiatAmount(amt)
+        str <- JsonUtils.json2string(json)
+        amt = BigDecimal(str)
+        norm <- newEncodeFiatAmount(amt)
         (mant, exp) = norm
         isNeg       = amt.signum < 0
-        enc         <- binaryFormatFiatAmount(isNeg, mant, exp)
+        enc <- binaryFormatFiatAmount(isNeg, mant, exp)
       } yield enc
     }
   }
 
-  def newEncodeFiatAmount(amount: BigDecimal): Either[RippleCodecError, (ULong, Int)] = {
+  def newEncodeFiatAmount(amount: BigDecimal): Either[BinCodecLibError, (ULong, Int)] = {
 
     if (amount === 0) {
-      (ULong.MinValue, 0).asRight[RippleCodecError]
+      (ULong.MinValue, 0).asRight[BinCodecLibError]
     } else {
       val isNeg = amount.signum < 0
 
       for {
         prenorm <- newPreNormalize(amount.abs)
-        _       = scribe.info(s"NEW PRENORMALIZED  $prenorm")
-        norm    <- newNormalize(prenorm._1, prenorm._2)
-        _       = scribe.info("NEW METHOD FINAL NORMALIZATION: " + norm)
+        _ = scribe.info(s"NEW PRENORMALIZED  $prenorm")
+        norm <- newNormalize(prenorm._1, prenorm._2)
+        _ = scribe.info("NEW METHOD FINAL NORMALIZATION: " + norm)
       } yield norm
     }
   }
@@ -75,15 +74,15 @@ trait IssuedAmountCodec extends CodecUtils {
     *
     * @return Absolute value of bd scales by 10 ** n such that the value is .xyyyyyyyy..   where x != 0
     */
-  protected def newPreNormalize(bd: BigDecimal): Either[OErrorRipple, (BigInt, Int)] = {
+  protected def newPreNormalize(bd: BigDecimal): Either[BCLibErr, (BigInt, Int)] = {
     val absBd = bd.abs
     scribe.debug(s"Normalizing $bd with precision ${bd.precision}")
     if (bd > maxVal || bd < minVal || bd < minAbsAmount) {
-      RippleCodecError(s"$bd not in range $minVal ...$maxVal  or smaller than $minAbsAmount").asLeft
+      BinCodecLibError(s"$bd not in range $minVal ...$maxVal  or smaller than $minAbsAmount").asLeft
     } else if (absBd < minAbsAmount) {
-      RippleCodecError(s"$bd Absolute value smaller than $minAbsAmount").asLeft
+      BinCodecLibError(s"$bd Absolute value smaller than $minAbsAmount").asLeft
     } else if (bd.precision > 16) {
-      RippleCodecError(s"$bd Precision > 16 and probably would be rounded").asLeft
+      BinCodecLibError(s"$bd Precision > 16 and probably would be rounded").asLeft
     } else {
       val exp     = absBd.scale
       val fExp    = 0 - exp
@@ -101,7 +100,7 @@ trait IssuedAmountCodec extends CodecUtils {
     * @return tuple, normalized mantissa, exponent  - if underflow both fields set to 0
     *         Overflow returned as Error
     */
-  protected def newNormalize(mantissa: BigInt, exponent: Int): Either[RippleCodecError, (ULong, Int)] = {
+  protected def newNormalize(mantissa: BigInt, exponent: Int): Either[BinCodecLibError, (ULong, Int)] = {
     // Okay, we have a mantissa and and exp. We want (generally) to increate the mantissa until 10000000L which means
     // the exponent has to decrease
     // A quick literal translation
@@ -109,22 +108,22 @@ trait IssuedAmountCodec extends CodecUtils {
     // Before we do this we have converted mantissa to abs() and recorded the sign bit.
     // So the equivalent C++ code (which stores in  std::int64_t) is not needed.
 
-    val res: Either[RippleCodecError, (ULong, Int)] =
-      BinCodecExeption.wrap(s"Error Normalizing $mantissa ^ $exponent") {
+    val res: Either[BinCodecLibError, (ULong, Int)] =
+      BinCodecLibError.wrap(s"Error Normalizing $mantissa ^ $exponent") {
         var mant: BigInt = mantissa
         var exp: Int     = exponent
 
         // Crank up the mantissa as much as we can
         while ((mant < minMantissa) && (exp > minExponent)) {
           mant = mant * ULong(10)
-          exp = exp - 1
+          exp  = exp - 1
         }
 
         // Crank down the mantissa if too high, making sure not to overflow exponent
         while (mant > maxMantissa) {
           if (exp >= maxExponent) throw new IllegalArgumentException("Amount out range - overflow")
           mant = mant / ULong(10)
-          exp = exp + 1
+          exp  = exp + 1
         }
 
         // Check to see if number too small to represent and truncate to zero
@@ -135,7 +134,7 @@ trait IssuedAmountCodec extends CodecUtils {
           (ULong.fromBigInt(mant), exp).asRight
         } else {
           scribe.warn(s"Mantissa Too Big for Initial $mantissa E $exp")
-          RippleCodecError(s"System Error with Amount ${mantissa} * 10 ^ ${exponent}").asLeft
+          BinCodecLibError(s"System Error with Amount ${mantissa} * 10 ^ ${exponent}").asLeft
         }
       }
     res.foreach(v => scribe.info(s"NEW FINAL NORMALIZED: $v"))
@@ -144,9 +143,11 @@ trait IssuedAmountCodec extends CodecUtils {
 
   /** V2: Given normalized amount encode it in ripple binary format
     * This is used for all algorithms once we have normalized mantissa and exponent */
-  protected def binaryFormatFiatAmount(isNegative: Boolean,
-                                       mantissa: ULong,
-                                       exp: Int): Either[RippleCodecError, RawValue] = {
+  protected def binaryFormatFiatAmount(
+      isNegative: Boolean,
+      mantissa: ULong,
+      exp: Int
+  ): Either[BinCodecLibError, RawValue] = {
 
     scribe.info(s"Encoding BigDecimal Fiat $isNegative  $mantissa  ^  $exp")
 
@@ -161,12 +162,12 @@ trait IssuedAmountCodec extends CodecUtils {
       val top10: ULong          = top2Bits | expBitsShifted
       val full: ULong           = top10 | mantissa
 
-      val asBytes: Either[RippleCodecError, RawValue] = encodeULong(full, "UInt64")
+      val asBytes: Either[BinCodecLibError, RawValue] = encodeULong(full, "UInt64")
       asBytes
     }
   }
 
-  def validateFiatAmount(amount: BigDecimal): Either[OErrorRipple, BigDecimal] = {
+  def validateFiatAmount(amount: BigDecimal): Either[BCLibErr, BigDecimal] = {
 
     amount match {
       case amt if amt < minVal =>
@@ -174,7 +175,7 @@ trait IssuedAmountCodec extends CodecUtils {
         BigDecimal(0).asRight
 
       case amt if amt > maxVal =>
-        RippleCodecError(s"Overflow FiatAmount $amt < $maxVal").asLeft
+        BinCodecLibError(s"Overflow FiatAmount $amt < $maxVal").asLeft
 
       case amt if amt.precision > maxPrecision =>
         // Too much precision, some will be ignored. But if close to zero make zero?
@@ -190,9 +191,9 @@ trait IssuedAmountCodec extends CodecUtils {
   }
 
   /** Check the bounds after amount in normalized */
-  protected def checkMantissaBounds(mantissa: ULong): Either[OErrorRipple, ULong] = {
+  protected def checkMantissaBounds(mantissa: ULong): Either[BCLibErr, ULong] = {
     if (mantissa < minMantissa || mantissa > maxMantissa) {
-      RippleCodecError(s"$mantissa has to be in range $minMantissa - $maxMantissa").asLeft
+      BinCodecLibError(s"$mantissa has to be in range $minMantissa - $maxMantissa").asLeft
     } else {
       mantissa.asRight
     }
@@ -200,9 +201,9 @@ trait IssuedAmountCodec extends CodecUtils {
   }
 
   /** Check the bounds after amount in normalized */
-  protected def checkExponentBounds(exp: Int): Either[OErrorRipple, Int] = {
+  protected def checkExponentBounds(exp: Int): Either[BCLibErr, Int] = {
     if (exp < minExponent || exp > maxExponent) {
-      RippleCodecError(s"$exp has to be in range $minExponent to $maxExponent inclusive ").asLeft
+      BinCodecLibError(s"$exp has to be in range $minExponent to $maxExponent inclusive ").asLeft
     } else {
       exp.asRight
     }

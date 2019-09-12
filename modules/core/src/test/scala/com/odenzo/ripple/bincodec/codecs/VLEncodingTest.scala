@@ -2,8 +2,7 @@ package com.odenzo.ripple.bincodec.codecs
 
 import org.scalatest.FunSuite
 
-import com.odenzo.ripple.bincodec.{OTestSpec, RawValue}
-import com.odenzo.ripple.bincodec.utils.caterrors.OErrorRipple
+import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BCLibErr}
 
 class VLEncodingTest extends OTestSpec {
 

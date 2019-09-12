@@ -7,9 +7,8 @@ import io.circe.Json
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue}
+import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import io.circe.syntax._
 import scribe.Level
 
@@ -18,7 +17,7 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
   // Ripple method working, but we can make more concise using Java Math
   // This tries to compare the two.
 
-  import com.odenzo.ripple.bincodec.syntax.debugging._
+  import com.odenzo.ripple.bincodec.syntax.showinstances._
 
   test("Fixture") {
 
@@ -73,7 +72,7 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     val expected = "67" +
       "D4C38D7EA4C68000" +
       "0000000000000000000000005553440000000000" + // Currency
-      "E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
+      "E14829DB4C6419A8EFCAC1EC21D891A1A4339871"   // Issuer with no VL Encoding
 
     val fieldExpected    = "67"
     val amountExpected   = "D4C38D7EA4C68000"

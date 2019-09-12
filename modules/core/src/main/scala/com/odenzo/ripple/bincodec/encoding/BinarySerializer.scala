@@ -12,9 +12,4 @@ object BinarySerializer extends ByteUtils {
 
   val defns: DefinitionData = Definitions.fieldData
 
-  // These should be in Reference Data
-  val objDel: List[UByte] = List(UByte(15))
-
-  val arrDel: List[UByte] = List(UByte(14))
-
 }

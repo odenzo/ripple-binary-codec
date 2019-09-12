@@ -1,32 +1,24 @@
 package com.odenzo.ripple.bincodec
 
-import cats._
 import cats.data._
 import cats.implicits._
-
-import cats.Eval
+import cats.{Eval, _}
 import io.circe.{JsonObject, Decoder}
 import org.scalatest.{OptionValues, FunSuiteLike, EitherValues, Matchers}
-import scribe.{Logging, Level}
+import scribe.Logging
 
-import com.odenzo.ripple.bincodec.utils.caterrors.ErrorOr.ErrorOr
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import ErrorOr.ErrorOr
 
 trait OTestSpec extends FunSuiteLike with Logging with Matchers with EitherValues with OptionValues with OTestUtils {
 
   private val touch = TestLoggingConfig.setTestLogging.value
 
-  def setLogToDebug(): Unit = TestLoggingConfig.setAll(Level.Debug)
   def getOrLog[T](ee: ErrorOr[T], msg: String = "Error: "): T = {
-
-    RippleCodecError.dump(ee) match {
-      case None       => //scribe.debug("No Errors Found")
-      case Some(emsg) => scribe.error(s"$msg\t=> ${emsg.show} ")
-    }
-
     ee match {
-      case Left(e)  => assert(false, "getOrLog error"); throw new Exception("getOrLogError")
       case Right(v) => v
+      case Left(emsg) =>
+        scribe.error(s"$msg\t=> ${emsg.show} ")
+        fail(emsg)
     }
   }
 

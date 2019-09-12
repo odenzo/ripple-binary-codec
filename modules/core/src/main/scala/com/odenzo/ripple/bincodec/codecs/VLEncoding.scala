@@ -5,8 +5,7 @@ import cats.data._
 import cats.implicits._
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
-import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
+import com.odenzo.ripple.bincodec.{EncodedVL, BCLibErr, RawValue, BinCodecLibError}
 
 trait VLEncoding {
 
@@ -15,9 +14,8 @@ trait VLEncoding {
     * @param bytes
     * @return
     */
-  def prependVL(bytes: List[UByte]): Either[OErrorRipple, EncodedVL] = {
+  def prependVL(bytes: List[UByte]): Either[BCLibErr, EncodedVL] = {
     encodeVL(bytes.length).map(v => EncodedVL(v, RawValue(bytes)))
-
   }
 
   /** We are going to encode the len in an array of bytes betwen 0 and 4 bytes long.
@@ -28,7 +26,7 @@ trait VLEncoding {
     *
     * @return The encodedVL, which 1, 2, or 3 bytes. There is no RiplpleType for this
     */
-  def encodeVL(lengthToEnc: Int): Either[OErrorRipple, RawValue] = {
+  def encodeVL(lengthToEnc: Int): Either[BCLibErr, RawValue] = {
     val vl = lengthToEnc match {
 
       // Is this really inclusive 192 = 11000000
@@ -41,27 +39,27 @@ trait VLEncoding {
         List(
           UByte(241 + (length >>> 16)),
           UByte((length >> 8) & 0xff),
-          UByte(length & 0xff),
+          UByte(length & 0xff)
         ).asRight
 
-      case l => RippleCodecError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
+      case l => BinCodecLibError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
     }
 
     vl.map(RawValue)
   }
 
-  /** Note that for generality, data may have more fields after the VL encoded one */
-  def decodeVL(data: List[UByte]): Either[OErrorRipple, (Int, List[UByte])] = {
+  /** Note that data may have more fields after the VL encoded one */
+  def decodeVL(data: List[UByte]): Either[BCLibErr, (Int, List[UByte])] = {
     // If top two bits are zero its one byte
     // This just calculates the number of bytes in VL
     // FIXME: Isn't actaully returning the length yet, except < 192 lengths
     // The length is data.length - 1 , 2 or 3 cheating.
     // Better to do the full decode
-    val left: Either[OErrorRipple, (Int, List[UByte])] = data match {
+    val left: Either[BCLibErr, (Int, List[UByte])] = data match {
       case h :: t if h <= UByte(192) => (h.toInt, data.drop(1)).asRight
       case h :: t if h <= UByte(240) => (0, data.drop(2)).asRight
       case h :: t if h <= UByte(254) => (0.toInt, data.drop(3)).asRight
-      case other                     => RippleCodecError(s"Illegal VL Encoding").asLeft
+      case other                     => BinCodecLibError(s"Illegal VL Encoding").asLeft
     }
 
     left

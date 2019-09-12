@@ -7,8 +7,11 @@ import scribe.Level.Debug
 import com.odenzo.ripple.bincodec.codecs.AccountIdCodecs
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
+/**
+  * This will fail on fields which have a null value.
+  *
+  */
 object RippleCodecAPI {
 
   //scribe.warn("RippleCodeAPI Setup")
@@ -18,11 +21,11 @@ object RippleCodecAPI {
     * Expects a top level JsonObject representing a JSON document
     * that would be sent to rippled server. All isSerializable fields serialized.
     *
-    * @param jsonObject
+    * @param jsonObject  WITHOUT NULL VALUES
     *
     * @return Hex string representing the serialization in total.
     */
-  def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
+  def binarySerialize(jsonObject: JsonObject): Either[BinCodecLibError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
@@ -34,7 +37,7 @@ object RippleCodecAPI {
     *
     * @param tx_json
     */
-  def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
+  def binarySerializeForSigning(tx_json: JsonObject): Either[BinCodecLibError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
   }
 
@@ -44,7 +47,7 @@ object RippleCodecAPI {
     * @param jsonObject The tx_json object, with auto-fillable fields filled
     * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
     */
-  def serializedTxBlob(jsonObject: JsonObject): Either[RippleCodecError, Array[Byte]] = {
+  def serializedTxBlob(jsonObject: JsonObject): Either[BinCodecLibError, Array[Byte]] = {
     binarySerialize(jsonObject).map(_.toBytes)
   }
 
@@ -55,7 +58,7 @@ object RippleCodecAPI {
     *
     * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
     */
-  def signingTxBlob(jsonObject: JsonObject): Either[RippleCodecError, Array[Byte]] = {
+  def signingTxBlob(jsonObject: JsonObject): Either[BinCodecLibError, Array[Byte]] = {
     binarySerializeForSigning(jsonObject).map(_.toBytes)
   }
 
@@ -66,7 +69,7 @@ object RippleCodecAPI {
     *
     * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
     */
-  def serializedTxBlob(tx: String): Either[RippleCodecError, Array[Byte]] = {
+  def serializedTxBlob(tx: String): Either[BinCodecLibError, Array[Byte]] = {
     JsonUtils.parseAsJsonObject(tx).flatMap(serializedTxBlob)
   }
 
@@ -77,7 +80,7 @@ object RippleCodecAPI {
     *
     * @return Binary format, equivalent to tx_blob when converted to Hex, no padding needed
     */
-  def signingTxBlob(tx: String): Either[RippleCodecError, Array[Byte]] = {
+  def signingTxBlob(tx: String): Either[BinCodecLibError, Array[Byte]] = {
     JsonUtils.parseAsJsonObject(tx).flatMap(signingTxBlob)
   }
 
@@ -89,7 +92,7 @@ object RippleCodecAPI {
     * @param addressBase58Check An account address in Base58Check form, e.g.  r9EP7xcWBAWEHhgtm4evqsHTJT4ZesJHXX
     * @return Array of bytes or an error. This currently is NOT VLEncoded, just raw bytes.
     */
-  def serializedAddress(addressBase58Check: String): Either[RippleCodecError, Array[Byte]] = {
+  def serializedAddress(addressBase58Check: String): Either[BinCodecLibError, Array[Byte]] = {
     AccountIdCodecs.encodeAccountNoVL(Json.fromString(addressBase58Check)).map(_.toBytes)
   }
 }

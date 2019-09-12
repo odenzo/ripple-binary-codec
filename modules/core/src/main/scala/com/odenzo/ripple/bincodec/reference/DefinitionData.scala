@@ -3,14 +3,13 @@ package com.odenzo.ripple.bincodec.reference
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.Json
+import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import spire.math.{UByte, UInt}
 
-import com.odenzo.ripple.bincodec.RawValue
+import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 /**
   *
@@ -26,20 +25,20 @@ case class FieldType(nth: Long, isVLEncoded: Boolean, isSerialized: Boolean, isS
 
 object FieldType {
 
-  import io.circe._
-
   implicit val config: Configuration =
     Configuration.default.copy(transformMemberNames = (s: String) => if (s === "tipe") "type" else s)
   implicit val codec: Codec.AsObject[FieldType] = deriveConfiguredCodec[FieldType]
 }
 
 /** FeildType merged with RippleDataType, with no data */
-case class FieldMetaData(name: String,
-                         nth: Long,
-                         isVLEncoded: Boolean,
-                         isSerialized: Boolean,
-                         isSigningField: Boolean,
-                         datatype: RippleDataType) {
+case class FieldMetaData(
+    name: String,
+    nth: Long,
+    isVLEncoded: Boolean,
+    isSerialized: Boolean,
+    isSigningField: Boolean,
+    datatype: RippleDataType
+) {
 
   val fieldID: RawValue = RawValue(FieldMetaData.encodeFieldID(nth.toInt, datatype.value.toInt))
   val sortKey: UInt     = UInt(datatype.value) << 16 | UInt(nth)
@@ -55,7 +54,7 @@ case class FieldMetaData(name: String,
   * @param fi   Metadata about the field and its type
   */
 case class FieldData(json: Json, fi: FieldMetaData) {
-  @inline final def fieldName: String = fi.name
+  final def fieldName: String = fi.name
 }
 
 object FieldMetaData {
@@ -93,11 +92,13 @@ object FieldMetaData {
   * @param txnTypes
   * @param txnResultTypes
   */
-case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
-                          types: Map[String, Long],
-                          ledgerTypes: Map[String, Long],
-                          txnTypes: Map[String, Long],
-                          txnResultTypes: Map[String, Long]) {
+case class DefinitionData(
+    fieldsInfo: Map[String, FieldMetaData],
+    types: Map[String, Long],
+    ledgerTypes: Map[String, Long],
+    txnTypes: Map[String, Long],
+    txnResultTypes: Map[String, Long]
+) {
 
   /** Tries to find the fieldnInfo for the fieldName. This may not exist (e.g. hash)
     * because the field is not (isSerialized or isSigning)
@@ -115,37 +116,40 @@ case class DefinitionData(fieldsInfo: Map[String, FieldMetaData],
     fieldsInfo.filter { case (_: String, fi: FieldMetaData) => fi.nth === nth }.values
   }
 
-  def getFieldData(fieldName: String, fieldValue: Json): Either[OErrorRipple, FieldData] = {
-    Either.fromOption(optFieldData(fieldName, fieldValue), RippleCodecError(s"$fieldName not found"))
+  def getFieldData(fieldName: String, fieldValue: Json): Either[BCLibErr, FieldData] = {
+    Either.fromOption(optFieldData(fieldName, fieldValue), BinCodecLibError(s"$fieldName not found"))
   }
 
-  def getFieldInfo(name: String): Either[OErrorRipple, FieldMetaData] = getMapEntry(fieldsInfo, name)
+  def getFieldInfo(name: String): Either[BCLibErr, FieldMetaData] = getMapEntry(fieldsInfo, name)
 
   def findFieldInfo(fieldName: String): Option[FieldMetaData] = fieldsInfo.get(fieldName)
 
-  def getTypeObj(name: String): Either[OErrorRipple, RippleDataType] =
+  def getTypeObj(name: String): Either[BCLibErr, RippleDataType] =
     getType(name).map(RippleDataType(name, _)) // Optimize
 
-  def getType(name: String): Either[OErrorRipple, Long] = getMapEntry(types, name)
+  def getType(name: String): Either[BCLibErr, Long] = getMapEntry(types, name)
 
   // Optimize We should map these to UInt16 bytes as they are always encoded that way
-  def getTransactionType(txn: String): Either[OErrorRipple, Long] = getMapEntry(txnTypes, txn)
+  def getTransactionType(txn: String): Either[BCLibErr, Long] = getMapEntry(txnTypes, txn)
 
   // Optimize We should map these to UInt16 bytes as they are always encoded that way
-  def getLedgerEntryType(lt: String): Either[OErrorRipple, Long] = getMapEntry(ledgerTypes, lt)
+  def getLedgerEntryType(lt: String): Either[BCLibErr, Long] = getMapEntry(ledgerTypes, lt)
 
-  def getTxnResultType(lt: String): Either[OErrorRipple, Long] = getMapEntry(txnResultTypes, lt)
+  def getTxnResultType(lt: String): Either[BCLibErr, Long] = getMapEntry(txnResultTypes, lt)
 
   /** Each field has a marker, for debugging I find the fieldinfo from that
     * Meh, easier to do this via bytes */
-  def findByFieldMarker(ub: List[UByte]): Option[(String, FieldMetaData)] = {
-    val ms = fieldsInfo.filter { case (v: String, fi: FieldMetaData) => fi.fieldID.ubytes === ub }
+  def findByFieldMarker(ub: List[UByte]): Either[BCLibErr, FieldMetaData] = {
+    val ms: Map[String, FieldMetaData] = fieldsInfo.filter { case (_, fi: FieldMetaData) => fi.fieldID.ubytes === ub }
     ms.foreach(ms => scribe.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
-    ms.headOption
+    if (ms.size > 1) BinCodecLibError(s"FieldMarker ${ub} found ${ms.size} times in fieldinfo.").asLeft
+    else {
+      ms.headOption.map(_._2).toRight(BinCodecLibError(s"FieldMarker ${ub} not found in fieldinfo."))
+    }
   }
 
-  private def getMapEntry[T, V](map: Map[T, V], key: T): Either[OErrorRipple, V] = {
-    Either.fromOption(map.get(key), RippleCodecError(s" $key not found in map"))
+  private def getMapEntry[T, V](map: Map[T, V], key: T): Either[BCLibErr, V] = {
+    map.get(key).toRight(BinCodecLibError(s" $key not found in map"))
   }
 
 }
@@ -155,6 +159,12 @@ object DefinitionData {
   val pathSetEnd      = RawValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
   val objectEndMarker = RawValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
   val arrayEndMarker  = RawValue(List(UByte(0xF1)))
+
+  val objDel: List[UByte] = List(UByte(15))
+  val arrDel: List[UByte] = List(UByte(14))
+
+  final val objectMarkerEndName: String = "ObjectEndMarker"
+  final val arrayMarkerEndName: String  = "ArrayEndMarker"
 
   implicit val showFieldInfo: Show[FieldMetaData] = Show[FieldMetaData] { fi =>
     s"${fi.fieldID.toHex} : ${fi.name} ${fi.datatype.name} : VL ${fi.isVLEncoded} " +

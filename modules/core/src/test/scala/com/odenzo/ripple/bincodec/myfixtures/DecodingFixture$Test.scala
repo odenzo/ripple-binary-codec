@@ -8,9 +8,8 @@ import io.circe.syntax._
 import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils}
-import com.odenzo.ripple.bincodec.{Decoded, EncodedSTObject, OTestSpec}
+import com.odenzo.ripple.bincodec.utils.{FixtureUtils, ByteUtils}
+import com.odenzo.ripple.bincodec.{Decoded, EncodedSTObject, OTestSpec, BinCodecLibError}
 
 /** This test is designed to process Transaction Request and Response files */
 class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with FixtureUtils {
@@ -18,7 +17,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   val txnFixt: List[(JsonObject, JsonObject)] = loadTransactions("/mytests/all_txns.json")
 
   /** See if we can get the correct Signing Public Key and Hash to start */
-  def decodeOne(rq: JsonObject, rs: JsonObject): Either[RippleCodecError, List[Decoded]] = {
+  def decodeOne(rq: JsonObject, rs: JsonObject): Either[BinCodecLibError, List[Decoded]] = {
 
     scribe.info(s"Response: ${rs.asJson.spaces4}")
 
@@ -43,7 +42,7 @@ class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils with F
   }
 
   def dumpNestedFieldsInfo(nested: EncodedSTObject): Unit = {
-    import com.odenzo.ripple.bincodec.syntax.debugging._
+    import com.odenzo.ripple.bincodec.syntax.showinstances._
     scribe.info(s"The tree: ${nested.show}")
   }
 

@@ -9,11 +9,13 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, FixtureUtils}
 import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, RippleCodecAPI, TestLoggingConfig}
+import io.circe.optics._
+import io.circe.optics.JsonPath._
 
 /** This test is designed to process Transaction Request and Response files */
 class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils with FixtureUtils {
 
-  import com.odenzo.ripple.bincodec.syntax.debugging._
+  import com.odenzo.ripple.bincodec.syntax.showinstances._
 
   val mixed: List[(JsonObject, JsonObject)] = loadTransactions("/mytests/all_txns.json")
   val allTxn                                = mixed
@@ -30,12 +32,13 @@ class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils w
   }
 
   /** See if we can get the correct Signing Public Key and Hash to start */
-  private def testViaAPI(rq: JsonObject, rs: JsonObject) = {
+  private def testViaAPI(rq: JsonObject, rs: JsonObject): Either[Nothing, EncodedSTObject] = {
 
     scribe.debug(s"Request: ${rq.asJson.spaces4}")
     scribe.debug(s"Response: ${rs.asJson.spaces4}")
 
     // This is from response which is populated with default values.
+
     val result         = findRequiredObject("result", rs)
     val txjson         = findRequiredObject("tx_json", result)
     val txblob: String = findRequiredStringField("tx_blob", result)
