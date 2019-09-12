@@ -5,8 +5,7 @@ import scala.collection.immutable
 import org.scalatest.FunSuite
 import spire.math._
 
-import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.{OTestSpec, BinCodecLibError}
 
 class ByteUtilsTest extends FunSuite with OTestSpec {
 
@@ -30,7 +29,7 @@ class ByteUtilsTest extends FunSuite with OTestSpec {
     (0 to 255).foreach { n =>
       val byte: UByte                           = UByte(n.toByte)
       val hex: String                           = ByteUtils.ubyte2hex(byte)
-      val back: Either[RippleCodecError, UByte] = ByteUtils.hex2ubyte(hex)
+      val back: Either[BinCodecLibError, UByte] = ByteUtils.hex2ubyte(hex)
 
       scribe.debug(s"$byte <=> $hex <=> $back")
       getOrLog(back) shouldEqual byte

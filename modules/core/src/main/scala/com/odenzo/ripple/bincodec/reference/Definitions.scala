@@ -1,12 +1,11 @@
 package com.odenzo.ripple.bincodec.reference
 
-import java.io.InputStream
-import scala.io.{BufferedSource, Source}
+import scala.io.Source
 
 import cats.implicits._
 
+import com.odenzo.ripple.bincodec.BinCodecLibError
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 
 /** Definitions are loading from the definitions.js file supplied by Ripple from their C++ for the JavaScript library.
   *     [[https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json]]
@@ -21,21 +20,14 @@ object Definitions extends JsonUtils {
     case Right(v)  => v
   }
 
-  final val objectMarkerEndName: String = "ObjectEndMarker"
-  final val arrayMarkerEndName: String  = "ArrayEndMarker"
-
-  /** Loads the default data
-    * @return
-    */
-  def loadDefaultData(): Either[RippleCodecError, DefinitionData] = {
+  def loadDefaultData(): Either[BinCodecLibError, DefinitionData] = {
     val resourceName = "/ripplereferencedata/definitions.json"
     scribe.info(s"Loading Default Data from $resourceName")
 
-    Option(this.getClass.getResourceAsStream(resourceName)) match {
-      case None => RippleCodecError(s"Couldn't Find Definitions Resource $resourceName").asLeft
-      case Some(s) =>
-        val txt = Source.fromInputStream(s, "UTF-8").getLines().mkString("\n")
-        JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitions)
+    BinCodecLibError.wrap(s"Couldn't Load Definitions Resource $resourceName") {
+      val stream = this.getClass.getResourceAsStream(resourceName)
+      val txt    = Source.fromInputStream(stream, "UTF-8").getLines().mkString("\n")
+      JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitions)
     }
     // In Case I want to fetch directly next time.
     // val rippleSiteUrl: String = "https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json"

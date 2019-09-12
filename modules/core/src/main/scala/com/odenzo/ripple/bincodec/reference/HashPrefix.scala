@@ -48,7 +48,7 @@ object HashPrefix {
   // payment channel claim
   val paymentChannelClaim: HashPrefix = fromHex("434C4D00")
 
-  /** None of these overflow signed I think */
+  /** None of these overflow signed int I think */
   def fromHex(lhex: String): HashPrefix = {
     val ubytes: List[UByte] = ByteUtils.unsafeHex2ubytes(lhex)
     scribe.warn(s"Long: $lhex bytes: $ubytes")

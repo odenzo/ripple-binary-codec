@@ -33,7 +33,7 @@ object TestLoggingConfig {
       // This don't cut out by class or method.
       val packagesToMute: List[String] = List(
         //"com.odenzo.ripple.bincodec.reference",
-        "com.odenzo.ripple.bincodec.codecs.STObjectCodec",
+        "com.odenzo.ripple.bincodec.codecs.STObjectCodec"
       )
       ScribeLoggingConfig.addModifiers(packagesToMute, Level.Warn)
 

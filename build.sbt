@@ -4,7 +4,7 @@ lazy val supportedScalaVersions = List("2.13.0", "2.12.9")
 scalaVersion := supportedScalaVersions.head
 
 ThisBuild / organization := "com.odenzo"
-ThisBuild / version := "0.1.1"
+
 ThisBuild / scalaVersion := supportedScalaVersions.head
 ThisBuild / name := "ripple-binary-codec"
 
@@ -46,9 +46,9 @@ lazy val commonSettings = Seq(
   )
 )
 
-val circeVersion      = "0.12.0-RC4"
-val catsVersion       = "2.0.0-RC3"
-val catsEffectVersion = "2.0.0-RC2"
+val circeVersion      = "0.12.1"
+val catsVersion       = "2.0.0"
+val catsEffectVersion = "2.0.0"
 val spireVersion      = "0.17.0-M1"
 val scribeVersion     = "2.7.9"
 val scalaTestVersion  = "3.0.8"
@@ -61,6 +61,8 @@ val libs = Seq(
   "io.circe"       %% "circe-generic"        % circeVersion,
   "io.circe"       %% "circe-generic-extras" % circeVersion,
   "io.circe"       %% "circe-parser"         % circeVersion,
+  "io.circe"       %% "circe-optics"         % "0.12.0-RC2" % Test,
+  "io.circe"       %% "circe-literal"        % circeVersion % Test,
   "org.typelevel"  %% "cats-core"            % catsVersion,
   "org.typelevel"  %% "cats-effect"          % catsEffectVersion,
   "org.typelevel"  %% "spire"                % spireVersion,

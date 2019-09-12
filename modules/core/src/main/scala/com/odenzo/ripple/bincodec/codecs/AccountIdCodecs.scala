@@ -4,9 +4,8 @@ import cats.implicits._
 import io.circe.Json
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.{EncodedVL, RawValue}
+import com.odenzo.ripple.bincodec.{EncodedVL, BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.RippleBase58
-import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 /**
   * Accounts a little special and also I want to create, encode, and decode later.
@@ -36,11 +35,11 @@ trait AccountIdCodecs {
     *  encodes an Account field with VL Header (variable length field)
     *  When not nested, this form is useed.
     */
-  def encodeAccount(json: Json): Either[OErrorRipple, EncodedVL] = {
+  def encodeAccount(json: Json): Either[BCLibErr, EncodedVL] = {
     for {
       bits160 <- encodeAccountNoVL(json)
       vl      <- VLEncoding.encodeVL(bits160.rawBytes.length) // ALways 20 bytes
-      fused   = EncodedVL(vl, bits160)
+      fused = EncodedVL(vl, bits160)
     } yield fused
 
   }
@@ -49,11 +48,11 @@ trait AccountIdCodecs {
     * the AccountID is 160 bits but is not VL encoded.
     * This is special case so stick with raw encoded value
     */
-  def encodeAccountNoVL(json: Json): Either[OErrorRipple, RawValue] = {
-    val account: Either[OErrorRipple, String] =
-      Either.fromOption(json.asString, RippleCodecError("Account JSON Not String"))
+  def encodeAccountNoVL(json: Json): Either[BCLibErr, RawValue] = {
+    val account: Either[BCLibErr, String] =
+      Either.fromOption(json.asString, BinCodecLibError("Account JSON Not String"))
 
-    val asBytes: Either[OErrorRipple, List[UByte]] = account.map { s =>
+    val asBytes: Either[BCLibErr, List[UByte]] = account.map { s =>
       val allBytes: List[UByte] = RippleBase58.decode(s).map(UByte(_)).toList
       val padded = if (allBytes.length < 24) {
         List.fill(24 - allBytes.length)(UByte(0)) ::: allBytes

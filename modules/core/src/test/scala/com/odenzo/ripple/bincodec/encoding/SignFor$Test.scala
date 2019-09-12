@@ -85,7 +85,7 @@ class SignFor$Test extends OTestSpec {
 
     logger.info(s"TxBlob: $txblob")
 
-    import com.odenzo.ripple.bincodec.syntax.debugging._
+    import com.odenzo.ripple.bincodec.syntax.showinstances._
 
     val signingEncoded: EncodedSTObject = getOrLog(RippleCodecAPI.binarySerializeForSigning(tx_json))
     logger.debug(s"Signing ${signingEncoded.show}")

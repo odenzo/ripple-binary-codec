@@ -2,6 +2,7 @@ package com.odenzo.ripple.bincodec.codecs
 
 import scala.annotation.tailrec
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -9,41 +10,41 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, RippleCodecError}
-import com.odenzo.ripple.bincodec.{DecodedNestedField, EncodedPathSet, RawValue}
+import com.odenzo.ripple.bincodec._
 
 trait PathCodecs extends JsonUtils {
 
   /** These is really a container. Inside is a list of  datasteps and delimeters **/
-  def encodePathSet(data: FieldData): Either[RippleCodecError, EncodedPathSet] = {
+  def encodePathSet(data: FieldData): Either[BinCodecLibError, EncodedPathSet] = {
 
     // Another array of arrays. List of PathSet, each PathSet has Paths, each Path has  PathSteps
 
-    val pathList: Either[RippleCodecError, List[Json]] = json2array(data.json)
+    val pathList: Either[BinCodecLibError, List[Json]] = json2array(data.json)
 
     val another = DefinitionData.pathSetAnother
     val end     = DefinitionData.pathSetEnd
 
-    val encodedPaths = pathList.flatMap { path: List[Json] =>
-      path.traverse(encodePathStep)
-    }
+    val encodedPaths = pathList.flatMap((path: List[Json]) => path.traverse(encodePathStep))
 
+    encodedPaths.map((p: List[RawValue]) => NonEmptyList.fromList(p))
     // No for each of the paths we need to put in deliminers
+    // Pattern Match  headUntilLast:::rest::last::Nil, logic good. I 1 or more, not if zero
     encodedPaths.map { listOfPaths: List[RawValue] =>
-      val rest: List[RawValue] = listOfPaths.dropRight(1).flatMap(path => List(path, another))
-
-      val lastPath: RawValue      = listOfPaths.takeRight(1).head
-      val endList: List[RawValue] = List(lastPath, end)
-
-      val subFields: List[RawValue] = rest ::: endList
-
-      EncodedPathSet(subFields)
-
+      if (listOfPaths.length > 0) {
+        val rest: List[RawValue]      = listOfPaths.dropRight(1).flatMap(path => List(path, another))
+        val lastPath: RawValue        = listOfPaths.takeRight(1).head // listOfPaths.last is new in 2.13?
+        val endList: List[RawValue]   = List(lastPath, end)
+        val subFields: List[RawValue] = rest ::: endList
+        EncodedPathSet(subFields)
+      } else {
+        // Not sure what this should be, don't think it will ever occur
+        EncodedPathSet(List.empty[Encoded])
+      }
     }
   }
 
   /** @param json The array surrounding the object **/
-  def encodePathStep(json: Json): Either[RippleCodecError, RawValue] = {
+  def encodePathStep(json: Json): Either[BinCodecLibError, RawValue] = {
     /*
       account by itself
       currency by itself
@@ -52,7 +53,7 @@ trait PathCodecs extends JsonUtils {
      */
     scribe.debug(s"Encoding Path Step\n ${json.spaces2}")
     // Another array of arrays
-    val arr: Either[RippleCodecError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
+    val arr: Either[BinCodecLibError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
 
     // In a step the following fields are serialized in the order below
     // FIXME: Move to reference data
@@ -61,12 +62,12 @@ trait PathCodecs extends JsonUtils {
     val issuerType: UByte        = UByte(32)
     val currencyAndIssuer: UByte = currencyType | issuerType
 
-    def combine2(amtType: UByte, amt: RawValue): RawValue = {
-      RawValue(amtType +: amt.ubytes)
+    def combine2(stepType: UByte, data: RawValue): RawValue = {
+      RawValue(stepType +: data.ubytes)
     }
 
-    def combine3(amtType: UByte, curr: RawValue, issuer: RawValue): RawValue = {
-      RawValue(amtType +: (curr.ubytes ++ issuer.ubytes))
+    def combine3(stepType: UByte, curr: RawValue, issuer: RawValue): RawValue = {
+      RawValue(stepType +: (curr.ubytes ++ issuer.ubytes))
     }
 
     val ans = arr.flatMap { obj: JsonObject =>
@@ -75,7 +76,7 @@ trait PathCodecs extends JsonUtils {
 
       fields match {
         case Some(account) :: None :: None :: Nil =>
-          AccountIdCodecs.encodeAccountNoVL(account).map(ac => combine2(accountType, ac))
+          AccountIdCodecs.encodeAccountNoVL(account).map(combine2(accountType, _))
 
         case None :: Some(curr) :: None :: Nil =>
           MoneyCodecs.encodeCurrency(curr).map(combine2(currencyType, _))
@@ -88,7 +89,7 @@ trait PathCodecs extends JsonUtils {
           (MoneyCodecs.encodeCurrency(curr), AccountIdCodecs.encodeAccountNoVL(issuer))
             .mapN(combine3(currencyAndIssuer, _, _))
 
-        case _ => RippleCodecError("Illegal Path", obj.asJson).asLeft
+        case _ => BinCodecLibError("Illegal Path", obj.asJson).asLeft
       }
     }
 

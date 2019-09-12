@@ -5,13 +5,11 @@ import cats.data._
 import cats.implicits._
 import io.circe._
 import io.circe.syntax._
-import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.codecs.ContainerFields
-import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, OTestUtils}
+import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec}
 
-class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
+class CodecFixtures$Test extends OTestSpec {
 
   test("Codec-Fixtures") {
     val fixturesAttempt      = super.loadJsonResource("/test/fixtures/codec-fixtures.json")
@@ -43,7 +41,7 @@ class CodecFixtures$Test extends FunSuite with OTestSpec with OTestUtils {
       }
 
   }
-  import com.odenzo.ripple.bincodec.syntax.compact._
+  import com.odenzo.ripple.bincodec.syntax.showinstances._
 
   def oneFixture(json: JsonObject, expected: String): Unit = {
     scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")

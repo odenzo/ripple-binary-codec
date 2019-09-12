@@ -8,10 +8,9 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec._
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
-import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
+import com.odenzo.ripple.bincodec.encoding.{TypeSerializers, CodecUtils}
 import com.odenzo.ripple.bincodec.reference.{FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.utils.caterrors.{OErrorRipple, RippleCodecError}
 
 trait STObjectCodec extends CodecUtils with JsonUtils {
 
@@ -25,20 +24,21 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     *
     * @return List of each of the named fields in the object with their encoded information
     */
-  def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[RippleCodecError, EncodedSTObject] = {
+  def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
     // Well, first lets try and get the fields and order them if needed.
+
     scribe.debug(s"Encoding STObject to Bytes: nested $isNested  Signing $isSigning")
 
-    val jobj: Either[RippleCodecError, JsonObject] = json2object(o)
+    val jobj: Either[BinCodecLibError, JsonObject] = json2object(o.dropNullValues)
 
-    val ans: Either[RippleCodecError, List[EncodedField]] = jobj
+    val ans: Either[BinCodecLibError, List[EncodedField]] = jobj
       .flatMap(prepareJsonObject(_, isSigning))
       .flatMap(
         lf =>
           lf.traverse(
             TypeSerializers
               .encodeFieldAndValue(_, true, isSigning)
-        )
+          )
       )
 
     // Only at objectEndMarker when? Not for top level
@@ -46,15 +46,15 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
 
   }
 
-  def decodeSTObject(v: List[UByte], info: FieldMetaData): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+  def decodeSTObject(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedNestedField, List[UByte])] = {
     val endOfSTObjectMarker = UByte(0xE1)
 
     // info is for the top level array
     @scala.annotation.tailrec
-    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[BCLibErr, (List[Decoded], List[UByte])] = {
       ub match {
         case h :: t if h === endOfSTObjectMarker => (acc.reverse, ub.drop(1)).asRight
-        case Nil                                 => RippleCodecError("Badly Formed STObject").asLeft
+        case Nil                                 => BinCodecLibError("Badly Formed STObject").asLeft
         case other => // The next bytes have another field
           TxBlobBuster.decodeNextField(ub) match {
             case Left(err)            => err.asLeft
@@ -78,7 +78,7 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     *
     * @return
     */
-  def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[RippleCodecError, List[FieldData]] = {
+  def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[BinCodecLibError, List[FieldData]] = {
 
     val bound: List[FieldData] = o.toList.flatMap {
       case (fieldName, fieldVal) => dd.optFieldData(fieldName, fieldVal)
@@ -100,19 +100,12 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
   * Account is VLEncoded in here.
   */
 trait STArrayCodec extends CodecUtils with JsonUtils {
-  def encodeSTArray(data: FieldData, isSigning: Boolean): Either[RippleCodecError, EncodedSTArray] = {
+  def encodeSTArray(data: FieldData, isSigning: Boolean): Either[BinCodecLibError, EncodedSTArray] = {
     scribe.info(s"STArray:\n${data.json.spaces2}")
 
-    def handleOneArrayElement(v: Json): Either[RippleCodecError, EncodedSTObject] = {
-      STObjectCodec.encodeSTObject(v, isNested = false, isSigning = isSigning) // This bytes... need End of Object
-      // but not VLEncoded.
-      //      json2object(v).map(_.toList).flatMap {
-//        case (fieldName: String, value: Json) :: Nil =>
-//          dd.getFieldData(fieldName, value)
-//            .flatMap(fd => TypeSerializers.encodeFieldAndValue(fd, isNestedObject = false, isSigning))
-//            .map(encField => EncodedNestedVals(List(encField)))
-//        case _ => RippleCodecError("Expected Exaclty One Field", v.asJson).asLeft
-//      }
+    def handleOneArrayElement(v: Json): Either[BinCodecLibError, EncodedSTObject] = {
+      STObjectCodec.encodeSTObject(v, isNested = false, isSigning = isSigning)
+
     }
 
     // Sticking to one encoded field per array elem. Even though each field is actually nested in an object.
@@ -121,15 +114,15 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
     array
   }
 
-  def decodeSTArray(v: List[UByte], info: FieldMetaData): Either[OErrorRipple, (DecodedNestedField, List[UByte])] = {
+  def decodeSTArray(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedNestedField, List[UByte])] = {
     val endOfFieldsMarker = UByte(0xF1)
 
     // info is for the top level array
-    def subfields(ub: List[UByte], acc: List[Decoded]): Either[OErrorRipple, (List[Decoded], List[UByte])] = {
+    def subfields(ub: List[UByte], acc: List[Decoded]): Either[BCLibErr, (List[Decoded], List[UByte])] = {
       if (ub.head === endOfFieldsMarker) {
         (acc.reverse, ub.drop(1)).asRight
       } else {
-        val next: Either[OErrorRipple, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
+        val next: Either[BCLibErr, (Decoded, List[UByte])] = TxBlobBuster.decodeNextField(ub)
         next match {
           case Left(err)            => err.asLeft
           case Right((field, tail)) => subfields(tail, field :: acc)
@@ -153,17 +146,17 @@ trait Vector256Codec extends CodecUtils with JsonUtils {
     *
     * @return
     */
-  def encodeVector256(data: FieldData): Either[RippleCodecError, EncodedVector256] = {
+  def encodeVector256(data: FieldData): Either[BinCodecLibError, EncodedVector256] = {
     // Like Indexes, these all seems to be 64 hex bytes in quotes 256 bits
 
-    def encodeListOfHash(jsonList: List[Json]): Either[RippleCodecError, List[EncodedDataType]] =
+    def encodeListOfHash(jsonList: List[Json]): Either[BinCodecLibError, List[EncodedDataType]] =
       jsonList.traverse(HashHexCodecs.encodeHash256)
 
     for {
-      arr      <- json2array(data.json)
-      hashes   <- encodeListOfHash(arr)
+      arr    <- json2array(data.json)
+      hashes <- encodeListOfHash(arr)
       totalLen = hashes.map(_.value.rawBytes.length).sum
-      vl       <- VLEncoding.encodeVL(totalLen)
+      vl <- VLEncoding.encodeVL(totalLen)
     } yield EncodedVector256(vl, hashes)
 
   }

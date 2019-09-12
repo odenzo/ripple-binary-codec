@@ -5,86 +5,59 @@ import cats.implicits._
 import io.circe.Json
 
 import com.odenzo.ripple.bincodec.codecs.{
-  AccountIdCodecs,
   ContainerFields,
+  VLEncoding,
+  PathCodecs,
+  AccountIdCodecs,
+  MoneyCodecs,
   HashHexCodecs,
   MiscCodecs,
-  MoneyCodecs,
-  PathCodecs,
-  UIntCodecs,
-  VLEncoding
+  UIntCodecs
 }
 import com.odenzo.ripple.bincodec.reference.FieldData
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedField, EncodedSTObject, EncodedVL, RawValue}
+import com.odenzo.ripple.bincodec.{Encoded, EncodedSTObject, RawValue, EncodedVL, EncodedField, BinCodecLibError}
 
 /**
-  * I am not building these based on pure JSON rather
-  * than the WSModel objects
+  *  Goes throught and deep serializes a JsonObject
   */
 object TypeSerializers extends JsonUtils with CodecUtils {
 
-  def encodeTopLevel(json: Json, isSigning: Boolean): Either[RippleCodecError, EncodedSTObject] = {
-
+  /** The very top level object, which doesn't get an end of object marker */
+  def encodeTopLevel(json: Json, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
     ContainerFields.encodeSTObject(json, isNested = false, isSigning = isSigning)
   }
 
-//
-//  def deepFilterJsonObject(o:JsonObject, isSigning:Boolean):JsonObject = {
-//    o.toList.flatMap{ case (fieldName, fieldVal) =>
-//      dd.optFieldData(fieldName, fieldVal)
-//    }
-//  }
-//
-//  /**
-//    *
-//    * Canonically sorts a json object and removes non-serializable or non-signing fields
-//    * TODO: Should just do this as a deep traverse once at the begining and avoid passing isSigning around.
-//    *
-//    * @param o
-//    * @param isSigning Remove all non-signing fields if true, else serialized
-//    *
-//    * @return
-//    */
-//  def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[RippleCodecError, List[FieldData]] = {
-//    logger.trace(s"prepareJsonObect ")
-//    val bound: List[FieldData] = o.toList.flatMap{   case (fieldName, fieldVal) =>
-//      dd.optFieldData(fieldName, fieldVal)
-//    }
-//    val filtered = if (isSigning) {
-//      bound.filter(_.fi.isSigningField)
-//    } else {
-//      bound.filter(_.fi.isSerialized)
-//    }
-//
-//    filtered.sortBy(_.fi.sortKey).asRight
-//  }
-
   /**
+    *All subsequent JsonObject fields come through here to get decoded.
     * Encodes a field and value. It seems we need to know if the field is in a nested JSObject
     * in order to not VL Encode Account="r...", e.g. in txJson
     * A field here by definition has a fieldName and associated meta data.
     *
     * Note that encoding a field may produce nested structure
     *
-    * @param fieldData
-    *
+    * @param fieldData The actual Jaon for the field with the FieldMetaData
+    * @param isNestedObject Not sure we actually need this.
+    * @param signingModeOn True if we are encoding for signing vs full serialization
     * @return
     */
-  def encodeFieldAndValue(fieldData: FieldData,
-                          isNestedObject: Boolean,
-                          signingModeOn: Boolean): Either[RippleCodecError, EncodedField] = {
+  def encodeFieldAndValue(
+      fieldData: FieldData,
+      isNestedObject: Boolean,
+      signingModeOn: Boolean
+  ): Either[BinCodecLibError, EncodedField] = {
+
     val fieldName: String = fieldData.fieldName
     val fieldValue: Json  = fieldData.json
 
     scribe.debug(s"Encoding FieldValue: $fieldData")
 
-    val valueBytes: Either[RippleCodecError, Encoded] = fieldData.fi.fieldTypeName match {
+    val valueBytes: Either[BinCodecLibError, Encoded] = fieldData.fi.fieldTypeName match {
       case "UInt16" if fieldName === "LedgerEntryType" => MiscCodecs.encodeLedgerEntryType(fieldValue)
       case "UInt16" if fieldName === "TransactionType" => MiscCodecs.encodeTransactionType(fieldValue)
-      // Inside IOU Amount account is not encoded as a VL. Not sure other cases.
-      // Sticking case now is Array of Signer's
+
+      // I tihnk this is the only case I use nested. The meaning is really if its packed in (like FiatAmount)
+      // not in a JsonObject as plain field below the to object
       case "AccountID" if isNestedObject  => AccountIdCodecs.encodeAccount(fieldValue)
       case "AccountID" if !isNestedObject => AccountIdCodecs.encodeAccount(fieldValue)
 
@@ -101,12 +74,12 @@ object TypeSerializers extends JsonUtils with CodecUtils {
       case "STArray"   => ContainerFields.encodeSTArray(fieldData, signingModeOn)
       case "STObject"  => ContainerFields.encodeSTObject(fieldValue, isNestedObject, signingModeOn)
 
-      case other => RippleCodecError(s"Not handling Field Type $other").asLeft
+      case other => BinCodecLibError(s"Not handling Field Type $other").asLeft
 
     }
 
-    // Lets drag some baggage along!
-    val full: Either[RippleCodecError, EncodedField] = valueBytes.map(EncodedField(_, fieldData))
+    // Lets drag some baggage along, the original Json and FieldMetaData for debugging
+    val full: Either[BinCodecLibError, EncodedField] = valueBytes.map(EncodedField(_, fieldData))
     full
 
   }

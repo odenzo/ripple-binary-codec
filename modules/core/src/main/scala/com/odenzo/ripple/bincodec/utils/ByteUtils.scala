@@ -3,15 +3,14 @@ package com.odenzo.ripple.bincodec.utils
 import java.util.Locale
 import scala.annotation.tailrec
 
-import scribe.{Level, Logging}
+import scribe.{Logging, Level}
 import spire.implicits._
-import spire.math.{UByte, UInt, ULong}
-
+import spire.math.{UByte, ULong, UInt}
 import cats._
 import cats.data._
 import cats.implicits._
 
-import com.odenzo.ripple.bincodec.utils.caterrors.{BinCodecExeption, OErrorRipple, RippleCodecError}
+import com.odenzo.ripple.bincodec.{BCLibErr, BinCodecLibError}
 
 /** Helpers since I seldom use bits/bytes directly and Scala/Java sucks. Don't know a good lib
   * SDtarting to use Spire, and making sure these all work -- but more convenience than speed at this point
@@ -23,7 +22,7 @@ private[bincodec] trait ByteUtils extends Logging {
 
   val ZEROBYTE: Byte = 0.toByte
 
-  def hex2Bytes(hex: String): Either[RippleCodecError, List[Byte]] = Nested(hex2ubytes(hex)).map(_.toByte).value
+  def hex2Bytes(hex: String): Either[BinCodecLibError, List[Byte]] = Nested(hex2ubytes(hex)).map(_.toByte).value
 
   def byte2ubyte(b: Byte): UByte = UByte(b)
 
@@ -37,9 +36,9 @@ private[bincodec] trait ByteUtils extends Logging {
   }
 
   /** WARNING: This doesn't check range problems */
-  def bigInt2ulong(bi: BigInt): Either[OErrorRipple, ULong] = {
+  def bigInt2ulong(bi: BigInt): Either[BCLibErr, ULong] = {
     if (bi < BigInt(0) || (bi > ULong.MaxValue.toBigInt))
-      RippleCodecError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
+      BinCodecLibError(s"BigInt $bi out of ULong/UInt64 Range ").asLeft
     else ULong.fromBigInt(bi).asRight
   }
 
@@ -55,7 +54,7 @@ private[bincodec] trait ByteUtils extends Logging {
     * If the number of hex digits is odd, is padded with zero on left.
     * FIX: 2.13 fix needed
     */
-  def hex2ubytes(v: String): Either[RippleCodecError, List[UByte]] = {
+  def hex2ubytes(v: String): Either[BinCodecLibError, List[UByte]] = {
     val padded: String = v.length % 2 match {
       case 0 => v
       case 1 => '0' +: v
@@ -81,19 +80,19 @@ private[bincodec] trait ByteUtils extends Logging {
     * @param v Must be a one or two character hex string not enforced
     * @return
     */
-  def hex2ubyte(v: String): Either[RippleCodecError, UByte] = {
+  def hex2ubyte(v: String): Either[BinCodecLibError, UByte] = {
     hex2byte(v).map(UByte(_))
   }
 
   /**
-    * Note for speed
+    * Not for speed!
     *
     * @param v Must be a one or two character hex string
     *
     * @return
     */
-  def hex2byte(v: String): Either[RippleCodecError, Byte] = {
-    BinCodecExeption.wrap(s"$v hex to Byte") {
+  def hex2byte(v: String): Either[BinCodecLibError, Byte] = {
+    BinCodecLibError.wrap(s"$v hex to Byte") {
       java.lang.Long.parseLong(v, 16).toByte.asRight
     }
   }
@@ -127,9 +126,9 @@ private[bincodec] trait ByteUtils extends Logging {
   }
 
   /** List of four unsigned bytes representing unsigned long get converted */
-  def ubytes2ulong(bytes: Seq[UByte]): Either[OErrorRipple, ULong] = {
+  def ubytes2ulong(bytes: Seq[UByte]): Either[BCLibErr, ULong] = {
 
-    if (bytes.length != 8) RippleCodecError("ulong requires exactly 4 ubytes").asLeft
+    if (bytes.length != 8) BinCodecLibError("ulong requires exactly 4 ubytes").asLeft
     else {
       val ul: List[ULong]      = bytes.map(ub => ULong(ub.toLong)).toList.reverse
       val shifted: List[ULong] = ul.mapWithIndex((v: ULong, i: Int) => v << (i * 8))
@@ -146,15 +145,15 @@ private[bincodec] trait ByteUtils extends Logging {
   def ulong2hex(v: ULong): String = zeroPadLeft(v.toHexString(), 16)
 
   /** Quicky to take 16 hex chars and turn into ULong. Hex prefixed with 0x if missing */
-  def hex2ulong(hex: String): Either[RippleCodecError, ULong] = {
-    BinCodecExeption.wrap(s"Parsing ULong from $hex") {
+  def hex2ulong(hex: String): Either[BinCodecLibError, ULong] = {
+    BinCodecLibError.wrapPure(s"Parsing ULong from $hex") {
       val bi = BigInt(hex, 16)
-      ULong.fromBigInt(bi).asRight
+      ULong.fromBigInt(bi)
     }
   }
 
   /** If there are 8 bytes then return as 64 bit  ULong otherwise error. */
-  def longBytesToULong(bytes: List[UByte]): Either[OErrorRipple, ULong] = {
+  def longBytesToULong(bytes: List[UByte]): Either[BCLibErr, ULong] = {
 
     bytes.length match {
       case 8 =>
@@ -166,8 +165,8 @@ private[bincodec] trait ByteUtils extends Logging {
         val ulong: ULong = shifted.foldLeft(ULong(0))(_ | _)
         ulong.asRight
 
-      case x if x < 8 => RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}, pleaase pad").asLeft
-      case _          => RippleCodecError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
+      case x if x < 8 => BinCodecLibError(s"8 Bytes needed to convert to ulong but ${bytes.length}, pleaase pad").asLeft
+      case _          => BinCodecLibError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
     }
 
   }
@@ -182,8 +181,8 @@ private[bincodec] trait ByteUtils extends Logging {
     s"Hex: ${a.toHexString} or  ${a.toBinaryString}"
   }
 
-  def ensureMaxLength(l: List[UByte], len: Int): Either[RippleCodecError, List[UByte]] = {
-    if (l.length > len) RippleCodecError(s"Byte List length ${l.length} > $len").asLeft
+  def ensureMaxLength(l: List[UByte], len: Int): Either[BinCodecLibError, List[UByte]] = {
+    if (l.length > len) BinCodecLibError(s"Byte List length ${l.length} > $len").asLeft
     else l.asRight
   }
 

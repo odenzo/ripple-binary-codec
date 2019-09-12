@@ -8,7 +8,7 @@ import com.odenzo.ripple.bincodec.reference.DefinitionData
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec._
 
-object debugging {
+object showinstances {
 
   import ByteUtils._
 

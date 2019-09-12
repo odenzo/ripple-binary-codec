@@ -1,27 +1,30 @@
 package com.odenzo.ripple.bincodec
 
+import cats._
+import cats.data._
+import cats.implicits._
 import io.circe.Decoder.Result
 import io.circe.Json
+import io.circe.literal._
 import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
-import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
+import com.odenzo.ripple.bincodec.encoding.{TypeSerializers, CodecUtils}
 import com.odenzo.ripple.bincodec.reference._
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
 import com.odenzo.ripple.bincodec.utils._
 
 class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   val defdata: DefinitionData = Definitions.fieldData
 
-  val inorder = """
-                  |{
-                  | "TransactionType": "EscrowCancel"   ,
-                  | "OfferSequence": 25   ,
-                  | "Account": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"    ,
-                  | "Owner": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"
-                  |}
-  """.stripMargin
+  val inorder = json"""
+                  {
+                   "TransactionType": "EscrowCancel"   ,
+                  "OfferSequence": 25   ,
+                   "Account": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"    ,
+                   "Owner": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"
+                  }
+  """
 
   val sample =
     """
@@ -35,18 +38,18 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   val json: Json = {
     val res = JsonUtils.parseAsJson(sample)
-    RippleCodecError.dump(res).foreach(e => scribe.error(s"Trouble Parsing Sample JSON $e \n===\n${sample}\n===\n"))
     getOrLog(res)
   }
 
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
-  def encodeSingle(fieldName: String, data: Json) = {
+  def encodeSingle(fieldName: String, data: Json): Either[BCLibErr, EncodedField] = {
     val req = dd.getFieldData(fieldName, data)
     req.foreach(v => scribe.info(s"encoding Single Field: $v"))
-    val ans = req.flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
-    RippleCodecError.dump(ans).foreach(e => scribe.error(s"Trouble Encoding Field $fieldName $e "))
-    ans
+    req
+      .flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
+      .leftMap(_.addMsg(s"Decoding Field $fieldName"))
+
   }
 
   test("TransactionType") {

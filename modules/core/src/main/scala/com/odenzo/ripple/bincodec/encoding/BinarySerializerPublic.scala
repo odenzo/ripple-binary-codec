@@ -3,8 +3,7 @@ package com.odenzo.ripple.bincodec.encoding
 import io.circe.JsonObject
 import io.circe.syntax._
 
-import com.odenzo.ripple.bincodec.EncodedSTObject
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
+import com.odenzo.ripple.bincodec.{EncodedSTObject, BinCodecLibError}
 
 /**
   * User level interfaces to this package.
@@ -18,7 +17,7 @@ object BinarySerializerPublic {
     * @param jsonObject
     * @return Hex string representing the serialization in total.
     */
-  def binarySerialize(jsonObject: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
+  def binarySerialize(jsonObject: JsonObject): Either[BinCodecLibError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(jsonObject.asJson, isSigning = false)
   }
 
@@ -30,7 +29,7 @@ object BinarySerializerPublic {
     *  level
     * @param tx_json
     */
-  def binarySerializeForSigning(tx_json: JsonObject): Either[RippleCodecError, EncodedSTObject] = {
+  def binarySerializeForSigning(tx_json: JsonObject): Either[BinCodecLibError, EncodedSTObject] = {
     TypeSerializers.encodeTopLevel(tx_json.asJson, isSigning = true)
 
   }

@@ -8,12 +8,11 @@ import cats.implicits._
 import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.reference.Definitions
-import com.odenzo.ripple.bincodec.utils.caterrors.RippleCodecError
-import com.odenzo.ripple.bincodec.{Decoded, OTestSpec}
+import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, BinCodecLibError}
 
 class TxBlobBusterTest extends FunSuite with OTestSpec {
 
-  import com.odenzo.ripple.bincodec.syntax.debugging._
+  import com.odenzo.ripple.bincodec.syntax.showinstances._
   test("Sample Blob") {
 
     val dd = Definitions.fieldData
@@ -27,7 +26,7 @@ class TxBlobBusterTest extends FunSuite with OTestSpec {
     val src = expected
     def run(src: String): List[Decoded] = {
       scribe.info(s"SRC: $src")
-      val res: Either[RippleCodecError, List[Decoded]] = TxBlobBuster.bust(src)
+      val res: Either[BinCodecLibError, List[Decoded]] = TxBlobBuster.bust(src)
       val ok: List[Decoded]                            = getOrLog(res)
       scribe.info(s"SRC: $src")
       scribe.info(s"Raw List FieldDecoded $ok")
