@@ -4,19 +4,10 @@ import cats.data._
 import cats.implicits._
 import io.circe.Json
 
-import com.odenzo.ripple.bincodec.codecs.{
-  ContainerFields,
-  VLEncoding,
-  PathCodecs,
-  AccountIdCodecs,
-  MoneyCodecs,
-  HashHexCodecs,
-  MiscCodecs,
-  UIntCodecs
-}
+import com.odenzo.ripple.bincodec.codecs._
 import com.odenzo.ripple.bincodec.reference.FieldData
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EncodedSTObject, RawValue, EncodedVL, EncodedField, BinCodecLibError}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
+import com.odenzo.ripple.bincodec.{EncodedSTObject, EncodedField, BinCodecLibError, Encoded}
 
 /**
   *  Goes throught and deep serializes a JsonObject

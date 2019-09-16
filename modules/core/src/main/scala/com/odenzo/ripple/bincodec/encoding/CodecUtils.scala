@@ -40,7 +40,7 @@ trait CodecUtils {
       .asRight[BinCodecLibError]
 
     bytes.foreach(bl => assert(bl.length === numBytes))
-    bytes.map(RawValue)
+    bytes.map(RawValue.apply)
   }
 
   /** Decodes field bytes to hex with no padding */

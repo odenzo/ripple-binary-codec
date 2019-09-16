@@ -35,6 +35,11 @@ class JsonUtilsTest extends FunSuite with OTestSpec with JsonUtils {
     JsonUtils.parseAsJson(badJson).isLeft shouldBe true
   }
 
+  // This just adds the top level fields, creating duplicate fields on collision I think
+  // (x+y)+ z == x + (y+z)
+  // empty = JsonObject.empty
+  // empty + x = x+empty = x
+  // I think Circe supplies a JsonObject monoid (plus more I am not sure)
   test("Monoid") {
     val sum = for {
       a <- parseAsJsonObject(aJson)

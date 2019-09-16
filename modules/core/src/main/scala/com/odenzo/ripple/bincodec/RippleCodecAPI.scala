@@ -2,7 +2,6 @@ package com.odenzo.ripple.bincodec
 
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
-import scribe.Level.Debug
 
 import com.odenzo.ripple.bincodec.codecs.AccountIdCodecs
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers

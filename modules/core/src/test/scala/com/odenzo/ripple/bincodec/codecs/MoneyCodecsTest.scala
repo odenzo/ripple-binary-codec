@@ -4,20 +4,18 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import spire.math.ULong
-
-import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, RawValue, BinCodecLibError}
-import com.odenzo.ripple.bincodec.utils.JsonUtils
 import io.circe.syntax._
-import scribe.Level
+import org.scalatest.BeforeAndAfterAll
+import spire.math._
+import spire.implicits._
+
+import com.odenzo.ripple.bincodec.utils.JsonUtils
+import com.odenzo.ripple.bincodec.{OTestSpec, RawValue}
 
 class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
   // Ripple method working, but we can make more concise using Java Math
   // This tries to compare the two.
-
-  import com.odenzo.ripple.bincodec.syntax.showinstances._
 
   test("Fixture") {
 

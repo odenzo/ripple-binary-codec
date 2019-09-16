@@ -41,7 +41,6 @@ class CodecFixtures$Test extends OTestSpec {
       }
 
   }
-  import com.odenzo.ripple.bincodec.syntax.showinstances._
 
   def oneFixture(json: JsonObject, expected: String): Unit = {
     scribe.info(s"OneFixture: \n ${json.asJson.spaces4}")

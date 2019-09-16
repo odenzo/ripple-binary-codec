@@ -1,4 +1,4 @@
-package com.odenzo.ripple.bincodec
+package com.odenzo.ripple.bincodec.encoding
 
 import cats._
 import cats.data._
@@ -8,10 +8,10 @@ import io.circe.Json
 import io.circe.literal._
 import spire.math.{UByte, ULong}
 
+import com.odenzo.ripple.bincodec.{Encoded, BCLibErr, EncodedField, BinCodecLibError, OTestSpec}
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
-import com.odenzo.ripple.bincodec.encoding.{TypeSerializers, CodecUtils}
 import com.odenzo.ripple.bincodec.reference._
-import com.odenzo.ripple.bincodec.utils._
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
 
 class TypeSerializersTest extends OTestSpec with CodecUtils {
 
@@ -43,7 +43,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
-  def encodeSingle(fieldName: String, data: Json): Either[BCLibErr, EncodedField] = {
+  def encodeSingle(fieldName: String, data: Json): Either[BinCodecLibError, EncodedField] = {
     val req = dd.getFieldData(fieldName, data)
     req.foreach(v => scribe.info(s"encoding Single Field: $v"))
     req
@@ -139,4 +139,5 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
     val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
     scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
+
 }

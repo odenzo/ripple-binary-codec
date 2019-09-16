@@ -51,7 +51,7 @@ object HashPrefix {
   /** None of these overflow signed int I think */
   def fromHex(lhex: String): HashPrefix = {
     val ubytes: List[UByte] = ByteUtils.unsafeHex2ubytes(lhex)
-    scribe.warn(s"Long: $lhex bytes: $ubytes")
+    scribe.debug(s"Long: $lhex bytes: $ubytes")
     HashPrefix(ubytes)
   }
 //

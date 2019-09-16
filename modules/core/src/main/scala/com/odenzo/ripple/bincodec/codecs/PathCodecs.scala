@@ -9,94 +9,91 @@ import io.circe.{Json, JsonObject}
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, FieldMetaData}
-import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec._
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 trait PathCodecs extends JsonUtils {
 
-  /** These is really a container. Inside is a list of  datasteps and delimeters **/
+  import PathCodecs._
+
+  /** These is really a container. Inside is a list of  datasteps and delimeters. Equalivalent to paths **/
   def encodePathSet(data: FieldData): Either[BinCodecLibError, EncodedPathSet] = {
 
-    // Another array of arrays. List of PathSet, each PathSet has Paths, each Path has  PathSteps
-
+    scribe.debug(s"Encoding PathSet/Path: ${data.fieldName} : \n ${data.json.spaces4}")
     val pathList: Either[BinCodecLibError, List[Json]] = json2array(data.json)
 
-    val another = DefinitionData.pathSetAnother
-    val end     = DefinitionData.pathSetEnd
+    val encodedPaths: Either[BinCodecLibError, List[EncodedNestedValue]] =
+      pathList.flatMap((path: List[Json]) => path.traverse(encodePath))
 
-    val encodedPaths = pathList.flatMap((path: List[Json]) => path.traverse(encodePathStep))
+    // PathSet has delimeters betweend the paths
 
-    encodedPaths.map((p: List[RawValue]) => NonEmptyList.fromList(p))
-    // No for each of the paths we need to put in deliminers
-    // Pattern Match  headUntilLast:::rest::last::Nil, logic good. I 1 or more, not if zero
-    encodedPaths.map { listOfPaths: List[RawValue] =>
-      if (listOfPaths.length > 0) {
-        val rest: List[RawValue]      = listOfPaths.dropRight(1).flatMap(path => List(path, another))
-        val lastPath: RawValue        = listOfPaths.takeRight(1).head // listOfPaths.last is new in 2.13?
-        val endList: List[RawValue]   = List(lastPath, end)
-        val subFields: List[RawValue] = rest ::: endList
-        EncodedPathSet(subFields)
+    val withDelimeters: Either[BinCodecLibError, EncodedPathSet] = encodedPaths.fmap { listOfPaths: List[Encoded] =>
+      if (listOfPaths.nonEmpty) {
+        // Drop the last anotherPathMarker but not the last element
+        val intercalated: List[Encoded] = listOfPaths.flatMap(a => List(a, anotherPathMarker)).dropRight(1)
+        val delimited: List[Encoded]    = intercalated ::: List(endOfPathsMarker) // appeneded 2.13 only
+
+        EncodedPathSet(delimited)
+
       } else {
         // Not sure what this should be, don't think it will ever occur
         EncodedPathSet(List.empty[Encoded])
       }
     }
+    withDelimeters.flatTap(v => scribe.debug(s"Encoded PathSet ${v.show}").asRight)
   }
 
-  /** @param json The array surrounding the object **/
-  def encodePathStep(json: Json): Either[BinCodecLibError, RawValue] = {
-    /*
-      account by itself
-      currency by itself
-      currency and issuer as long as the currency is not XRP
-      issuer by itself
-     */
-    scribe.debug(s"Encoding Path Step\n ${json.spaces2}")
-    // Another array of arrays
-    val arr: Either[BinCodecLibError, JsonObject] = json2array(json).map(_.head).flatMap(json2object)
+  /**
+    *  Path is an array with anonomous PathStep contents
+    * @param json
+    */
+  def encodePath(json: Json): Either[BinCodecLibError, EncodedNestedValue] = {
+    // There are no delimeters at the end of each pathstep in a path
+    for {
+      arr          <- json2array(json)
+      steps        <- arr.traverse(json2object)
+      encodedSteps <- steps.traverse(encodePathStep)
+      _ = scribe.debug(s"Encoded Path: ${encodedSteps.show}")
+    } yield EncodedNestedValue(encodedSteps)
+  }
 
-    // In a step the following fields are serialized in the order below
-    // FIXME: Move to reference data
-    val accountType: UByte       = UByte(1)
-    val currencyType: UByte      = UByte(16)
-    val issuerType: UByte        = UByte(32)
-    val currencyAndIssuer: UByte = currencyType | issuerType
+  /** @param json Object containing the account/currency/issuer
+    *            @return Encoded Fields, but no pathstep delimineters
+    */
+  def encodePathStep(json: JsonObject): Either[BinCodecLibError, EncodedNestedValue] = {
+    import PathCodecs._
+    scribe.debug(s"Encoding Path Step\n ${json.asJson.spaces2}")
 
-    def combine2(stepType: UByte, data: RawValue): RawValue = {
-      RawValue(stepType +: data.ubytes)
+    // TODO: Validate currency is not XRP , with special currency encoding TBC
+
+    val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => json(k))
+
+    val res: Either[BinCodecLibError, List[RawValue]] = fields match {
+      case Some(account) :: None :: None :: Nil =>
+        AccountIdCodecs.encodeAccountNoVL(account).fmap(List(accountPrefix, _))
+
+      case None :: Some(curr) :: None :: Nil => MoneyCodecs.encodeCurrency(curr).fmap(List(currencyPrefix, _))
+
+      case None :: None :: Some(issuer) :: Nil =>
+        AccountIdCodecs.encodeAccountNoVL(issuer).fmap(List(issuerPrefix, _))
+
+      case None :: Some(curr) :: Some(issuer) :: Nil =>
+        for {
+          c <- MoneyCodecs.encodeCurrency(curr)
+          i <- AccountIdCodecs.encodeAccountNoVL(issuer)
+        } yield List(currencyAndIssuerPrefix, c, i)
+
+      case _ => BinCodecLibError("Illegal Path", json.asJson).asLeft
     }
 
-    def combine3(stepType: UByte, curr: RawValue, issuer: RawValue): RawValue = {
-      RawValue(stepType +: (curr.ubytes ++ issuer.ubytes))
+    res.map { v =>
+      scribe.debug(s"PathStep Encoded: ${v.show}")
+      EncodedNestedValue(v)
     }
-
-    val ans = arr.flatMap { obj: JsonObject =>
-      scribe.debug(s"JOBJ: ${obj.asJson.spaces2}")
-      val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => obj(k))
-
-      fields match {
-        case Some(account) :: None :: None :: Nil =>
-          AccountIdCodecs.encodeAccountNoVL(account).map(combine2(accountType, _))
-
-        case None :: Some(curr) :: None :: Nil =>
-          MoneyCodecs.encodeCurrency(curr).map(combine2(currencyType, _))
-
-        case None :: None :: Some(issuer) :: Nil =>
-          AccountIdCodecs.encodeAccountNoVL(issuer).map(combine2(issuerType, _))
-
-        case None :: Some(curr) :: Some(issuer) :: Nil =>
-          // TODO: Validate currency is not XRP , with special currency encoding TBC
-          (MoneyCodecs.encodeCurrency(curr), AccountIdCodecs.encodeAccountNoVL(issuer))
-            .mapN(combine3(currencyAndIssuer, _, _))
-
-        case _ => BinCodecLibError("Illegal Path", obj.asJson).asLeft
-      }
-    }
-
-    ans
 
   }
 
+  // not tested
   def decodePathSet(v: List[UByte], info: FieldMetaData): Either[Nothing, (DecodedNestedField, List[UByte])] = {
     // Array of Arrays
 
@@ -162,4 +159,17 @@ object PathCodecs extends PathCodecs {
   val kAddressStep  = UByte(1)
   val kCurrencyStep = UByte(16)
   val kIssuerStep   = UByte(32)
+
+  val accountType: UByte  = UByte(0x01)
+  val currencyType: UByte = UByte(0x10)
+  val issuerType: UByte   = UByte(0x20)
+
+  val accountPrefix           = RawValue(List(accountType))
+  val currencyPrefix          = RawValue(List(currencyType))
+  val issuerPrefix            = RawValue(List(issuerType))
+  val currencyAndIssuerPrefix = RawValue(List(currencyType | issuerType))
+
+  val anotherPathMarker: RawValue = DefinitionData.pathSetAnother
+  val endOfPathsMarker: RawValue  = DefinitionData.pathSetEnd
+
 }

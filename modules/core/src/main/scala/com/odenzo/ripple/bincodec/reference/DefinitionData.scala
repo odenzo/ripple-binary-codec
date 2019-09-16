@@ -8,8 +8,8 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import spire.math.{UByte, UInt}
 
-import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
+import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
 
 /**
   *

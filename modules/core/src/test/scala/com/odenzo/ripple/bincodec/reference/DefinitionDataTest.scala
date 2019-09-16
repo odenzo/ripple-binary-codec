@@ -4,13 +4,12 @@ import scala.io.Source
 
 import com.odenzo.ripple.bincodec.{OTestSpec, BinCodecLibError}
 import io.circe._
-
-import com.odenzo.ripple.bincodec.utils.JsonUtils
 import cats._
 import cats.data._
 import cats.implicits._
 
 import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 class DefinitionDataTest extends OTestSpec {
 
@@ -33,17 +32,12 @@ class DefinitionDataTest extends OTestSpec {
   }
 
   test("Full") {
-    super.setLogToDebug()
     val res: Either[BinCodecLibError, DefinitionData] = json.flatMap(DefinitionsDecoding.decodeDefinitions)
-    val ok                                            = getOrLog(res)
-    logger.debug(s"FILTERED AND MAPPED: ${ok.fieldsInfo.size}")
+    getOrLog(res)
   }
   test("Test Decoding") {
-    super.setLogToDebug()
     val decoded = json.flatMap(JsonUtils.decode(_, Decoder[DefinitionsDecoding.DefinitionJson]))
-    logger.debug(s"Decoded $decoded")
-    val ok = getOrLog(decoded)
-    logger.debug(s"OK: ${ok.fields.size}")
+    getOrLog(decoded)
 
   }
 

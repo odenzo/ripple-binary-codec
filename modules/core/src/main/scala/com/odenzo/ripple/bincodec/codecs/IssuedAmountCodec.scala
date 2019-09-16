@@ -59,9 +59,9 @@ trait IssuedAmountCodec extends CodecUtils {
 
       for {
         prenorm <- newPreNormalize(amount.abs)
-        _ = scribe.info(s"NEW PRENORMALIZED  $prenorm")
+        _ = scribe.debug(s"NEW PRENORMALIZED  $prenorm")
         norm <- newNormalize(prenorm._1, prenorm._2)
-        _ = scribe.info("NEW METHOD FINAL NORMALIZATION: " + norm)
+        _ = scribe.debug("NEW METHOD FINAL NORMALIZATION: " + norm)
       } yield norm
     }
   }
@@ -88,7 +88,7 @@ trait IssuedAmountCodec extends CodecUtils {
       val fExp    = 0 - exp
       val noScale = absBd * BigDecimal(10).pow(exp)
       scribe.debug(s"BD: $absBd   Exp: $exp  Scaled To $noScale  is valid long: ${noScale.isValidLong}")
-      scribe.info(s"NEW METHOD PRENORMALIZED: $noScale $fExp")
+      scribe.debug(s"NEW METHOD PRENORMALIZED: $noScale $fExp")
       (noScale.toBigInt, fExp).asRight
     }
   }
@@ -116,14 +116,14 @@ trait IssuedAmountCodec extends CodecUtils {
         // Crank up the mantissa as much as we can
         while ((mant < minMantissa) && (exp > minExponent)) {
           mant = mant * ULong(10)
-          exp  = exp - 1
+          exp = exp - 1
         }
 
         // Crank down the mantissa if too high, making sure not to overflow exponent
         while (mant > maxMantissa) {
           if (exp >= maxExponent) throw new IllegalArgumentException("Amount out range - overflow")
           mant = mant / ULong(10)
-          exp  = exp + 1
+          exp = exp + 1
         }
 
         // Check to see if number too small to represent and truncate to zero
@@ -137,7 +137,7 @@ trait IssuedAmountCodec extends CodecUtils {
           BinCodecLibError(s"System Error with Amount ${mantissa} * 10 ^ ${exponent}").asLeft
         }
       }
-    res.foreach(v => scribe.info(s"NEW FINAL NORMALIZED: $v"))
+    res.foreach(v => scribe.debug(s"NEW FINAL NORMALIZED: $v"))
     res
   }
 
@@ -149,7 +149,7 @@ trait IssuedAmountCodec extends CodecUtils {
       exp: Int
   ): Either[BinCodecLibError, RawValue] = {
 
-    scribe.info(s"Encoding BigDecimal Fiat $isNegative  $mantissa  ^  $exp")
+    scribe.debug(s"Encoding BigDecimal Fiat $isNegative  $mantissa  ^  $exp")
 
     if (mantissa === ULong(0)) {
       val zero = ULong(1) << 63

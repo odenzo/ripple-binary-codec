@@ -1,17 +1,15 @@
-package com.odenzo.ripple.bincodec.encoding
+package com.odenzo.ripple.bincodec.jsfixtures
 
 import io.circe.Decoder.Result
 import io.circe.Json
-import org.scalatest.FunSuite
-import spire.math.{UByte, ULong}
+import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, AccountIdCodecs, IssuedAmountCodec, VLEncoding}
+import com.odenzo.ripple.bincodec.codecs.AccountIdCodecs
+import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldMetaData}
-import com.odenzo.ripple.bincodec.utils.{FixtureUtils, ByteUtils, CirceCodecUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{RawValue, EncodedVL, EncodedField, BinCodecLibError, OTestSpec}
-import io.circe.literal._
-import io.circe.syntax._
-class AccountID$Test extends OTestSpec with FixtureUtils {
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils}
+import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, BinCodecLibError}
+class AccountID$Test extends OTestSpec {
 
   val defdata: DefinitionData = Definitions.fieldData
 
@@ -68,22 +66,6 @@ class AccountID$Test extends OTestSpec with FixtureUtils {
 
 //        got shouldEqual expected
     }
-  }
-
-  test("Public Account") {
-
-    val ok             = "14EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA" // This seems to be the repeated account But get 1 19 1A 1B ED
-    val account: Json  = "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2".asJson
-    val rev: EncodedVL = getOrLog(AccountIdCodecs.encodeAccount(account))
-    scribe.info(s"Valid Result: $ok \n Length ${rev.rawBytes.length * 4} bites")
-    scribe.info(s"Results Byte Len: ${rev.rawBytes.length}")
-    scribe.info(s"Account Btes: ${rev.toHex}")
-    // C++ code says null account is empty, other serialize to 160bits.
-    // Account is VLEncoded apparently, thus 0x14 may be length
-    val lenEncoded: RawValue = getOrLog(VLEncoding.encodeVL(160 / 8))
-    scribe.info(s"VL Encoded ${lenEncoded.toHex}")
-    // Yes it is.
-
   }
 
   import cats.implicits._

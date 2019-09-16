@@ -1,14 +1,11 @@
-package com.odenzo.ripple.bincodec
+package com.odenzo.ripple.bincodec.utils
 
-import scribe.Level.{Debug, Warn}
-import scribe.{Level, Logger, Priority}
-import scribe.format.FormatBlock.Level
-import scribe.filter.{Filter, FilterBuilder, className, level, packageName, select}
 import cats._
 import cats.data._
 import cats.implicits._
-
-import com.odenzo.ripple.bincodec.codecs.UIntCodecs
+import scribe.{Priority, Logger, Level}
+import scribe.filter._
+import scribe.Level.{Warn, Debug}
 
 /**
   *  Scribe has run-time configuration.

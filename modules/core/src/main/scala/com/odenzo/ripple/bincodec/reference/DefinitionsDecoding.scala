@@ -7,8 +7,8 @@ import io.circe.generic.extras.Configuration
 import io.circe.{Codec, Json, Decoder}
 import io.circe.generic.extras.semiauto._
 
-import com.odenzo.ripple.bincodec.{BCLibErr, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.JsonUtils
+import com.odenzo.ripple.bincodec.{BCLibErr, BinCodecLibError}
 
 object DefinitionsDecoding extends JsonUtils {
 
