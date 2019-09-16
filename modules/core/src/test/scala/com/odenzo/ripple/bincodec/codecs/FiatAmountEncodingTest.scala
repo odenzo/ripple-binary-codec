@@ -4,13 +4,13 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.{Json, Decoder}
-import org.scalatest.{Assertion, FunSuite}
+import org.scalatest.Assertion
 import scribe.Level
 import spire.math._
 
-import com.odenzo.ripple.bincodec.syntax.showinstances._
+import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{TestLoggingConfig, RawValue, OTestUtils, BinCodecLibError, OTestSpec}
+import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
 
 /**
   * Trouble with Fiat encoding so a dedicated test suite.

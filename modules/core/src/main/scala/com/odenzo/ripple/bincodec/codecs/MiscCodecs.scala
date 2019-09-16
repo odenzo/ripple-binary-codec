@@ -8,7 +8,7 @@ import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{Encoded, EmptyValue, RawValue, EncodedVL, BinCodecLibError}
+import com.odenzo.ripple.bincodec.{RawValue, BinCodecLibError, Encoded}
 
 trait MiscCodecs extends CodecUtils with JsonUtils {
 

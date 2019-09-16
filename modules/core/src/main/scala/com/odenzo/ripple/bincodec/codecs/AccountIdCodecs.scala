@@ -4,8 +4,8 @@ import cats.implicits._
 import io.circe.Json
 import spire.math.UByte
 
-import com.odenzo.ripple.bincodec.{EncodedVL, BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.utils.RippleBase58
+import com.odenzo.ripple.bincodec.{EncodedVL, BCLibErr, RawValue, BinCodecLibError}
 
 /**
   * Accounts a little special and also I want to create, encode, and decode later.
@@ -44,10 +44,6 @@ trait AccountIdCodecs {
 
   }
 
-  /** In some cases, generally when inside another aboject like FiatAmount
-    * the AccountID is 160 bits but is not VL encoded.
-    * This is special case so stick with raw encoded value
-    */
   def encodeAccountNoVL(json: Json): Either[BCLibErr, RawValue] = {
     val account: Either[BCLibErr, String] =
       Either.fromOption(json.asString, BinCodecLibError("Account JSON Not String"))
@@ -57,13 +53,13 @@ trait AccountIdCodecs {
       val padded = if (allBytes.length < 24) {
         List.fill(24 - allBytes.length)(UByte(0)) ::: allBytes
       } else allBytes
+      // Doh, padTo appends not prepends
 
       val ans: List[UByte] = padded.take(160 / 8)
       ans
     }
     asBytes.map(v => RawValue(v))
   }
-
 }
 
 object AccountIdCodecs extends AccountIdCodecs

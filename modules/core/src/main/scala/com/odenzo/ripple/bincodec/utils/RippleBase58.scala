@@ -6,7 +6,6 @@ import scala.annotation.tailrec
 import cats._
 import cats.data._
 import cats.implicits._
-
 import spire.math.UByte
 
 /** Based on

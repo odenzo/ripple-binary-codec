@@ -6,14 +6,14 @@ scalaVersion := supportedScalaVersions.head
 ThisBuild / organization := "com.odenzo"
 
 ThisBuild / scalaVersion := supportedScalaVersions.head
-ThisBuild / name := "ripple-binary-codec"
+ThisBuild / name         := "ripple-binary-codec"
 
-Test / logBuffered := true
+Test / logBuffered       := true
 Test / parallelExecution := false
 
-coverageMinimum := 70
+coverageMinimum       := 70
 coverageFailOnMinimum := false
-coverageHighlighting := true
+coverageHighlighting  := true
 
 publishArtifact in Test := false
 
@@ -22,13 +22,13 @@ lazy val bincodec_root = (project in file("."))
   .settings(
     // crossScalaVersions must be set to Nil on the aggregating project
     crossScalaVersions := Nil,
-    publish / skip := true
+    publish / skip     := true
   )
 
 lazy val bincodec = (project in file("modules/core"))
   .settings(
     crossScalaVersions := supportedScalaVersions,
-    name := "ripple-binary-codec",
+    name               := "ripple-binary-codec",
     scalacOptions := (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n <= 12 => optsV12 ++ warningsV12 ++ lintersV12
       case Some((2, n)) if n >= 13 => optsV13 ++ warningsV13 ++ lintersV13
@@ -59,9 +59,9 @@ val libs = Seq(
   "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
   "io.circe"       %% "circe-core"           % circeVersion,
   "io.circe"       %% "circe-generic"        % circeVersion,
-  "io.circe"       %% "circe-generic-extras" % circeVersion,
+  "io.circe"       %% "circe-generic-extras" % "0.12.2",
   "io.circe"       %% "circe-parser"         % circeVersion,
-  "io.circe"       %% "circe-optics"         % "0.12.0-RC2" % Test,
+  "io.circe"       %% "circe-optics"         % "0.12.0",
   "io.circe"       %% "circe-literal"        % circeVersion % Test,
   "org.typelevel"  %% "cats-core"            % catsVersion,
   "org.typelevel"  %% "cats-effect"          % catsEffectVersion,

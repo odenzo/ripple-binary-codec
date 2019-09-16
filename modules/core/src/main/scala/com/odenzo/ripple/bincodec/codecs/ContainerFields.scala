@@ -25,25 +25,11 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     * @return List of each of the named fields in the object with their encoded information
     */
   def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
-    // Well, first lets try and get the fields and order them if needed.
-
-    scribe.debug(s"Encoding STObject to Bytes: nested $isNested  Signing $isSigning")
-
-    val jobj: Either[BinCodecLibError, JsonObject] = json2object(o.dropNullValues)
-
-    val ans: Either[BinCodecLibError, List[EncodedField]] = jobj
-      .flatMap(prepareJsonObject(_, isSigning))
-      .flatMap(
-        lf =>
-          lf.traverse(
-            TypeSerializers
-              .encodeFieldAndValue(_, true, isSigning)
-          )
-      )
-
-    // Only at objectEndMarker when? Not for top level
-    ans.fmap(EncodedSTObject(_, isNested))
-
+    scribe.debug(s"Encoding STObject to Bytes w/o End Marker: nested $isNested  Signing $isSigning")
+    for {
+      obj    <- prepareJsonObject(o, isSigning)
+      fields <- obj.traverse(TypeSerializers.encodeFieldAndValue(_, true, isSigning))
+    } yield EncodedSTObject(fields, isNested)
   }
 
   def decodeSTObject(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedNestedField, List[UByte])] = {
@@ -73,25 +59,22 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     * Canonically sorts a json object and removes non-serializable or non-signing fields
     * TODO: Should just do this as a deep traverse once at the begining and avoid passing isSigning around.
     *
-    * @param o
+    * @param j
     * @param isSigning Remove all non-signing fields if true, else serialized
     *
     * @return
     */
-  def prepareJsonObject(o: JsonObject, isSigning: Boolean): Either[BinCodecLibError, List[FieldData]] = {
+  def prepareJsonObject(j: Json, isSigning: Boolean): Either[BinCodecLibError, List[FieldData]] = {
 
-    val bound: List[FieldData] = o.toList.flatMap {
-      case (fieldName, fieldVal) => dd.optFieldData(fieldName, fieldVal)
-    }
-    val filtered = if (isSigning) {
-      bound.filter(_.fi.isSigningField)
-    } else {
-      bound.filter(_.fi.isSerialized)
-    }
+    def filterFn(fd: FieldData): Boolean = if (isSigning) fd.fi.isSigningField else fd.fi.isSerialized
 
-    filtered.sortBy(_.fi.sortKey).asRight
+    for {
+      jobj <- json2object(j.dropNullValues)
+      bound    = jobj.toList.flatMap { case (fieldName, fieldVal) => dd.optFieldData(fieldName, fieldVal) }
+      filtered = bound.filter(filterFn)
+      sorted   = filtered.sortBy(_.fi.sortKey)
+    } yield sorted
   }
-
 }
 
 /**
@@ -100,24 +83,23 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
   * Account is VLEncoded in here.
   */
 trait STArrayCodec extends CodecUtils with JsonUtils {
+
+  /** Encodes each element of an array as an STObject.  */
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[BinCodecLibError, EncodedSTArray] = {
     scribe.info(s"STArray:\n${data.json.spaces2}")
 
-    def handleOneArrayElement(v: Json): Either[BinCodecLibError, EncodedSTObject] = {
-      STObjectCodec.encodeSTObject(v, isNested = false, isSigning = isSigning)
+    for {
+      arr  <- json2array(data.json)
+      vals <- arr.traverse(j => STObjectCodec.encodeSTObject(j, isNested = false, isSigning = isSigning))
+    } yield EncodedSTArray(vals)
 
-    }
-
-    // Sticking to one encoded field per array elem. Even though each field is actually nested in an object.
-    val objects = json2array(data.json).flatMap(lj => lj.traverse(j => handleOneArrayElement(j)))
-    val array   = objects.map(fields => EncodedSTArray(fields))
-    array
   }
 
   def decodeSTArray(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedNestedField, List[UByte])] = {
     val endOfFieldsMarker = UByte(0xF1)
 
     // info is for the top level array
+    @scala.annotation.tailrec
     def subfields(ub: List[UByte], acc: List[Decoded]): Either[BCLibErr, (List[Decoded], List[UByte])] = {
       if (ub.head === endOfFieldsMarker) {
         (acc.reverse, ub.drop(1)).asRight
@@ -130,10 +112,7 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
       }
     }
 
-    subfields(v, List.empty[DecodedField]).map {
-      case (fields, rest) =>
-        (DecodedNestedField(info, fields), rest)
-    }
+    subfields(v, List.empty[DecodedField]).map { case (fields, rest) => (DecodedNestedField(info, fields), rest) }
   }
 }
 
@@ -147,14 +126,11 @@ trait Vector256Codec extends CodecUtils with JsonUtils {
     * @return
     */
   def encodeVector256(data: FieldData): Either[BinCodecLibError, EncodedVector256] = {
-    // Like Indexes, these all seems to be 64 hex bytes in quotes 256 bits
-
-    def encodeListOfHash(jsonList: List[Json]): Either[BinCodecLibError, List[EncodedDataType]] =
-      jsonList.traverse(HashHexCodecs.encodeHash256)
 
     for {
       arr    <- json2array(data.json)
-      hashes <- encodeListOfHash(arr)
+      hashes <- arr.traverse(HashHexCodecs.encodeHash256)
+      // Pendantic as we know the length for each really.
       totalLen = hashes.map(_.value.rawBytes.length).sum
       vl <- VLEncoding.encodeVL(totalLen)
     } yield EncodedVector256(vl, hashes)

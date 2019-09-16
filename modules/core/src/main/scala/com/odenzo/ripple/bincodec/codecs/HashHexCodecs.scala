@@ -22,14 +22,14 @@ trait HashHexCodecs extends CodecUtils {
     }
     val checked = ans.flatMap(ByteUtils.ensureMaxLength(_, byteLen))
     checked.map(ByteUtils.zeroPadBytes(_, byteLen))
-    ans.fmap(RawValue)
+    ans.fmap(RawValue(_))
   }
 
   def encodeHash160(json: Json): Either[BinCodecLibError, EncodedDataType] = {
     val rtype: Either[BCLibErr, RippleDataType]     = dd.getTypeObj("Hash160")
     val encoded: Either[BinCodecLibError, RawValue] = encodeHash(json, 20)
 
-    (encoded, rtype).mapN(EncodedDataType)
+    (encoded, rtype).mapN(EncodedDataType.apply)
   }
 
   def encodeHash256(json: Json): Either[BinCodecLibError, EncodedDataType] = {

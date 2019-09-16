@@ -6,7 +6,7 @@ import cats.data._
 import cats.implicits._
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, RippleCodecAPI, TestLoggingConfig}
+import com.odenzo.ripple.bincodec.{EncodedSTObject, OTestSpec, RippleCodecAPI}
 
 /** This is a quick test to make sure we have the binary encoding correct for multi-signing messages
   * Signers is serialized but not for signing, that checks out ok.
@@ -78,14 +78,12 @@ class SignFor$Test extends OTestSpec {
     * do a diff on the signingEncoded vs binarySerialized (latter for TxBlob)
     */
   test("Correct Serialization and Hash") {
-    val json = getOrLog(JsonUtils.parseAsJsonObject(finalResponse))
+    val json: JsonObject = getOrLog(JsonUtils.parseAsJsonObject(finalResponse))
 
-    val txblob: String      = getOrLog(findResultTxBlob(json))
-    val tx_json: JsonObject = getOrLog(findTxJson(json))
+    val txblob: String      = getOrLog(findTxBlobInReply(json))
+    val tx_json: JsonObject = getOrLog(findTxJsonInReply(json))
 
     logger.info(s"TxBlob: $txblob")
-
-    import com.odenzo.ripple.bincodec.syntax.showinstances._
 
     val signingEncoded: EncodedSTObject = getOrLog(RippleCodecAPI.binarySerializeForSigning(tx_json))
     logger.debug(s"Signing ${signingEncoded.show}")

@@ -45,7 +45,7 @@ trait VLEncoding {
       case l => BinCodecLibError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
     }
 
-    vl.map(RawValue)
+    vl.map(RawValue.apply)
   }
 
   /** Note that data may have more fields after the VL encoded one */

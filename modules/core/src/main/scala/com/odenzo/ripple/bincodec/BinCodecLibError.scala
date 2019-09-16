@@ -19,8 +19,7 @@ import io.circe.{ParsingFailure, Json, DecodingFailure}
 sealed trait BinCodecLibError extends Throwable {
   def msg: String
   def cause: Option[BinCodecLibError]
-
-  def addMsg(s: String) = BCLibErr(s, this.some)
+  def addMsg(s: String): BinCodecLibError = BCLibErr(s, this.some)
 }
 
 case class BCLibErr(msg: String = "<None>", cause: Option[BinCodecLibError] = None) extends BinCodecLibError
@@ -72,7 +71,7 @@ object BCLibErr {
   implicit val show: Show[BCLibErr] = Show.show[BCLibErr] { (failure: BCLibErr) =>
     s"""
        |       BCLib Error: ${failure.msg}
-       |       Cause:\n ${failure.cause.map(_.show)}
+       |       Cause:\n ${ErrorUtils.showCauseOrStack(failure)}
        |""".stripMargin
 
   }
@@ -86,16 +85,16 @@ object BCException extends ErrorUtils {
     case err: BinCodecLibError => err.show
     case other =>
       s"""
-         | BCThrowable:\n  ${other.toString}
+         | BCThrowable:\n  ${other.toString}   // This has the stack trace
          |""".stripMargin
   }
 
-  implicit val show: Show[BCException] = Show.show[BCException] { errorException =>
+  implicit val show: Show[BCException] = Show.show[BCException] { failure =>
     s""""
-       | BCException -=>  ${errorException.msg} \n\t\t
-       |   Exception Class: \t${errorException.err.getClass}
-       |   Exception:    ${errorException.err.show}
-       |   StackTrace As String: ${stackAsString(errorException.err)}
+       | BCException -=>  ${failure.msg} \n\t\t
+       |   Exception Class: \t${failure.err.getClass}
+       |   Exception:    ${failure.err.show}
+       |   StackTrace:\n ${stackAsString(failure.err)}
      """.stripMargin
   }
 }
@@ -106,17 +105,17 @@ object BCJsonParseErr {
         |BCJsonParseErr -=> ${failure.msg}
         |ParseError:  ${failure.err.show}
         |FullText: ${failure.raw}
-        |
+        |Cause:  ${ErrorUtils.showCauseOrStack(failure)}
         | """.stripMargin
   }
 
 }
 object BCJsonDecodingErr {
   implicit val show: Show[BCJsonDecodingErr] = Show.show[BCJsonDecodingErr] { failure: BCJsonDecodingErr =>
-    val base  = s"BCJsonDecodingErr -=>  ${failure.err.show} \n\t\t On JSON: ${failure.json.spaces2}"
-    val stack = "\n\nStack as String: " + ErrorUtils.stackAsString(failure.err)
-    // val stackTrace = "\n\nStack Trace " + StackUtils.printStackTrace(failure.err)
-    base + "\n DecodingFailure History: " + failure.err.history + stack
+    s"""| CJsonDecodingErr         ${failure.msg}
+        | DecodingFailure History:  ${failure.err.history}
+        | Underlying:  \n${failure.cause.map(_.show).getOrElse("Shouldn't happen")}
+        """.stripMargin
   }
 
   /**
@@ -177,6 +176,12 @@ trait ErrorUtils {
     e.getStackTrace.slice(3, 19).map(_.toString).mkString("\n\t", "\n\t", "\n== .... ==\n")
   }
 
+  def showCauseOrStack(base: BinCodecLibError): String = {
+    base.cause match {
+      case Some(err) => err.show
+      case None      => ErrorUtils.stackAsString(base)
+    }
+  }
 }
 
 object ErrorUtils extends ErrorUtils

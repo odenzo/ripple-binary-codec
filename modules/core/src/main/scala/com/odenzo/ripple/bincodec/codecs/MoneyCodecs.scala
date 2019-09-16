@@ -6,8 +6,8 @@ import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.reference.{FieldData, FieldMetaData}
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec._
+import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
@@ -109,13 +109,14 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   }
 
   protected def encodeFullIOU(jobj: JsonObject): Either[BinCodecLibError, EncodedNestedValue] = {
+    val noNulls = jobj.filter(_._2 != Json.Null)
     def encodeField(name: String, fn: Json => Either[BinCodecLibError, Encoded]): Either[BinCodecLibError, Encoded] = {
-      findField(name, jobj).flatMap(fn)
+      findField(name, noNulls).flatMap(fn)
     }
 
     for {
-      value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
       currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
+      value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
       issuer   <- encodeField("issuer", AccountIdCodecs.encodeAccountNoVL)
     } yield EncodedNestedValue(List(value, currency, issuer))
 
@@ -139,15 +140,17 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     // 20 bytes total
     val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
     val bit40Zero: List[UByte] = List.fill(5)(UByte(0))
+    val bit160Zero             = List.fill(20)(UByte(0))
     //  It should be a 160 bit hex string but can't be XRP
 
     json2string(json)
       .flatMap {
+        case "XRP" => RawValue(bit160Zero).asRight
         case s if s.length === 3 && isRippleAscii(s) =>
           val curr = ByteUtils.bytes2ubytes(s.getBytes("UTF-8")).toList
           RawValue(bit90Zero ::: curr ::: bit40Zero).asRight
 
-        case s if s.length === 40 => ByteUtils.hex2ubytes(s).map(RawValue)
+        case s if s.length === 40 => ByteUtils.hex2ubytes(s).map(RawValue.apply)
 
         case other => BinCodecLibError(s"Currency $other not three ascii").asLeft
       }

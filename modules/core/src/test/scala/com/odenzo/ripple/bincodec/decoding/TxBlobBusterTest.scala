@@ -10,9 +10,8 @@ import org.scalatest.FunSuite
 import com.odenzo.ripple.bincodec.reference.Definitions
 import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, BinCodecLibError}
 
+/** Crude 1/2 baked decoding for debugging. Re-write with scodecs */
 class TxBlobBusterTest extends FunSuite with OTestSpec {
-
-  import com.odenzo.ripple.bincodec.syntax.showinstances._
   test("Sample Blob") {
 
     val dd = Definitions.fieldData

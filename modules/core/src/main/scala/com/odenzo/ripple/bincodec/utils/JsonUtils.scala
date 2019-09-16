@@ -90,6 +90,11 @@ private[bincodec] trait JsonUtils {
 
   }
 
+  def removeAllNulls(j: JsonObject): ErrorOr[JsonObject] = {
+    val cleanTxt = droppingNullsPrinter.print(j.asJson)
+    parseAsJsonObject(cleanTxt)
+  }
+
   /** Ripled doesn't like objects like { x=null } */
   val droppingNullsPrinter: Printer = Printer.spaces2.copy(dropNullValues = true)
 

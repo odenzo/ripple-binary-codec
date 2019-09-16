@@ -3,7 +3,7 @@ package com.odenzo.ripple.bincodec.utils
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{ACursor, JsonObject}
+import io.circe.{JsonObject, ACursor}
 
 private[bincodec] trait CirceCodecUtils {
 
