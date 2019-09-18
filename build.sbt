@@ -4,9 +4,8 @@ lazy val supportedScalaVersions = List("2.13.1", "2.12.9")
 scalaVersion := supportedScalaVersions.head
 
 ThisBuild / organization := "com.odenzo"
-
-ThisBuild / scalaVersion := supportedScalaVersions.head
 ThisBuild / name         := "ripple-binary-codec"
+ThisBuild / scalaVersion := supportedScalaVersions.head
 
 Test / logBuffered       := true
 Test / parallelExecution := false
@@ -14,8 +13,6 @@ Test / parallelExecution := false
 coverageMinimum       := 70
 coverageFailOnMinimum := false
 coverageHighlighting  := true
-
-publishArtifact in Test := false
 
 lazy val bincodec_root = (project in file("."))
   .aggregate(bincodec)
