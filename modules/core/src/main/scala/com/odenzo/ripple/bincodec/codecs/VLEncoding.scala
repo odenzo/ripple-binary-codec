@@ -20,8 +20,7 @@ trait VLEncoding {
 
   /** We are going to encode the len in an array of bytes betwen 0 and 4 bytes long.
     * UInt8 array is used in Javascript. Length is unsigned of course
-    * This is not EncodedValue because a sub-value
-    *  Multisigning sends in SigningPubKey which is VLEncoded Blob but empty, so cannot be VLEncoded.
+    * TODO: Note there are things like SigningPubKey="" which needs to be handled (make test case)
     * @param lengthToEnc
     *
     * @return The encodedVL, which 1, 2, or 3 bytes. There is no RiplpleType for this
@@ -48,10 +47,10 @@ trait VLEncoding {
     vl.map(RawValue.apply)
   }
 
-  /** Note that data may have more fields after the VL encoded one */
+  /**  This just calculates the number of bytes in VL and consumes. Don't rely on answer */
   def decodeVL(data: List[UByte]): Either[BCLibErr, (Int, List[UByte])] = {
     // If top two bits are zero its one byte
-    // This just calculates the number of bytes in VL
+
     // FIXME: Isn't actaully returning the length yet, except < 192 lengths
     // The length is data.length - 1 , 2 or 3 cheating.
     // Better to do the full decode

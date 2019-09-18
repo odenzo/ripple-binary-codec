@@ -30,23 +30,6 @@ trait OTestSpec
     }
   }
 
-  def findRequiredStringField(name: String, jobj: JsonObject): String = {
-    getOrLog(findField(name, jobj).flatMap(json2string))
-  }
-
-  /**
-    *
-    * @return Json of field or logging of error and assertion failure
-    */
-  def findRequiredField(name: String, json: JsonObject): Json = {
-    getOrLog(findField(name, json))
-  }
-
-  def findRequiredObject(name: String, jsonObject: JsonObject): JsonObject = {
-    val asObj = findField(name, jsonObject).flatMap(json2object)
-    getOrLog(asObj)
-  }
-
   /**
     * Common to have object with binary and json in test files.
     * @param binary

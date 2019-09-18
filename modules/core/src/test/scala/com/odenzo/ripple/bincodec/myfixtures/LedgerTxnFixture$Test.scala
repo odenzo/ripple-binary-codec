@@ -3,7 +3,9 @@ package com.odenzo.ripple.bincodec.myfixtures
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{JsonObject, Decoder}
+import io.circe.{JsonObject, Decoder, Json}
+import io.circe.syntax._
+
 import org.scalatest.FunSuite
 import scribe.Level
 
@@ -50,11 +52,11 @@ class LedgerTxnFixture$Test extends FunSuite with OTestSpec with ByteUtils {
     getOrLog(complete)
   }
 
-  def loadAndPrepare(file: String): Either[BinCodecLibError, List[JsonObject]] = {
+  def loadAndPrepare(file: String): Either[BinCodecLibError, List[Json]] = {
     for {
       json <- loadJsonResource(s"/mytests/$file")
       lobj <- decode(json, Decoder[List[JsonObject]])
-      nometa = lobj.map(o => o.remove("metaData")) // metaData not serialized and noisy
+      nometa = lobj.map(o => o.remove("metaData").asJson) // metaData not serialized and noisy
     } yield nometa
   }
 

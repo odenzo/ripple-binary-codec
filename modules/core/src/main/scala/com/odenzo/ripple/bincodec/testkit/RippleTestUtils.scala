@@ -25,18 +25,13 @@ trait RippleTestUtils extends Logging with JsonUtils {
   val rs_deprecated                             = root.result.deprecated
 
   /** Removes the deprecated field in result iff its present*/
-  def removeDeprecated(rs: JsonObject): Either[BinCodecLibError, JsonObject] = {
-    // Circe Optics needed?
-    val json = root.result.obj.modify(obj => obj.remove("deprecated"))(rs.asJson)
-    json2object(json)
-    //rs.asJson.hcursor.downField("result").downField("deprecated").delete.top match {
-    //case None       => rs.asRight
-    // case Some(json) => json2jsonObject(json)
-    // }
+  def removeDeprecated(rs: Json): Json = {
+    //      root.result.at("deprecated").set( None)
+    root.result.obj.modify(obj => obj.remove("deprecated"))(rs.asJson)
   }
 
-  def findResultInReply(rs: JsonObject): Either[BCJsonErr, JsonObject] = lens(rs_resultLens, rs.asJson)
-  def findTxJsonInReply(rs: JsonObject): Either[BCJsonErr, JsonObject] = lens(rs_txjsonLens, rs.asJson)
-  def findTxBlobInReply(rs: JsonObject): Either[BCJsonErr, String]     = lens(rs_txblobLens, rs.asJson)
+  def findResultInReply(rs: Json): Either[BCJsonErr, JsonObject] = lens(rs_resultLens, rs)
+  def findTxJsonInReply(rs: Json): Either[BCJsonErr, JsonObject] = lens(rs_txjsonLens, rs)
+  def findTxBlobInReply(rs: Json): Either[BCJsonErr, String]     = lens(rs_txblobLens, rs)
 
 }

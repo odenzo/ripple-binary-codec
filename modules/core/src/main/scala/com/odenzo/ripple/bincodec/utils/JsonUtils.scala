@@ -5,6 +5,7 @@ import java.io.File
 import cats.Monoid
 import cats.implicits._
 import io.circe.jawn.JawnParser
+import io.circe.optics.JsonPath
 import io.circe.syntax._
 import io.circe.{Json, Printer, JsonObject, Decoder}
 
@@ -20,8 +21,8 @@ private[bincodec] trait JsonUtils {
     def combine(x: JsonObject, y: JsonObject): JsonObject = JsonObject.fromIterable(x.toVector |+| y.toVector)
   }
 
-  def findField(name: String, json: JsonObject): Either[BinCodecLibError, Json] = {
-    Either.fromOption(json(name), BinCodecLibError(s"Field $name not found ", json.asJson))
+  def findField(name: String, json: Json): Either[BinCodecLibError, Json] = {
+    JsonPath.root.at(name).getOption(json).flatten.toRight(BinCodecLibError(s"Field $name not found ", json.asJson))
   }
 
   /**
@@ -45,19 +46,15 @@ private[bincodec] trait JsonUtils {
   }
 
   def json2object(json: Json): Either[BinCodecLibError, JsonObject] = {
-    Either.fromOption(json.asObject, BinCodecLibError("Expected JSON Object", json))
+    json.asObject.toRight(BinCodecLibError("Expected JSON Object", json))
   }
 
   def json2array(json: Json): Either[BinCodecLibError, List[Json]] = {
-    Either.fromOption(json.asArray.map(_.toList), BinCodecLibError("Expected JSON Array", json))
+    json.asArray.map(_.toList).toRight(BinCodecLibError("Expected JSON Array", json))
   }
 
   def json2string(json: Json): Either[BinCodecLibError, String] = {
-    Either.fromOption(json.asString, BinCodecLibError("Expected JSON String", json))
-  }
-
-  def extractFieldFromObject(jobj: JsonObject, fieldName: String): Either[BCLibErr, Json] = {
-    Either.fromOption(jobj.apply(fieldName), BinCodecLibError(s"Could not Find $fieldName in JSonObject "))
+    json.asString.toRight(BinCodecLibError("Expected JSON String", json))
   }
 
   /**
@@ -66,37 +63,18 @@ private[bincodec] trait JsonUtils {
     *
     * @param json
     */
-  def extractAsKeyValueList(json: Json): ErrorOr[List[(String, Json)]] = {
-    val obj: Either[BCLibErr, JsonObject] =
-      json.asObject.toRight(BinCodecLibError("JSON Fragment was not a JSON Object"))
-    val ans: Either[BCLibErr, List[(String, Json)]] = obj.map(_.toList)
-    ans
-  }
-
-  /**
-    * Parses the list of json key  value pairs until it hits first error (not-accumulating parsing).
-    *
-    * @param json
-    * @param fn The parsing function
-    * @tparam T
-    *
-    * @return
-    */
-  def parseKeyValuesList[T](json: Json, fn: (String, Json) => Either[BinCodecLibError, T]): ErrorOr[List[T]] = {
-    val kvs: ErrorOr[List[(String, Json)]] = extractAsKeyValueList(json)
-    kvs.flatMap { theList =>
-      theList.traverse { case (key: String, value: Json) => fn(key, value) }
-    }
+  def extractAsKeyValueMap(json: Json): Either[BinCodecLibError, Map[String, Json]] = {
+    json2object(json).map(_.toMap)
 
   }
+
+  /** Ripled doesn't like objects like { x=null } */
+  val droppingNullsPrinter: Printer = Printer.spaces2.copy(dropNullValues = true)
 
   def removeAllNulls(j: JsonObject): ErrorOr[JsonObject] = {
     val cleanTxt = droppingNullsPrinter.print(j.asJson)
     parseAsJsonObject(cleanTxt)
   }
-
-  /** Ripled doesn't like objects like { x=null } */
-  val droppingNullsPrinter: Printer = Printer.spaces2.copy(dropNullValues = true)
 
   /** Caution: Uses BigDecimal and BigInt in parsing.
     *
@@ -111,11 +89,7 @@ private[bincodec] trait JsonUtils {
   }
 
   def parseAsJsonObject(m: String): ErrorOr[JsonObject] = {
-    parseAsJson(m).flatMap(json2jsonObject)
-  }
-
-  def json2jsonObject(json: Json): ErrorOr[JsonObject] = {
-    Either.fromOption(json.asObject, BinCodecLibError("JSON was not a JSonObject"))
+    parseAsJson(m).flatMap(json2object)
   }
 
   def parseAsJson(f: File): ErrorOr[Json] = {

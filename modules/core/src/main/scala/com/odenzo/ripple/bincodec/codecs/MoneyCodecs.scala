@@ -20,23 +20,29 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   /** Maximum XRP amount expressed in Drops */
   private val maxXrpDrops: BigInt = spire.math.pow(BigInt(10), BigInt(17))
 
-  /** represent special case encoding of 0 fiatamount  */
-  //val zeroFiatAmount =  0x8000000000000000000000000000000000000000
+  /** represents special case encoding of 0 fiatamount  */
   private val zeroFiatAmount: List[UByte] = UByte(0x80) :: List.fill(19)(UByte(0))
-  private val rawEncodedZeroFiatAmount    = RawValue(zeroFiatAmount)
+
+  /** Packaged up zeroFiatAmount  */
+  private val rawEncodedZeroFiatAmount = RawValue(zeroFiatAmount)
 
   private val xrpCurrencyCode: List[UByte] = List.fill(20)(UByte(0))
+
   // The raw hex form in json can be handled, but can't be XRP
   // This should be 24 bits, 'X'.ascii , 'R'.ascii, 'P'.ascii (UTF-8 equivalent in that range)
   private val correctXrpHexCode = ByteUtils.bytes2hex("XRP".getBytes("UTF-8"))
-  private val xrpHex            = "0158415500000000C1F76FF6ECB0BAC600000000" // Standard XRP encoding, like an ISO
-  // (garbage)
+
+  /**  Standard XRP encoding, like an ISO **/
+  private val xrpHex = "0158415500000000C1F76FF6ECB0BAC600000000"
 
   /** Valid currency characters */
   private val rippleAscii: String =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
       "0123456789" +
       "<>(){}[]|?!@#$%^&*"
+
+  /** Mask to set the top bits of an XRP Amount */
+  private val mask: ULong = ULong.fromLong(0x4000000000000000L)
 
   /**
     * https://developers.ripple.com/currency-formats.html
@@ -46,7 +52,7 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   def encodeAmount(json: Json): Either[BinCodecLibError, Encoded] = {
     json.asObject match {
       case None      => encodeXrpAmount(json)
-      case Some(obj) => encodeIOU(obj)
+      case Some(obj) => encodeIOU(json)
     }
   }
 
@@ -72,8 +78,6 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   /** This is expressed as a string json field representing number of drops **/
   def encodeXrpAmount(v: Json): Either[BinCodecLibError, RawValue] = {
 
-    val mask: ULong = ULong.fromLong(0x4000000000000000L)
-
     // Check is its with drops range
     json2string(v).map(t => BigInt(t)) match {
       case Left(err)                     => BCJsonErr("Could not decode as Xrp Amount BigInt", v).asLeft
@@ -84,12 +88,8 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
 
   }
 
-  def extract(metadata: FieldMetaData, obj: JsonObject): Either[BinCodecLibError, FieldData] = {
-    findField(metadata.name, obj).map(json => FieldData(json, metadata))
-  }
-
-  /** Encoded IOU / Issued Amount , in this case account has VL encoding */
-  def encodeIOU(v: JsonObject): Either[BinCodecLibError, Encoded] = {
+  /** Encode IOU / Issued Amount , in this case account has VL encoding */
+  def encodeIOU(v: Json): Either[BinCodecLibError, Encoded] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
@@ -108,12 +108,11 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     } yield full
   }
 
-  protected def encodeFullIOU(jobj: JsonObject): Either[BinCodecLibError, EncodedNestedValue] = {
-    val noNulls = jobj.filter(_._2 != Json.Null)
+  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, EncodedNestedValue] = {
+    val json = jobj.dropNullValues
     def encodeField(name: String, fn: Json => Either[BinCodecLibError, Encoded]): Either[BinCodecLibError, Encoded] = {
-      findField(name, noNulls).flatMap(fn)
+      findField(name, json).flatMap(fn)
     }
-
     for {
       currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
       value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)

@@ -1,8 +1,6 @@
 package com.odenzo.ripple.bincodec
 
 import io.circe.Json
-
-import com.odenzo.ripple.bincodec.OTestSpec
 import io.circe.literal._
 
 import com.odenzo.ripple.bincodec.testkit.TestRegimes
@@ -134,8 +132,8 @@ class DevTests extends OTestSpec {
   }     """
 
     val done = for {
-      jobj <- json2object(json)
-      rs   <- TestRegimes.testLedgerTxn(jobj)
+
+      rs <- TestRegimes.testLedgerTxn(json)
     } yield rs
     getOrLog(done)
 

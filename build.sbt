@@ -1,6 +1,6 @@
 import MyCompileOptions._
 
-lazy val supportedScalaVersions = List("2.13.0", "2.12.9")
+lazy val supportedScalaVersions = List("2.13.1", "2.12.9")
 scalaVersion := supportedScalaVersions.head
 
 ThisBuild / organization := "com.odenzo"
@@ -50,9 +50,9 @@ val circeVersion      = "0.12.1"
 val catsVersion       = "2.0.0"
 val catsEffectVersion = "2.0.0"
 val spireVersion      = "0.17.0-M1"
-val scribeVersion     = "2.7.9"
+val scribeVersion     = "2.7.10"
 val scalaTestVersion  = "3.0.8"
-val scalaCheckVersion = "1.14.0"
+val scalaCheckVersion = "1.14.1"
 
 val libs = Seq(
   "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
