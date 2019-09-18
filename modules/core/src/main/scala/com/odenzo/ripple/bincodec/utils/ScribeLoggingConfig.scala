@@ -30,8 +30,7 @@ object ScribeLoggingConfig extends Logger {
   }
 
   def excludeByClass(clazzes: List[Class[_]], minLevel: Level): FilterBuilder = {
-    val names = clazzes.map(_.getName)
-    scribe.info(s"Filtering Classes: $names to $minLevel")
+    val names   = clazzes.map(_.getName)
     val filters = names.map(n => className(n))
     select(filters: _*).include(level >= minLevel)
   }
@@ -40,8 +39,6 @@ object ScribeLoggingConfig extends Logger {
 
   // Need to apply these by package scope for library mode.
   // APply to com.odenzo.ripple.bincodec.*
-
-  scribe.warn("*********** logging config package initialization **************")
 
   /** Scala test should manuall control after this */
   val defaultSetup: Eval[Unit] = Eval.later {
@@ -60,7 +57,6 @@ object ScribeLoggingConfig extends Logger {
     *
     * */
   def setAllToLevel(l: Level): Unit = {
-    scribe.warn(s"Setting all to log level $l")
     scribe.Logger.root.clearHandlers().withHandler(minimumLevel = Some(l)).replace()
     //scribe.Logger.root.clearModifiers().withMinimumLevel(l).replace()
   }
@@ -73,7 +69,6 @@ object ScribeLoggingConfig extends Logger {
   // We want to filter the debug messages just for com.odenzo.ripple.bincodec.reference.FieldInfo
   // method encodeFieldID but do just for package s
   def addModifiers(packages: List[String], l: Level): Unit = {
-    scribe.info(s"Setting Packages Level to $l")
     val pri = Priority.Normal // unnecessary since clearing existing modifiers, but handy for future.
     scribe.Logger.root.withModifier(ScribeLoggingConfig.excludePackageSelction(packages, l, pri)).replace()
 

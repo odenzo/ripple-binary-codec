@@ -145,7 +145,7 @@ object AccountKeys {
   implicit val decoder: Decoder[AccountKeys]          = deriveDecoder[AccountKeys]
 }
 
-case class JsonReqRes(rq: JsonObject, rs: JsonObject)
+case class JsonReqRes(rq: Json, rs: Json)
 
 object JsonReqRes {
   implicit val show: Show[JsonReqRes] = Show.show[JsonReqRes](rr => rr.asJson.spaces4)
@@ -153,7 +153,9 @@ object JsonReqRes {
   implicit val encoder: Encoder.AsObject[JsonReqRes] = deriveEncoder[JsonReqRes]
   implicit val decoder: Decoder[JsonReqRes]          = deriveDecoder[JsonReqRes]
 
-  def empty = JsonReqRes(JsonObject.empty, JsonObject.empty)
+  def apply(rq: JsonObject, rs: JsonObject): JsonReqRes = JsonReqRes(rq.asJson, rs.asJson)
+
+  def empty = JsonReqRes(Json.Null, Json.Null)
 }
 
 // Always tracing these with master key only.

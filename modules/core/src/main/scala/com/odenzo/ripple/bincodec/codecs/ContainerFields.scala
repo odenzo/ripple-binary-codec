@@ -25,7 +25,6 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     * @return List of each of the named fields in the object with their encoded information
     */
   def encodeSTObject(o: Json, isNested: Boolean, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
-    scribe.debug(s"Encoding STObject to Bytes w/o End Marker: nested $isNested  Signing $isSigning")
     for {
       obj    <- prepareJsonObject(o, isSigning)
       fields <- obj.traverse(TypeSerializers.encodeFieldAndValue(_, true, isSigning))
@@ -86,8 +85,6 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
 
   /** Encodes each element of an array as an STObject.  */
   def encodeSTArray(data: FieldData, isSigning: Boolean): Either[BinCodecLibError, EncodedSTArray] = {
-    scribe.info(s"STArray:\n${data.json.spaces2}")
-
     for {
       arr  <- json2array(data.json)
       vals <- arr.traverse(j => STObjectCodec.encodeSTObject(j, isNested = false, isSigning = isSigning))
@@ -119,9 +116,7 @@ trait STArrayCodec extends CodecUtils with JsonUtils {
 trait Vector256Codec extends CodecUtils with JsonUtils {
 
   /**
-    * This is usually a field, maybe always not sure.
-    *
-    * @param data
+    * @param data Json and the FieldData, FieldData is redundant
     *
     * @return
     */

@@ -49,9 +49,7 @@ trait TxBlobBuster extends JsonUtils with ByteUtils with CodecUtils {
 
   /** First cut just do to hex */
   def decodeField(info: FieldMetaData, blob: List[UByte]): Either[BCLibErr, (Decoded, List[UByte])] = {
-    if (info.isVLEncoded) { // TODO: Special case for AccountID, not nested then vl encoded else not
-      // Decode the VL then just leave it as hex for now.
-      //   case "Blob"   => encodeBlob(fieldValue) is VL Encoded
+    if (info.isVLEncoded) {
       val vled = VLEncoding.decodeVL(blob).flatMap { case (len, data) => decodeToUBytes(len, data, info) }
       vled
     } else {

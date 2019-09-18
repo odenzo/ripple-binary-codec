@@ -9,10 +9,26 @@
 
 ## Overview
 
-This project is a library written in Scala for use with Ripple XRP ledger.
-Main use-case is local sign and signFor implementation. See: 
+This library is for binary encoding Ripple transactions, with some decoding for debugging purposes.
+The primary use-case is to implement local signing, multi-signing and verification of Ripple transactions.
 
-Cross-compiled to Scala 2.12.9 and Scala 2.13.0 currently, tested with OpenJDK9
+It is a developer library, most users will want to use https://github.com/odenzo/ripple-local-signing to do the signing.
+
+
+
+### Status
+
+Works well enough, and plus/minus is that it is written very simply, so serves as a good example/reference to the
+ gotchas. 
+
+- This is "production" ready in that it works reliably, and throws no exceptions.
+- Functional serialization, works on a good set of test cases.
+- Deserialization useful for development and debugging work
+- Code is getting cleaner;  but not optimized for speed and some debris left. 
+
+
+### Environment
+Cross-compiled to Scala 2.12.9 and Scala 2.13.1 currently, tested with OpenJDK9
 It takes 
 
 1. JSON and serializes into Ripple binary format, e.g. TxBlob
@@ -20,10 +36,12 @@ It takes
 
   
 Best place to start on documentation is:
- https://developers.ripple.com/serialization.html
+https://xrpl.org/serialization.html
 
-* Testing is done against a set of trace txn from Ripple stand-alone server, these may also be useful to someone for
- some other purpose.
+### Testing
+
+There are some unit tests, but primary testing is done using trace logs of requests / responses from Ripple TestNet
+ and production server.
 
 ## Quick Start
 
@@ -37,7 +55,7 @@ Published under Bintray for now, so in sbt use via:
 
 The API is in   `com.odenzo.ripple.bincodec.RippleCodecAPI` and provides the routines to 
 
-- Serializize a JsonObject (Stirng form) to non HashPrefixed
+- Serializize a JsonObject (String form) to non HashPrefixed
     * TxBlob  (aka serialize ll serialization fields)
     * SigningTxBlob (serialize for Signing, this is binary that is signed to TxnSignature)
     
@@ -54,7 +72,9 @@ Other than that the API should be stable, additional Java, ScalaJS and perhaps S
     
 
 
-## Differences from Ripple Signing
+## Differences from Ripple Encoding
+
+All the test cases pass, but the following are "problem" areas that may arise.
 
 ### Issued Amounts (aka Fiat Amount, IOU Amount)
 https://xrpl.org/currency-formats.html#issued-currency-math defines the "spec" for these.
@@ -77,19 +97,12 @@ Tidy up and correct error messages pending for Issued Amounts, see IssuedAmountC
 ### 160-bit hex encoded Currencies not tested or supported
 
 
-## Status
-
-- Functional serialization, works on a good set of test cases.
-- Deserialization useful for development and debugging work
-- Code is getting cleaner, but not optimized. 
-
-
 
 ## TODOs
 
-* Add more test cases, particularly of Ripple transactions  (High Priority)
-* Optimize data structures perhaps (currently List[UByte] everywhere) and concatenation.
-* Cross-compile to Javascript
-* Maven x-publish on Version 0.4.x
-* Adding Hex encoded currencies
-* Rethink the Scribe approach to logging, using customer root logger
+1) Cross Compile to ScalaJS 
+2) After that start benchmark and optimization
+    * Optimize data structures perhaps (currently List[UByte] everywhere) and concatenation.
+3) Adding Hex encoded currencies
+4) Internal: clean-up Scribe logging and other internal test utils
+5) Low Priority: Re-implement decoding, perhaps with scodec

@@ -67,15 +67,11 @@ trait PathCodecs extends JsonUtils {
     // TODO: Validate currency is not XRP , with special currency encoding TBC
 
     val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => json(k))
-
+    import AccountIdCodecs._
     val res: Either[BinCodecLibError, List[RawValue]] = fields match {
-      case Some(account) :: None :: None :: Nil =>
-        AccountIdCodecs.encodeAccountNoVL(account).fmap(List(accountPrefix, _))
-
-      case None :: Some(curr) :: None :: Nil => MoneyCodecs.encodeCurrency(curr).fmap(List(currencyPrefix, _))
-
-      case None :: None :: Some(issuer) :: Nil =>
-        AccountIdCodecs.encodeAccountNoVL(issuer).fmap(List(issuerPrefix, _))
+      case Some(account) :: None :: None :: Nil => encodeAccountNoVL(account).fmap(List(accountPrefix, _))
+      case None :: Some(curr) :: None :: Nil    => MoneyCodecs.encodeCurrency(curr).fmap(List(currencyPrefix, _))
+      case None :: None :: Some(issuer) :: Nil  => encodeAccountNoVL(issuer).fmap(List(issuerPrefix, _))
 
       case None :: Some(curr) :: Some(issuer) :: Nil =>
         for {
@@ -99,7 +95,6 @@ trait PathCodecs extends JsonUtils {
 
     def loop(v: List[UByte], acc: List[List[RawValue]]): (List[List[RawValue]], List[UByte]) = {
       val (path, remaining) = decodePath(v)
-
       if (path.head.ubytes.head === UByte.MinValue) {
         (path.reverse :: acc, remaining)
       } else {

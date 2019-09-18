@@ -22,22 +22,27 @@ trait MiscCodecs extends CodecUtils with JsonUtils {
     }
   }
 
+  protected def encodeMnemonicType(
+      json: Json,
+      lookupFn: String => Either[BinCodecLibError, Long]
+  ): Either[BinCodecLibError, RawValue] = {
+    for {
+      str     <- json2string(json)
+      ttype   <- lookupFn(str)
+      encoded <- UIntCodecs.encodeUIntN(Json.fromLong(ttype), "UInt16")
+    } yield encoded
+  }
+
   def encodeTransactionType(json: Json): Either[BinCodecLibError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getTransactionType)
-      .flatMap(l => UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
+    encodeMnemonicType(json, dd.getTransactionType)
   }
 
   def encodeLedgerEntryType(json: Json): Either[BinCodecLibError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getLedgerEntryType)
-      .flatMap(l => UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
-  }
+    encodeMnemonicType(json, dd.getLedgerEntryType)
 
+  }
   def encodeTxnResultType(json: Json): Either[BinCodecLibError, RawValue] = {
-    json2string(json)
-      .flatMap(dd.getTxnResultType)
-      .flatMap(l => UIntCodecs.encodeUIntN(Json.fromLong(l), "UInt16")) // PreBake
+    encodeMnemonicType(json, dd.getTxnResultType)
   }
 
 }

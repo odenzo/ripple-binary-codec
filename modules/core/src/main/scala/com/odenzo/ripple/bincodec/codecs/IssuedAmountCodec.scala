@@ -87,8 +87,6 @@ trait IssuedAmountCodec extends CodecUtils {
       val exp     = absBd.scale
       val fExp    = 0 - exp
       val noScale = absBd * BigDecimal(10).pow(exp)
-      scribe.debug(s"BD: $absBd   Exp: $exp  Scaled To $noScale  is valid long: ${noScale.isValidLong}")
-      scribe.debug(s"NEW METHOD PRENORMALIZED: $noScale $fExp")
       (noScale.toBigInt, fExp).asRight
     }
   }
@@ -101,12 +99,6 @@ trait IssuedAmountCodec extends CodecUtils {
     *         Overflow returned as Error
     */
   protected def newNormalize(mantissa: BigInt, exponent: Int): Either[BinCodecLibError, (ULong, Int)] = {
-    // Okay, we have a mantissa and and exp. We want (generally) to increate the mantissa until 10000000L which means
-    // the exponent has to decrease
-    // A quick literal translation
-
-    // Before we do this we have converted mantissa to abs() and recorded the sign bit.
-    // So the equivalent C++ code (which stores in  std::int64_t) is not needed.
 
     val res: Either[BinCodecLibError, (ULong, Int)] =
       BinCodecLibError.wrap(s"Error Normalizing $mantissa ^ $exponent") {
@@ -116,14 +108,14 @@ trait IssuedAmountCodec extends CodecUtils {
         // Crank up the mantissa as much as we can
         while ((mant < minMantissa) && (exp > minExponent)) {
           mant = mant * ULong(10)
-          exp = exp - 1
+          exp  = exp - 1
         }
 
         // Crank down the mantissa if too high, making sure not to overflow exponent
         while (mant > maxMantissa) {
           if (exp >= maxExponent) throw new IllegalArgumentException("Amount out range - overflow")
           mant = mant / ULong(10)
-          exp = exp + 1
+          exp  = exp + 1
         }
 
         // Check to see if number too small to represent and truncate to zero
@@ -178,11 +170,6 @@ trait IssuedAmountCodec extends CodecUtils {
         BinCodecLibError(s"Overflow FiatAmount $amt < $maxVal").asLeft
 
       case amt if amt.precision > maxPrecision =>
-        // Too much precision, some will be ignored. But if close to zero make zero?
-        // FIXME: Max Precision check hacked ... add cases to round down to ZERO on underflow
-        //AppError(s"Prevision Overflow $amount ${amount.precision} > $maxPrecision").asLeft
-
-        // Well, what to do here.
         scribe.debug(s"Too Much Precision $amt was ${amt.precision} w/ Scale ${amt.scale}")
         //RippleCodecError(s"Too Much Precision $amt was ${amt.precision} w/ Scale ${amt.scale}").asLeft
         amt.asRight // Test CAses seem to pass this

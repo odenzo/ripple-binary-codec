@@ -16,27 +16,26 @@ trait HashHexCodecs extends CodecUtils {
 
   def encodeHash(json: Json, byteLen: Int): Either[BinCodecLibError, RawValue] = {
     // This looks like Hex Already... in fact just round tripping
-    val str = JsonUtils.decode(json, Decoder[String])
-    val ans: Either[BinCodecLibError, List[UByte]] = str.flatMap { v =>
-      ByteUtils.hex2ubytes(v)
-    }
-    val checked = ans.flatMap(ByteUtils.ensureMaxLength(_, byteLen))
-    checked.map(ByteUtils.zeroPadBytes(_, byteLen))
-    ans.fmap(RawValue(_))
+
+    for {
+      str <- JsonUtils.decode(json, Decoder[String])
+      ans <- ByteUtils.hex2ubytes(str)
+      _   <- ByteUtils.ensureMaxLength(ans, byteLen)
+    } yield RawValue(ans)
   }
 
   def encodeHash160(json: Json): Either[BinCodecLibError, EncodedDataType] = {
-    val rtype: Either[BCLibErr, RippleDataType]     = dd.getTypeObj("Hash160")
-    val encoded: Either[BinCodecLibError, RawValue] = encodeHash(json, 20)
-
-    (encoded, rtype).mapN(EncodedDataType.apply)
+    for {
+      rtype   <- dd.getTypeObj("Hash160")
+      encoded <- encodeHash(json, 20)
+    } yield EncodedDataType(encoded, rtype)
   }
 
   def encodeHash256(json: Json): Either[BinCodecLibError, EncodedDataType] = {
-    val rtype: Either[BCLibErr, RippleDataType]     = dd.getTypeObj("Hash256")
-    val encoded: Either[BinCodecLibError, RawValue] = encodeHash(json, 32)
-
-    (encoded, rtype).mapN(EncodedDataType(_, _))
+    for {
+      rtype   <- dd.getTypeObj("Hash256")
+      encoded <- encodeHash(json, 32)
+    } yield EncodedDataType(encoded, rtype)
   }
 
 }

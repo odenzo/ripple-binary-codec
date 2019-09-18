@@ -56,9 +56,9 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     """.stripMargin
 
   test("NZ Amount") {
-    val iou    = getOrLog(JsonUtils.parseAsJsonObject(nzAmount))
+    val iou    = getOrLog(JsonUtils.parseAsJson(nzAmount))
     val iouEnc = getOrLog(MoneyCodecs.encodeIOU(iou))
-    val amtEnc = getOrLog(MoneyCodecs.encodeAmount(iou.asJson))
+    val amtEnc = getOrLog(MoneyCodecs.encodeAmount(iou))
     scribe.info(s"Encoded IOU: ${iouEnc.show}")
     iouEnc shouldEqual amtEnc
   }

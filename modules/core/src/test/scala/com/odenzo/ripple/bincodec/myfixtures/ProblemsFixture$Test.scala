@@ -4,6 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import org.scalatest.FunSuite
+import scribe.Level
 
 import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, JsonReqRes, TestRegimes}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
@@ -15,9 +16,13 @@ class ProblemsFixture$Test extends FunSuite with OTestSpec with ByteUtils {
   private val allTxn = loadRequestResponseFixture("/mytests/SignRqRs_Problems.json")
 
   test("ALL") {
-    TestLoggingConfig.debugLevel()
+    TestLoggingConfig.setAll(Level.Info)
     val txns = getOrLog(allTxn)
-    val done = txns.traverse(TestRegimes.testSignRqRs)
+    val done = txns.traverseWithIndexM {
+      case (d, i) =>
+        logger.warn(s"Doing Index $i")
+        TestRegimes.testSignRqRs(d)
+    }
     getOrLog(done)
   }
 

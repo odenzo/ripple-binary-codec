@@ -1,11 +1,11 @@
 package com.odenzo.ripple.bincodec.testkit
 
-import com.odenzo.ripple.bincodec.{EncodedSTObject, BinCodecLibError, RippleCodecAPI}
+import com.odenzo.ripple.bincodec.{EncodedSTObject, BinCodecLibError, RippleCodecAPI, RippleCodecDebugAPI}
 import java.security.MessageDigest
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.reference.HashPrefix
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import scribe.Logging
 
 import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
@@ -20,13 +20,13 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     *
     * @param reply  The tope level object in reply (id level). Traverses to result and gets infso
     */
-  def checkTxBlob(reply: JsonObject): Either[Throwable, Boolean] = {
+  def checkTxBlob(reply: Json): Either[Throwable, Boolean] = {
 
     for {
 
       txjson        <- findTxJsonInReply(reply)
       kTxBlob       <- findTxBlobInReply(reply)
-      txBlobEncoded <- RippleCodecAPI.binarySerialize(txjson)
+      txBlobEncoded <- RippleCodecDebugAPI.binarySerialize(txjson.asJson)
       txBlobHex = txBlobEncoded.toHex
       passFail <- compareTxBlobs(kTxBlob, txBlobHex, txBlobEncoded)
     } yield passFail
@@ -37,36 +37,18 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     * @param jobj AN object with a hash field in it, tx_json or ledgertxn etc.
     * @return
     */
-  def checkHash(jobj: JsonObject): Either[BinCodecLibError, JsonObject] = {
-    val reply = jobj.asJson
+  def checkHash(jobj: Json): Either[BinCodecLibError, Json] = {
+
     for {
       kHash <- findField("hash", jobj).flatMap(json2string)
       hash  <- createResponseHashHex(jobj)
       passed <- if (hash === kHash) jobj.asRight
       else {
         logger.warn(s"Hash Not Correct, Got vs Expected: \n$hash \n$kHash")
-        RippleCodecAPI.binarySerialize(jobj).foreach(v => logger.warn(s"ENcoding Was ${v.show}"))
+        RippleCodecDebugAPI.binarySerialize(jobj).foreach(v => logger.warn(s"ENcoding Was ${v.show}"))
         BinCodecLibError(s"Hash Computation Mismatch \n$hash \n$kHash").asLeft
       }
 
-    } yield passed
-  }
-
-  /** THis just calls it and checks completion and transcoding basically. */
-  def checkSigningSerializationLamely(reply: JsonObject): Either[BinCodecLibError, Boolean] = {
-    for {
-      txjson         <- findTxJsonInReply(reply)
-      fullBytes      <- RippleCodecAPI.serializedTxBlob(txjson)
-      signedBytes    <- RippleCodecAPI.signingTxBlob(txjson)
-      signedStrBytes <- RippleCodecAPI.signingTxBlob(txjson.asJson.noSpaces)
-      signedEncoded  <- RippleCodecAPI.binarySerializeForSigning(txjson)
-      passed <- if (signedBytes.sameElements(signedStrBytes) &&
-                    signedBytes.sameElements(signedEncoded.toBytes) &&
-                    !(fullBytes sameElements signedBytes)) {
-        true.asRight
-      } else {
-        BinCodecLibError(s"Failed Signing Serialization Crap").asLeft
-      }
     } yield passed
   }
 
@@ -75,9 +57,9 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     * @param rsObj tx_json or a LedgerTxn, anything with a hash field I think. But hardcoded to tranasctionID prefix
     * @return
     */
-  def createResponseHashHex(rsObj: JsonObject): Either[BinCodecLibError, String] = {
+  def createResponseHashHex(rsObj: Json): Either[BinCodecLibError, String] = {
     BinCodecLibError.wrap("Creating Hash Failed") {
-      RippleCodecAPI.binarySerialize(rsObj).map { serialized =>
+      RippleCodecDebugAPI.binarySerialize(rsObj).map { serialized =>
         // logger.info(s"Raw:\n${rsObj.asJson.spaces4}")
         // logger.info(s"BinarySerialized for Hash:\n ${serialized.show}")
         val payload: Seq[Byte]    = HashPrefix.transactionID.asBytes ++ serialized.toBytes

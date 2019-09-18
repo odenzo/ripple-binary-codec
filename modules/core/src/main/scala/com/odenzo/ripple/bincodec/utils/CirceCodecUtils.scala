@@ -7,15 +7,6 @@ import io.circe.{JsonObject, ACursor}
 
 private[bincodec] trait CirceCodecUtils {
 
-  type KeyTransformer = String => String
-
-  /** This is the transforms from io.circe.generic.extras */
-  val snakeCaseTransformation: KeyTransformer =
-    _.replaceAll("([A-Z]+)([A-Z][a-z])", "$1_$2").replaceAll("([a-z\\d])([A-Z])", "$1_$2").toLowerCase
-
-  /** Capitalize a somewhat normal word */
-  val capitalize: KeyTransformer = _.capitalize
-
   /** Usage {{{
     *
     * }}}
