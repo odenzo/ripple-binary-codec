@@ -5,9 +5,10 @@ import cats.implicits._
 import cats.{Eval, _}
 import io.circe.{Json, JsonObject, Decoder}
 import org.scalatest.{OptionValues, FunSuiteLike, EitherValues, Matchers}
-import scribe.Logging
+import scribe.{Logging, Level}
 
 import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, RippleTestUtils, OTestUtils}
+import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
 trait OTestSpec
     extends FunSuiteLike
@@ -19,6 +20,12 @@ trait OTestSpec
     with RippleTestUtils {
 
   private val touch = TestLoggingConfig.setTestLogging.value
+
+  def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") == "true"
+
+  def setTestLog(l: Level): Unit = if (!inCI) ScribeLoggingConfig.setAllToLevel(l)
+
+  def setLogDebug(): Unit = setTestLog(Level.Debug)
 
   def getOrLog[T](ee: Either[Throwable, T], msg: String = "Error: "): T = {
     import BCException.showThrowables

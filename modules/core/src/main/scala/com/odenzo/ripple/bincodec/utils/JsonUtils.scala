@@ -13,33 +13,12 @@ private[bincodec] trait JsonUtils {
 
   /** Monoid/Semigroup for Circe Json Object so we can add them togeher. */
   implicit val jsonObjectMonoid: Monoid[JsonObject] = new Monoid[JsonObject] {
-    def empty: JsonObject = JsonObject.empty
-
+    def empty: JsonObject                                 = JsonObject.empty
     def combine(x: JsonObject, y: JsonObject): JsonObject = JsonObject.fromIterable(x.toVector |+| y.toVector)
   }
 
   def findField(name: String, json: Json): Either[BinCodecLibError, Json] = {
     JsonPath.root.at(name).getOption(json).flatten.toRight(BinCodecLibError(s"Field $name not found ", json.asJson))
-  }
-
-  /**
-    * Finds the first (nested) field of given name which is expected to be a JsonObject.
-    *
-    * @param field Field name, deep search done.
-    * @param obj   Json to search on, this is typically but no always a JsonObject
-    *
-    * @return Error if field not found, or *first* found field is not JsonObject, Success is the JsonObject.
-    */
-  def findFieldDeepAsObject(field: String, obj: Json): Either[BinCodecLibError, JsonObject] = {
-    obj
-      .findAllByKey(field)
-      .collectFirst {
-        case obj if obj.isObject => json2object(obj)
-        case other               => BinCodecLibError(s"First $field field was not JsonObject").asLeft
-      }
-      .getOrElse {
-        BinCodecLibError(s"FieldName $field was not found").asLeft
-      }
   }
 
   def json2object(json: Json): Either[BinCodecLibError, JsonObject] = {
@@ -52,17 +31,6 @@ private[bincodec] trait JsonUtils {
 
   def json2string(json: Json): Either[BinCodecLibError, String] = {
     json.asString.toRight(BinCodecLibError("Expected JSON String", json))
-  }
-
-  /**
-    * Little utility for common case where an JsonObject just has "key": value
-    * WHere value may be heterogenous?
-    *
-    * @param json
-    */
-  def extractAsKeyValueMap(json: Json): Either[BinCodecLibError, Map[String, Json]] = {
-    json2object(json).map(_.toMap)
-
   }
 
   /** Ripled doesn't like objects like { x=null } */
@@ -88,7 +56,6 @@ private[bincodec] trait JsonUtils {
   def parseAsJsonObject(m: String): ErrorOr[JsonObject] = {
     parseAsJson(m).flatMap(json2object)
   }
-
 
   def decode[T](json: Json, decoder: Decoder[T], msg: Option[String] = None): ErrorOr[T] = {
     decoder

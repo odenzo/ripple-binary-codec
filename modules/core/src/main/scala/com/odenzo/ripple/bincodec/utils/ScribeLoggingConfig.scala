@@ -16,6 +16,8 @@ import scribe.Level.{Warn, Debug}
   */
 object ScribeLoggingConfig extends Logger {
 
+  def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") === "true"
+
   /** Helper to filter out messages in the packages given below the given level
     * I am not sure this works with the global scribe object or not.
     * Usage:
@@ -35,12 +37,6 @@ object ScribeLoggingConfig extends Logger {
     select(filters: _*).include(level >= minLevel)
   }
 
-  // When exactly does this get instanciated? Have to touch it.
-
-  // Need to apply these by package scope for library mode.
-  // APply to com.odenzo.ripple.bincodec.*
-
-  /** Scala test should manuall control after this */
   val defaultSetup: Eval[Unit] = Eval.later {
 
     if (inCI) { // This should catch case when as a library in someone elses CI
@@ -52,22 +48,11 @@ object ScribeLoggingConfig extends Logger {
     scribe.info("Done with Default")
   }
 
-  /** This sets the handler filter level,  all settings to modifiers are essentially overridden on level,
-    * althought the modifiers may filter out additional things.
-    *
-    * */
   def setAllToLevel(l: Level): Unit = {
     scribe.Logger.root.clearHandlers().withHandler(minimumLevel = Some(l)).replace()
     //scribe.Logger.root.clearModifiers().withMinimumLevel(l).replace()
   }
 
-  def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") === "true"
-
-  // Well, as far as I can tell the flow is: Logger => Modifiers => Handlers, The handlers write with Formatters
-  // but the default console handler (at least) can also filter with minimumLogLevel
-  // This experiment has scribe.Logger.root set at DEBUG.
-  // We want to filter the debug messages just for com.odenzo.ripple.bincodec.reference.FieldInfo
-  // method encodeFieldID but do just for package s
   def addModifiers(packages: List[String], l: Level): Unit = {
     val pri = Priority.Normal // unnecessary since clearing existing modifiers, but handy for future.
     scribe.Logger.root.withModifier(ScribeLoggingConfig.excludePackageSelction(packages, l, pri)).replace()
