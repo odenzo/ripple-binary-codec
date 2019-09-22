@@ -25,22 +25,25 @@ trait AccountIdCodecs {
     } yield EncodedVL(vl, bits160)
   }
 
-  def encodeAccountNoVL(json: Json): Either[BCJsonErr, RawValue] = {
-
-    val account = json.asString.toRight(BCJsonErr("Account JSON Not String", json))
-
-    val asBytes: Either[BCJsonErr, List[UByte]] = account.map { s =>
-      val allBytes = RippleBase58.decode(s).map(UByte(_)).toList
+  def encodeAccountNoVL(json: Json): Either[BinCodecLibError, RawValue] = {
+    for {
+      accountChecksum <- json.asString.toRight(BCJsonErr("Account JSON Not String", json))
+      _ = scribe.info(s"Account w/ Checksum: ${accountChecksum}")
+      decoded <- RippleBase58.decode(accountChecksum)
+      unchecked = decoded.drop(1).dropRight(4)
+      ubytesL   = unchecked.map(UByte(_)).toList
 
       // TODO: Add a generic padLeftTo somewhere
-      val padded = if (allBytes.length < 24) {
-        List.fill(24 - allBytes.length)(UByte(0)) ::: allBytes
-      } else allBytes
+      padded = if (ubytesL.length < 20) {
+        List.fill(20 - ubytesL.length)(UByte(0)) ::: ubytesL
+      } else {
+        ubytesL
+      }
 
-      padded.take(160 / 8)
+      firstTwenty = padded.take(160 / 8)
 
-    }
-    asBytes.map(v => RawValue(v))
+    } yield RawValue(firstTwenty)
+
   }
 }
 

@@ -2,29 +2,30 @@ package com.odenzo.ripple.bincodec.utils
 
 import java.math.BigInteger
 import scala.annotation.tailrec
+import scala.util.Try
 
-import cats._
-import cats.data._
 import cats.implicits._
-import spire.math.UByte
+import scribe.Logging
 
-/** Based on
-  https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
-  Note: This is restricted to bincodec.* packages
-  */
-private[bincodec] trait RippleBase58 {
+import com.odenzo.ripple.bincodec.BinCodecLibError
 
-  val std      = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+// Based on
+// https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
+object RippleBase58 extends Logging {
+
   val alphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
-
-  // char => value
-  val base28Map: Map[Char, Int] = alphabet.zipWithIndex.toMap
+  val B58_ZERO = 'r'
+  // char -> value
+  val base58Map: Map[Char, BigInt] = alphabet.zipWithIndex.map {
+    case (c, indx) => (c, BigInt(indx))
+  }.toMap
 
   /**
     * This should never fail
+    *
     * @param input binary data
     *
-    * @return the base-58 representation of input
+    * @return the base-58 representation of input, 0 bytes prefixes are converted to 'r'
     */
   def encode(input: Seq[Byte]): String = {
     if (input.isEmpty) ""
@@ -36,48 +37,41 @@ private[bincodec] trait RippleBase58 {
       def encode1(current: BigInteger): Unit = current match {
         case BigInteger.ZERO => ()
         case _ =>
-          val Array(x, remainder) = current.divideAndRemainder(BigInteger.valueOf(58L))
+          val res: Array[BigInteger] = current.divideAndRemainder(BigInteger.valueOf(58L))
+          val x                      = res(0)
+          val remainder              = res(1)
           builder.append(alphabet.charAt(remainder.intValue))
           encode1(x)
       }
 
       encode1(big)
-      input.takeWhile(_ === 0).map(_ => builder.append(alphabet.charAt(0)))
+      // Same as BTC mapping 0x00 => "1"
+      input.takeWhile(_ === 0).map(_ => builder.append(B58_ZERO))
       builder.toString().reverse
     }
   }
 
   /**
     * This potentially fails if String has char not in the alphabet.
+    *
+    *
     * @param input base-58 encoded data
-    * @return the decoded data
+    *
+    * @return the decoded data in binary form. Leading r turns into zero pad
     */
-  def decode(input: String): Array[Byte] = {
-    val zeroes = input.takeWhile(_ === '1').map(_ => 0: Byte).toArray
-    val trim   = input.dropWhile(_ === '1').toList
-    val decoded = trim
-      .foldLeft(BigInteger.ZERO)(
-        (a, b) =>
-          a.multiply(BigInteger.valueOf(58L))
-            .add(BigInteger.valueOf(base28Map(b).toLong))
-      )
-    if (trim.isEmpty) zeroes
-    else
-      zeroes ++ decoded.toByteArray
-        .dropWhile(_ === 0) // BigInteger.toByteArray may add a leading 0x00
-  }
+  def decode(input: String): Either[BinCodecLibError, Seq[Byte]] = {
+    BinCodecLibError.wrapPure(s"Decoding B58 $input") {
+      val zeroes: Seq[Byte] = input.takeWhile(c => c === 'r').iterator.map(_ => 0.toByte).toSeq
+      val trim: String      = input.dropWhile(c => c === 'r')
 
-  def base58CheckToBytes(b58check: String) = {
-    base58ToBytes(b58check).drop(1).dropRight(4)
-  }
-
-  def base58ToBytes(b58: String): List[UByte] = {
-    decode(b58).map(ByteUtils.byte2ubyte).toList
-  }
-
-  def base58ToHex(b58: String): String = {
-    ByteUtils.ubytes2hex(base58ToBytes(b58))
+      val base           = BigInt(58L)
+      val zeroBI: BigInt = BigInt(0)
+      trim match {
+        case str if str.isEmpty => Seq.empty[Byte]
+        case str =>
+          val decoded: BigInt = trim.foldLeft(zeroBI)((a, b) => (a * base) + base58Map(b))
+          zeroes ++ decoded.toByteArray.dropWhile(_ === 0) // BigInteger.toByteArray may add a leading 0x00
+      }
+    }
   }
 }
-
-private[bincodec] object RippleBase58 extends RippleBase58
