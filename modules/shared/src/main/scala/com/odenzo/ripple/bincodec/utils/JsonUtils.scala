@@ -1,10 +1,7 @@
 package com.odenzo.ripple.bincodec.utils
 
-import java.io.File
-
 import cats.Monoid
 import cats.implicits._
-import io.circe.jawn.JawnParser
 import io.circe.optics.JsonPath
 import io.circe.syntax._
 import io.circe.{Json, Printer, JsonObject, Decoder}
@@ -90,13 +87,6 @@ private[bincodec] trait JsonUtils {
 
   def parseAsJsonObject(m: String): ErrorOr[JsonObject] = {
     parseAsJson(m).flatMap(json2object)
-  }
-
-  def parseAsJson(f: File): ErrorOr[Json] = {
-    scribe.info(s"Parsing FIle $f")
-    new JawnParser().parseFile(f).leftMap { pf =>
-      new BCException(s"Error Parsing File $f to Json", pf)
-    }
   }
 
   def decode[T](json: Json, decoder: Decoder[T], msg: Option[String] = None): ErrorOr[T] = {

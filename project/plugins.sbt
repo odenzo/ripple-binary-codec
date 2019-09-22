@@ -1,6 +1,17 @@
 //
 //addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject"      % "0.6.1")
+addSbtPlugin("org.portable-scala" % "sbt-scala-native-crossproject" % "0.6.1")
+
+addSbtPlugin("org.scala-js" % "sbt-scalajs"        % "1.0.0-M8") // 0.6.28 and .6.29 for my dependancioes
+addSbtPlugin("org.scala-js" % "sbt-jsdependencies" % "1.0.0-M8")
+//addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % "0.6.23")
+
+//addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject"      % "0.6.1")
+//addSbtPlugin("org.scala-js"     % "sbt-scalajs"      % "0.6.28")
+//addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.3.7")
+
 //  https://github.com/scoverage/sbt-scoverage
 // sbt clean coverage test
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")

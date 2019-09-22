@@ -1,12 +1,15 @@
 package com.odenzo.ripple.bincodec
 
+import java.io.File
+
 import cats.data._
 import cats.implicits._
 import cats.{Eval, _}
-import io.circe.{Json, JsonObject, Decoder}
+import io.circe.{Json, JsonObject, Decoder, Parser}
 import org.scalatest.{OptionValues, FunSuiteLike, EitherValues, Matchers}
 import scribe.Logging
 
+import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, RippleTestUtils, OTestUtils}
 
 trait OTestSpec

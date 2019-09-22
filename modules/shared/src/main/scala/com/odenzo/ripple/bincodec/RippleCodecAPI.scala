@@ -1,5 +1,7 @@
 package com.odenzo.ripple.bincodec
 
+import scala.scalajs.js.annotation.JSExportTopLevel
+
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 
@@ -12,6 +14,7 @@ import com.odenzo.ripple.bincodec.utils.JsonUtils
   * This will fail on fields which have a null value.
   *
   */
+@JSExportTopLevel("XRPLCodecAPI")
 object RippleCodecAPI {
 
   //scribe.warn("RippleCodeAPI Setup")
