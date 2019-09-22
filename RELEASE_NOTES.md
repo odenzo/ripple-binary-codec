@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.1.3
++ Added support for Custom Encoded Currencies
++ Cleanup and Javascript fixtures
++ Update Scala 2.12.10 and 2.13.1
 
 ## V 0.1.2
 

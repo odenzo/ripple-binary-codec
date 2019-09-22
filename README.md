@@ -1,7 +1,7 @@
 
 # ripple-binary-codec
 [ ![Download](https://api.bintray.com/packages/odenzooss/maven/ripple-binary-codec/images/download.svg
-) ](https://bintray.com/odenzoos/maven/ripple-binary-codec/0.1.0/link)
+) ](https://bintray.com/odenzoos/maven/ripple-binary-codec/0.1.3/link)
 [![Build Status](https://travis-ci.com/odenzo/ripple-binary-codec.svg?branch=master)](https://travis-ci.com/odenzo/ripple-binary-codec)
 [![codecov](https://codecov.io/gh/odenzo/ripple-binary-codec/branch/master/graph/badge.svg)](https://codecov.io/gh/odenzo/ripple-binary-codec)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0ec6db4a57fc4de98a9f52f80a39dc1a)](https://www.codacy.com/app/odenzo/ripple-binary-codec?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=odenzo/ripple-binary-codec&amp;utm_campaign=Badge_Grade)
@@ -14,22 +14,7 @@ The primary use-case is to implement local signing, multi-signing and verificati
 
 It is a developer library, most users will want to use https://github.com/odenzo/ripple-local-signing to do the signing.
 
-
-
-### Status
-
-Works well enough, and plus/minus is that it is written very simply, so serves as a good example/reference to the
- gotchas. 
-
-- This is "production" ready in that it works reliably, and throws no exceptions.
-- Functional serialization, works on a good set of test cases.
-- Deserialization useful for development and debugging work
-- Code is getting cleaner;  but not optimized for speed and some debris left. 
-
-
-### Environment
-Cross-compiled to Scala 2.12.9 and Scala 2.13.1 currently, tested with OpenJDK9
-It takes 
+Cross-compiled to Scala 2.12 and Scala 2.13 currently
 
 1. JSON and serializes into Ripple binary format, e.g. TxBlob
 2. De-serializes Ripple binary encoded – back to a TxBlob style or broken down to hex fields and subfields for debugging
@@ -37,6 +22,23 @@ It takes
   
 Best place to start on documentation is:
 https://xrpl.org/serialization.html
+
+Note: Please "star" on GitHub if you are using, and I will switch to semantic versioning and keeping past versions
+ around.
+
+### Status
+
+Works well enough, and plus/minus is that it is written very simply, so serves as a good example/reference to the
+ gotchas. 
+
+- This is "production" ready in that it works reliably and correcltly.
+- Any exceptions generated are captured, so API is "pure function" in Scala sense.
+- Functional serialization, works on a good set of test cases.
+- Deserialization useful for development and debugging work
+- Code is getting cleaner;  but not optimized for speed and some debris left. 
+
+
+
 
 ### Testing
 
@@ -48,7 +50,7 @@ There are some unit tests, but primary testing is done using trace logs of reque
 Published under Bintray for now, so in sbt use via:
 
 ```
-   // Where version is the value in the badge above, e.g. "0.3.0" 
+   // Where version is the value in the badge above, e.g. "0.1.3" 
    resolvers in ThisBuild += Resolver.bintrayRepo("odenzooss", "maven"),
    libraryDependencies += "com.odenzo" %% "ripple-binary-codec" % version
 ```
@@ -74,35 +76,19 @@ Other than that the API should be stable, additional Java, ScalaJS and perhaps S
 
 ## Differences from Ripple Encoding
 
-All the test cases pass, but the following are "problem" areas that may arise.
-
 ### Issued Amounts (aka Fiat Amount, IOU Amount)
-https://xrpl.org/currency-formats.html#issued-currency-math defines the "spec" for these.
 
-Defined with 15-digits of precision and min and max ranges.
-Testing has shown that messages with more than 15 digits of precision are round/truncated.
-This is unlikely to occur in most cases, but I am not comfortable with it.
-All amounts with more than 15 digits of precision are rejected by the binary-encoder for now.
-If I figure out the precise behaviour of RippleD may change this.
-For now a hack with BigDecimal precision which treated 1234.00 as precision 6 (trailing zeros are significant digits)s 
 
-Examples:
- - 9223372036854775807 is SignRq is returned as 9223372036854775e3 in response)
- - 18014398509481989 =>   1801439850948198e1 
+https://github.com/odenzo/ripple-binary-codec/issues/11
 
-Mantissa is 54 bit unsigned, everything after that seems to be truncated.
-
-Tidy up and correct error messages pending for Issued Amounts, see IssuedAmountCodec
-
-### 160-bit hex encoded Currencies not tested or supported
+XRPL rounds/truncates some amounts with more than 15 significant digits, currently I reject these with error.
 
 
 
 ## TODOs
 
 1) Cross Compile to ScalaJS 
-2) After that start benchmark and optimization
-    * Optimize data structures perhaps (currently List[UByte] everywhere) and concatenation.
-3) Adding Hex encoded currencies
+2) Benchmark and Optimize as needed
+3) Revisit Issued Amounts with proper conformance tests
 4) Internal: clean-up Scribe logging and other internal test utils
 5) Low Priority: Re-implement decoding, perhaps with scodec

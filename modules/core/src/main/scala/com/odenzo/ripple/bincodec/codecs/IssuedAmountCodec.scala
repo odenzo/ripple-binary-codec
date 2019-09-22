@@ -108,14 +108,14 @@ trait IssuedAmountCodec extends CodecUtils {
         // Crank up the mantissa as much as we can
         while ((mant < minMantissa) && (exp > minExponent)) {
           mant = mant * ULong(10)
-          exp  = exp - 1
+          exp = exp - 1
         }
 
         // Crank down the mantissa if too high, making sure not to overflow exponent
         while (mant > maxMantissa) {
           if (exp >= maxExponent) throw new IllegalArgumentException("Amount out range - overflow")
           mant = mant / ULong(10)
-          exp  = exp + 1
+          exp = exp + 1
         }
 
         // Check to see if number too small to represent and truncate to zero

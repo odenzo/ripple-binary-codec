@@ -5,12 +5,12 @@ import cats.data._
 import cats.implicits._
 import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, Assertion}
 import spire.math._
 import spire.implicits._
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{OTestSpec, RawValue}
+import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
 
 class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
@@ -126,4 +126,28 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 
+  test("Currency Encoding") {
+
+    val passFail = List(
+      ("XRP", true), // This is special case
+      ("mew", true),
+      ("FOO", true),
+      ("BARR", false),
+      ("~~~", false), // Not a ripple ASCII char
+      ("[^]", true),
+      ("AA".padTo(20, 'F'), false),
+      ("00".padTo(20, 'F'), true),
+      ("01".padTo(20, 'F'), true) // Legacy case
+    )
+
+    passFail.foreach { case (v, exp) => encode(v, exp) }
+
+    def encode(v: String, expectedOK: Boolean): Assertion = {
+      val res = MoneyCodecs.encodeCurrency(Json.fromString(v))
+      logger.debug(s"$v expected $expectedOK got  $res")
+
+      res.isRight shouldEqual expectedOK
+    }
+
+  }
 }

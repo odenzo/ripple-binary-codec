@@ -1,7 +1,6 @@
 import MyCompileOptions._
 
-lazy val supportedScalaVersions = List("2.13.1", "2.12.9")
-scalaVersion := supportedScalaVersions.head
+lazy val supportedScalaVersions = List("2.13.1", "2.12.10")
 
 ThisBuild / organization := "com.odenzo"
 ThisBuild / name         := "ripple-binary-codec"

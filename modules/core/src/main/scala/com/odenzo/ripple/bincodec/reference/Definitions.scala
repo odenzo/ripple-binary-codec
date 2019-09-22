@@ -30,6 +30,7 @@ object Definitions extends JsonUtils {
       JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitions)
     }
     // In Case I want to fetch directly next time.
+    // Current version is Mar 24, 2019
     // val rippleSiteUrl: String = "https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json"
   }
 

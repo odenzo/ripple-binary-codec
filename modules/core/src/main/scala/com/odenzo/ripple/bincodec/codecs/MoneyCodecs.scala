@@ -130,29 +130,20 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     *              @return   160 bits per   https://xrpl.org/currency-formats.html
     **/
   def encodeCurrency(json: Json): Either[BinCodecLibError, RawValue] = {
-    // TODO: Look what the first 2 bits and format are for pure hex.
-    // This should always be 20 bytes long if ASCII psuedo-ISO code
-    // 2 bit b00 for psuedo ISO type     b01 for other
-    // 88-bit b0
-    // 24-bit encoded ISO (1 byte per char)
-    // 40-bit b0 padding
-    // 20 bytes total
-    val bit90Zero: List[UByte] = List.fill(12)(UByte(0))
-    val bit40Zero: List[UByte] = List.fill(5)(UByte(0))
-    val bit160Zero             = List.fill(20)(UByte(0))
-    //  It should be a 160 bit hex string but can't be XRP
+    val bit90Zero: List[UByte]  = List.fill(12)(UByte(0))
+    val bit40Zero: List[UByte]  = List.fill(5)(UByte(0))
+    val bit160Zero: List[UByte] = List.fill(20)(UByte(0))
 
-    json2string(json)
-      .flatMap {
-        case "XRP" => RawValue(bit160Zero).asRight
-        case s if s.length === 3 && isRippleAscii(s) =>
-          val curr = ByteUtils.bytes2ubytes(s.getBytes("UTF-8")).toList
-          RawValue(bit90Zero ::: curr ::: bit40Zero).asRight
+    json2string(json).flatMap {
+      case "XRP"                                      => RawValue(bit160Zero).asRight
+      case s if s.length === 20 && s.startsWith("00") => ByteUtils.hex2ubytes(s).map(RawValue.apply)
+      case s if s.length === 20 && s.startsWith("01") => ByteUtils.hex2ubytes(s).map(RawValue.apply) // Legacy Demurrage
+      case s if s.length === 3 && isRippleAscii(s) =>
+        val curr = ByteUtils.bytes2ubytes(s.getBytes("UTF-8")).toList
+        RawValue(bit90Zero ::: curr ::: bit40Zero).asRight
 
-        case s if s.length === 40 => ByteUtils.hex2ubytes(s).map(RawValue.apply)
-
-        case other => BinCodecLibError(s"Currency $other not three ascii").asLeft
-      }
+      case other => BinCodecLibError(s"Invalid Currency $other").asLeft
+    }
 
   }
 

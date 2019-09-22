@@ -94,25 +94,6 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
     implicit val decoder: Decoder[FieldTestData] = deriveDecoder[FieldTestData].prepare(munger)
   }
 
-  test("Field Names") {
-    val json            = getOrLog(loadJsonResource("/test/fixtures/data-driven-tests.json"))
-    val arr: List[Json] = json.asObject.flatMap(_("fields_tests")).flatMap(_.asArray).map(_.toList).get
-    scribe.debug(s"Things to Test ${arr.length}")
-    val ftd: Result[List[FieldTestData]] = arr.traverse(_.as[FieldTestData])
-    ftd.left.foreach(d => scribe.error(s"Decoding Failure: $d"))
-    ftd.map { lst =>
-      lst.foreach { fix: FieldTestData =>
-        scribe.debug(s"FieldTestData $fix")
-        val res: List[UByte] = FieldMetaData.encodeFieldID(fix.nth_of_type, fix.tipe)
-        val hex              = res.map(ByteUtils.ubyte2hex).mkString
-        scribe.info("Result: " + hex)
-        if (fix.name == "TickSize") hex shouldEqual ("0" + fix.expected_hex)
-        else hex shouldEqual fix.expected_hex
-      }
-    }
-
-  }
-
   test("XRP") {
 
     val min: ULong = ULong(0)

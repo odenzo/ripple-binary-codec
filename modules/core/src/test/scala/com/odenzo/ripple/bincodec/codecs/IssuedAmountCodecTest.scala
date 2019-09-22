@@ -15,7 +15,7 @@ import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
 /**
   * Trouble with Fiat encoding so a dedicated test suite.
   */
-class FiatAmountEncodingTest extends OTestSpec {
+class IssuedAmountCodecTest extends OTestSpec {
 
   test("Fiat Amount") {
     val fixture: Seq[BigDecimal] = Seq(
@@ -76,7 +76,10 @@ class FiatAmountEncodingTest extends OTestSpec {
 
   case class TData(bin: String, mant: String, exp: Int, value: String)
 
-  test("Dev Fiat Amount Value") {
+  /** Testing the edge cases where XRPL acts not exactly like I expected */
+  test("Conformance") {
+    // Need to make a decent conformance test set
+    //
     val fixture =
       """
         |[
@@ -89,78 +92,23 @@ class FiatAmountEncodingTest extends OTestSpec {
       """.stripMargin
 
     TestLoggingConfig.setAll(Level.Debug)
-    val td: Either[BinCodecLibError, List[TData]] =
-      JsonUtils
-        .parseAsJson(fixture)
-        .flatMap(j => JsonUtils.decode(j, Decoder[List[TData]]))
 
-    val testData: List[TData] = getOrLog(td)
+    for {
+      json <- parseAsJson(fixture)
+      data <- decode(json, Decoder[List[TData]])
+      _ = data.foreach { fix =>
+        val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+        bin.toHex == fix.bin
+        bin.toHex shouldEqual fix.bin
+      }
+    } yield ()
 
-    // Note that I return (0,0) for value 0.0 but encodes the same
-    testData.foreach { fix: TData =>
-      val fiatAmount    = BigDecimal(fix.value)
-      val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
-      bin.toHex shouldEqual fix.bin
-    }
   }
+
   def testOne(v: Json, expected: Json): Assertion = {
     val expectedHex = expected.asString.get
     val bytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(v))
     bytes.toHex shouldEqual expectedHex
   }
 
-  /**
-    *
-    * @param got      Value of field, without field marker
-    * @param expected Expected value of fields without field marker
-    *
-    * @return
-    */
-  def analyzeAmount(got: String, expected: String): Either[BinCodecLibError, Unit] = {
-
-    val isXRP: Either[BinCodecLibError, Boolean] = ByteUtils
-      .hex2ubyte("0" + got.drop(2).head)
-      .map(b => (b | UByte(8)) === UByte(0))
-
-    isXRP.map {
-      case true => scribe.info("XRP Value Deal With IT")
-      case false =>
-        scribe.info("Analyzing Suspected Fiat Amount")
-        val gotFields: Either[BinCodecLibError, (List[UByte], List[UByte], List[UByte])]      = breakFiat(got)
-        val expectedFields: Either[BinCodecLibError, (List[UByte], List[UByte], List[UByte])] = breakFiat(expected)
-    }
-
-  }
-
-  /** Breaks down to UBytes for the amount, currency amd issuer */
-  def breakFiat(hex: String): Either[BinCodecLibError, (List[UByte], List[UByte], List[UByte])] = {
-
-    val all: Either[BinCodecLibError, List[UByte]] = ByteUtils.hex2ubytes(hex)
-    val amount                                     = all.map(_.take(8)) // Top 64 is amount in sign and flag
-    val currency                                   = all.map(_.slice(8, 28)) // 160 bits
-    val issuer                                     = all.map(_.slice(32, 52)) // another 160 bits
-    (amount, currency, issuer).mapN((_, _, _))
-  }
-
-  /** Get Top 2 bits, Exponent (Shifted) anf the mantissa in that order in a list.
-    * Moved down so the 2 bits in ULong has value 3 is both set etc.
-    * */
-  def breakFiatAmount(fields: ULong): List[ULong] = {
-
-    // We char about the first 10 bits contains in the first two bytes
-
-    val topMask: ULong      = ULong(0xC000000000000000L)
-    val expMask: ULong      = ULong(0xFF) << 54
-    val mantissaMask: ULong = ULong(0x3FFFFFFFFFFFFFL) // 13 nibbles
-
-    //    scribe.debug("Masks:\n" + ByteUtils.uLong2Base2Str(topMask)+
-    //    "\n" + ByteUtils.uLong2Base2Str(expMask)+
-    //    "\n" + ByteUtils.uLong2Base2Str(mantissaMask))
-
-    val top2     = (fields & topMask) >> 62
-    val exp      = (fields & expMask) >> 54
-    val mantissa = fields & mantissaMask
-
-    List(top2, exp, mantissa)
-  }
 }
