@@ -17,21 +17,20 @@ import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
   */
 class IssuedAmountCodecTest extends OTestSpec {
 
-  test("Fiat Amount") {
-    val fixture: Seq[BigDecimal] = Seq(
-      BigDecimal(10),
-      BigDecimal("100"),
-      BigDecimal("100.23456"),
-      BigDecimal("0.12345"),
-      BigDecimal("0000.0012345600"),
-      BigDecimal("0000.12345"),
-      BigDecimal("0000.123450000")
+  test("Fiat Amount Doesnt Die") {
+    val fixture: Seq[String] = Seq(
+      "10",
+      "100",
+      "100.23456",
+      "0.12345",
+      "0000.0012345600",
+      "0000.12345",
+      "0000.123450000"
     )
 
-    fixture.foreach(oneOff)
-    def oneOff(amt: BigDecimal): Unit = {
-      val res = getOrLog(IssuedAmountCodec.newEncodeFiatAmount(amt))
-      scribe.info(s"Res: $amt =>")
+    fixture.foreach { txt =>
+      val res = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(txt)))
+      scribe.info(s"Res: $txt => $res")
     }
   }
 

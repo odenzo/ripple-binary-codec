@@ -21,8 +21,7 @@ trait Encoded extends CodecValue {
   lazy val rawBytes: List[UByte] = encoded.flatMap(_.ubytes)
   val encoded: List[RawValue]
 
-  def toHex: String = ByteUtils.ubytes2hex(rawBytes)
-
+  def toHex: String        = ByteUtils.ubytes2hex(rawBytes)
   def toBytes: Array[Byte] = rawBytes.map(_.toByte).toArray
 }
 
