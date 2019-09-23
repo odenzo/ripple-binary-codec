@@ -27,11 +27,14 @@ class ProblemsFixture$Test extends FunSuite with OTestSpec with ByteUtils {
   }
 
   test("Specific Cases") {
+    TestLoggingConfig.setAll(Level.Debug)
     val txns = getOrLog(allTxn)
-    txns
-      .drop(1)
+    val complete = txns
+      .drop(0)
       .take(1)
       .traverse(TestRegimes.testSignRqRs)
+
+    getOrLog(complete)
   }
 
 }

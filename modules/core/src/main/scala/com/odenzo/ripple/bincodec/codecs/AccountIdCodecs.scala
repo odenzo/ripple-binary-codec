@@ -33,16 +33,13 @@ trait AccountIdCodecs {
       unchecked = decoded.drop(1).dropRight(4)
       ubytesL   = unchecked.map(UByte(_)).toList
 
-      // TODO: Add a generic padLeftTo somewhere
-      padded = if (ubytesL.length < 20) {
-        List.fill(20 - ubytesL.length)(UByte(0)) ::: ubytesL
-      } else {
-        ubytesL
+      res = ubytesL.length match {
+        case len if len === 20 => ubytesL
+        case len if len < 20   => List.fill(20 - ubytesL.length)(UByte(0)) ::: ubytesL
+        case len if len > 20   => ubytesL.take(20)
+
       }
-
-      firstTwenty = padded.take(160 / 8)
-
-    } yield RawValue(firstTwenty)
+    } yield RawValue(res)
 
   }
 }
