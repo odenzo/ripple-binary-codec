@@ -20,7 +20,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
   // encode => decode
 
   val byteIso = Prop.forAll(byteGen) { b: Byte =>
-    val in: Array[Byte]                          = Array(b)
+    val in: Seq[Byte]                            = Seq(b)
     val out: String                              = RippleBase58.encode(in)
     val iso: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode(out)
     iso match {
@@ -32,7 +32,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
   }
 
   val strIso = Prop.forAll(alphaGen) { b58: Char =>
-    val in: String                               = b58.toString
+    val in: String                               = b58.toString()
     val out: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode(in)
     out match {
       case Left(err) => fail(err)
@@ -70,9 +70,12 @@ class RippleBase58Test extends OTestSpec with Checkers {
     } yield (b58, decoded, reencoded)
   }
 
-  test("Property Test") {
+  test("Property Test  byte") {
     setLogDebug()
     check(byteIso, minSize(255))
+  }
+
+  test("Prop from Str") {
     check(strIso, minSize(100))
   }
 

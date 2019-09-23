@@ -9,8 +9,10 @@ import scribe.Logging
 
 import com.odenzo.ripple.bincodec.BinCodecLibError
 
-// Based on
-// https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
+/** Based on
+   https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala
+    This is being used by Ripple Signing instead of having multiple versions.
+  */
 object RippleBase58 extends Logging {
 
   val alphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
@@ -67,7 +69,7 @@ object RippleBase58 extends Logging {
       val base           = BigInt(58L)
       val zeroBI: BigInt = BigInt(0)
       trim match {
-        case str if str.isEmpty => Seq.empty[Byte]
+        case str if str.isEmpty => zeroes
         case str =>
           val decoded: BigInt = trim.foldLeft(zeroBI)((a, b) => (a * base) + base58Map(b))
           zeroes ++ decoded.toByteArray.dropWhile(_ === 0) // BigInteger.toByteArray may add a leading 0x00
