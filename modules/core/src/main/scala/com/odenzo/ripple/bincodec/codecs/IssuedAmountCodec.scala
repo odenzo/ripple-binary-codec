@@ -46,20 +46,20 @@ trait IssuedAmountCodec extends CodecUtils {
     * @param json
     */
   def encodeFiatValue(json: Json): Either[BinCodecLibError, RawValue] = {
-    BinCodecLibError.wrap(s"Error Normalizing Fiat Amount ${json.spaces4}") {
+    BinCodecLibError.handlingM(s"Error Normalizing Fiat Amount ${json.spaces4}") {
       val doLatest = true
       for {
         str <- JsonUtils.json2string(json)
         amt = BigDecimal(str)
-        enc <- shinyAndSuperNew(amt)
+        enc <- normalize(amt)
 
       } yield enc
     }
   }
 
-  def shinyAndSuperNew(amount: BigDecimal): Either[BinCodecLibError, RawValue] = {
+  def normalize(amount: BigDecimal): Either[BinCodecLibError, RawValue] = {
     amount match {
-      case a if a === 0              => encodeULong(ULong(1) << 63, "UInt64") // This is 8 bytes.
+      case a if a === 0              => UIntCodecs.encodeULong(ULong(1) << 63, "UInt64") // This is 8 bytes.
       case a if a < minVal           => BinCodecLibError(s"amount too small $a").asLeft
       case a if a > maxVal           => BinCodecLibError(s"amount too big $a").asLeft
       case a if a.abs < minAbsAmount => BinCodecLibError(s"amount too close to zero $a").asLeft
@@ -91,7 +91,7 @@ trait IssuedAmountCodec extends CodecUtils {
     val top10: ULong          = signBits | expBitsShifted
     val full: ULong           = top10 | mantissa
 
-    val asBytes: Either[BinCodecLibError, RawValue] = encodeULong(full, "UInt64")
+    val asBytes: Either[BinCodecLibError, RawValue] = UIntCodecs.encodeULong(full, "UInt64")
     asBytes
 
   }

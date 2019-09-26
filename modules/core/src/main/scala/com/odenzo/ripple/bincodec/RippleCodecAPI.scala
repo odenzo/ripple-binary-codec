@@ -1,9 +1,7 @@
 package com.odenzo.ripple.bincodec
 
-import io.circe.{Json, JsonObject}
-import io.circe.syntax._
+import io.circe.Json
 
-import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 import com.odenzo.ripple.bincodec.codecs.AccountIdCodecs
 import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.utils.JsonUtils

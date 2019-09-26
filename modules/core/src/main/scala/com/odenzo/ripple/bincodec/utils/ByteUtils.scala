@@ -59,6 +59,7 @@ private[bincodec] trait ByteUtils extends Logging {
       case 0 => v
       case 1 => '0' +: v
     }
+    //  padded.sliding(2) Deprecated
     padded.grouped(2).map(hex2ubyte).toList.sequence
   }
 
@@ -92,8 +93,8 @@ private[bincodec] trait ByteUtils extends Logging {
     * @return
     */
   def hex2byte(v: String): Either[BinCodecLibError, Byte] = {
-    BinCodecLibError.wrap(s"$v hex to Byte") {
-      java.lang.Long.parseLong(v, 16).toByte.asRight
+    BinCodecLibError.handling(s"$v hex to Byte") {
+      java.lang.Long.parseLong(v, 16).toByte
     }
   }
 
@@ -114,16 +115,7 @@ private[bincodec] trait ByteUtils extends Logging {
     }
   }
 
-  @tailrec
-  final def trimLeftZeroBytes(a: List[Byte]): List[Byte] = {
-
-    a match {
-      case h :: t if h != ZEROBYTE => a
-      case Nil                     => a
-      case h :: t if h == ZEROBYTE => trimLeftZeroBytes(t)
-    }
-
-  }
+  def trimLeftZeroBytes(a: List[Byte]): List[Byte] = a.dropWhile((v: Byte) => v == ZEROBYTE)
 
   /** List of four unsigned bytes representing unsigned long get converted */
   def ubytes2ulong(bytes: Seq[UByte]): Either[BCLibErr, ULong] = {
@@ -146,7 +138,7 @@ private[bincodec] trait ByteUtils extends Logging {
 
   /** Quicky to take 16 hex chars and turn into ULong. Hex prefixed with 0x if missing */
   def hex2ulong(hex: String): Either[BinCodecLibError, ULong] = {
-    BinCodecLibError.wrapPure(s"Parsing ULong from $hex") {
+    BinCodecLibError.handling(s"Parsing ULong from $hex") {
       val bi = BigInt(hex, 16)
       ULong.fromBigInt(bi)
     }
@@ -169,16 +161,6 @@ private[bincodec] trait ByteUtils extends Logging {
       case _          => BinCodecLibError(s"8 Bytes needed to convert to ulong but ${bytes.length}").asLeft
     }
 
-  }
-
-  def byteToBitString(a: Int): String = {
-    // "%02x
-    // Byte is a signed Short I guess.
-    val locale   = Locale.US
-    val toString = a.toInt
-    //val hex = String.format(locale,"%02x", a.t)
-
-    s"Hex: ${a.toHexString} or  ${a.toBinaryString}"
   }
 
   def ensureMaxLength(l: List[UByte], len: Int): Either[BinCodecLibError, List[UByte]] = {

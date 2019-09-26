@@ -11,7 +11,7 @@ import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 
 private[bincodec] trait JsonUtils {
 
-  /** Monoid/Semigroup for Circe Json Object so we can add them togeher. */
+  /** Monoid/Semigroup for Circe Json Object so we can add them togeher combining top level fields only */
   implicit val jsonObjectMonoid: Monoid[JsonObject] = new Monoid[JsonObject] {
     def empty: JsonObject                                 = JsonObject.empty
     def combine(x: JsonObject, y: JsonObject): JsonObject = JsonObject.fromIterable(x.toVector |+| y.toVector)
@@ -38,7 +38,7 @@ private[bincodec] trait JsonUtils {
 
   def removeAllNulls(j: JsonObject): ErrorOr[JsonObject] = {
     val cleanTxt = droppingNullsPrinter.print(j.asJson)
-    parseAsJsonObject(cleanTxt)
+    parseAsJson(cleanTxt).flatMap(json2object)
   }
 
   /** Caution: Uses BigDecimal and BigInt in parsing.
@@ -48,19 +48,11 @@ private[bincodec] trait JsonUtils {
     * @return JSON or an exception if problems parsing, error holds the original String.
     */
   def parseAsJson(m: String): ErrorOr[Json] = {
-    io.circe.parser.parse(m).leftMap { pf =>
-      new BCJsonParseErr("Error Parsing String to Json", m, pf)
-    }
-  }
-
-  def parseAsJsonObject(m: String): ErrorOr[JsonObject] = {
-    parseAsJson(m).flatMap(json2object)
+    io.circe.parser.parse(m).leftMap(pf => BCJsonParseErr("Parsing String to Json", m, pf))
   }
 
   def decode[T](json: Json, decoder: Decoder[T], msg: Option[String] = None): ErrorOr[T] = {
-    decoder
-      .decodeJson(json)
-      .leftMap(e => BCJsonDecodingErr(msg.getOrElse("Decoding Helper"), json, e))
+    decoder.decodeJson(json).leftMap(e => BCJsonDecodingErr(msg.getOrElse("Decoding Helper"), json, e))
   }
 }
 

@@ -3,15 +3,14 @@ package com.odenzo.ripple.bincodec.encoding
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.Decoder.Result
 import io.circe.Json
 import io.circe.literal._
-import spire.math.{UByte, ULong}
+import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.{Encoded, BCLibErr, EncodedField, BinCodecLibError, OTestSpec}
+import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, BinCodecLibError, Encoded}
 import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
 import com.odenzo.ripple.bincodec.reference._
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, CirceCodecUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 class TypeSerializersTest extends OTestSpec with CodecUtils {
 
@@ -47,7 +46,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
     val req = dd.getFieldData(fieldName, data)
     req.foreach(v => scribe.info(s"encoding Single Field: $v"))
     req
-      .flatMap(TypeSerializers.encodeFieldAndValue(_, isNestedObject = false, false))
+      .flatMap(TypeSerializers.encodeFieldAndValue(_, false))
       .leftMap(_.addMsg(s"Decoding Field $fieldName"))
 
   }
@@ -90,7 +89,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
   object FieldTestData {
 
     val munger: ACursor => ACursor =
-      CirceCodecUtils.prepareJsonObject(CirceCodecUtils.fieldNameChangeEx("type", "tipe"))
+      prepareJsonObject(fieldNameChangeEx("type", "tipe"))
     implicit val decoder: Decoder[FieldTestData] = deriveDecoder[FieldTestData].prepare(munger)
   }
 

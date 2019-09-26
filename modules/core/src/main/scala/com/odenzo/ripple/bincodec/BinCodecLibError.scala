@@ -8,13 +8,9 @@ import io.circe.Decoder.Result
 import io.circe.{ParsingFailure, Json, DecodingFailure}
 
 /**
-  * This stuff is and always was a mess :-). Maybe move to ZIO or clean up.
-  * ZIO a bit fast moving to use now.
-  * Base class that all errors (including OError) must extends directly or indirectly.
-  * Not quite ready to move to case classes.
   *
-  * RippleCodecError is the base that all other errors should derive from.
-  * I let these be public, as they are returns from the RippleCodecAPI.
+  * All errors should instead this, and therefor be Throwable.
+  * I let these be public, as they are returns from the RippleCodecAPI often as Throwable
   */
 sealed trait BinCodecLibError extends Throwable {
   def msg: String
@@ -24,7 +20,6 @@ sealed trait BinCodecLibError extends Throwable {
 
 case class BCLibErr(msg: String = "<None>", cause: Option[BinCodecLibError] = None) extends BinCodecLibError
 
-/** This should be terminal node only, and typicall NonFatal throwable. */
 case class BCException(msg: String = "Wrapping Throwable", err: Throwable) extends BinCodecLibError {
   val cause: Option[BinCodecLibError] = Option.empty
 }
@@ -121,7 +116,7 @@ object BCJsonDecodingErr {
   /**
     * Wrap the Decoding error if there was one, and return as Either
     */
-  def wrapResult[T](v: Result[T], json: Json, note: String = "No Clues"): Either[BinCodecLibError, T] = {
+  def lift[T](v: Result[T], json: Json, note: String = "No Clues"): Either[BinCodecLibError, T] = {
     v.leftMap(err => BCJsonDecodingErr(note, json, err))
   }
 
@@ -142,7 +137,9 @@ object BCJsonErr {
 }
 
 trait ErrorUtils {
-  def wrap[A](msg: String)(fn: => Either[BinCodecLibError, A]): Either[BinCodecLibError, A] = {
+
+  /** Catches non-fatal exceptions and places in Either context */
+  def handlingM[A](msg: String)(fn: => Either[BinCodecLibError, A]): Either[BinCodecLibError, A] = {
     Try {
       fn
     } match {
@@ -151,7 +148,8 @@ trait ErrorUtils {
     }
   }
 
-  def wrapPure[A](msg: String)(fn: => A): Either[BinCodecLibError, A] = {
+  /** Catches non-fatal exceptions and places in Either context */
+  def handling[A](msg: String)(fn: => A): Either[BinCodecLibError, A] = {
     Try {
       fn
     } match {
@@ -160,20 +158,11 @@ trait ErrorUtils {
     }
   }
 
-  // Functionally equivalent, I think this style better.
-  def catchNonFatal[A](f: => A): Either[BinCodecLibError, A] = {
-    Either.catchNonFatal(f).leftMap(e => new BCException("Wrapped Exception", e))
-  }
-
   def stackAsString(err: Throwable): String = {
     import java.io.{PrintWriter, StringWriter}
     val errors = new StringWriter
     err.printStackTrace(new PrintWriter(errors))
     errors.toString
-  }
-
-  def printStackTrace(e: Throwable): String = {
-    e.getStackTrace.slice(3, 19).map(_.toString).mkString("\n\t", "\n\t", "\n== .... ==\n")
   }
 
   def showCauseOrStack(base: BinCodecLibError): String = {

@@ -24,7 +24,7 @@ object Definitions extends JsonUtils {
     val resourceName = "/ripplereferencedata/definitions.json"
     scribe.info(s"Loading Default Data from $resourceName")
 
-    BinCodecLibError.wrap(s"Couldn't Load Definitions Resource $resourceName") {
+    BinCodecLibError.handlingM(s"Couldn't Load Definitions Resource $resourceName") {
       val stream = this.getClass.getResourceAsStream(resourceName)
       val txt    = Source.fromInputStream(stream, "UTF-8").getLines().mkString("\n")
       JsonUtils.parseAsJson(txt).flatMap(DefinitionsDecoding.decodeDefinitions)
