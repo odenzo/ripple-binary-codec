@@ -17,28 +17,26 @@ trait PathCodecs extends JsonUtils {
   import PathCodecs._
 
   /** These is really a container. Inside is a list of  datasteps and delimeters. Equalivalent to paths **/
-  def encodePathSet(data: FieldData): Either[BinCodecLibError, EncodedPathSet] = {
+  def encodePathSet(data: Json): Either[BinCodecLibError, EncodedPathSet] = {
 
-    scribe.debug(s"Encoding PathSet/Path: ${data.fieldName} : \n ${data.json.spaces4}")
-    val pathList: Either[BinCodecLibError, List[Json]] = json2array(data.json)
+    scribe.debug(s"Encoding PathSet/Path:  : \n ${data.spaces4}")
+    val pathList: Either[BinCodecLibError, List[Json]] = json2array(data)
 
     val encodedPaths: Either[BinCodecLibError, List[EncodedNestedValue]] =
       pathList.flatMap((path: List[Json]) => path.traverse(encodePath))
 
     // PathSet has delimeters betweend the paths
 
-    val withDelimeters: Either[BinCodecLibError, EncodedPathSet] = encodedPaths.fmap { listOfPaths: List[Encoded] =>
-      if (listOfPaths.nonEmpty) {
-        // Drop the last anotherPathMarker but not the last element
-        val intercalated: List[Encoded] = listOfPaths.flatMap(a => List(a, anotherPathMarker)).dropRight(1)
-        val delimited: List[Encoded]    = intercalated ::: List(endOfPathsMarker) // appeneded 2.13 only
-
-        EncodedPathSet(delimited)
-
-      } else {
-        // Not sure what this should be, don't think it will ever occur
-        EncodedPathSet(List.empty[Encoded])
-      }
+    val withDelimeters: Either[BinCodecLibError, EncodedPathSet] = encodedPaths.fmap {
+      listOfPaths: List[EncodedNestedValue] =>
+        if (listOfPaths.nonEmpty) {
+          val intercalated: List[Encoded] = listOfPaths.flatMap(a => List(a, anotherPathMarker)).dropRight(1)
+          val delimited: List[Encoded]    = intercalated ::: List(endOfPathsMarker) // appeneded 2.13 only
+          EncodedPathSet(delimited)
+        } else {
+          // Not sure what this should be, don't think it will ever occur
+          EncodedPathSet(List.empty[Encoded])
+        }
     }
     withDelimeters.flatTap(v => scribe.debug(s"Encoded PathSet ${v.show}").asRight)
   }

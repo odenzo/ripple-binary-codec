@@ -3,6 +3,7 @@ package com.odenzo.ripple.bincodec
 import cats.data._
 import cats.implicits._
 import cats.{Show, _}
+import io.circe.JsonObject
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, RippleDataType, FieldMetaData}
@@ -67,10 +68,10 @@ case class EncodedNestedValue(enclosed: List[Encoded]) extends Encoded {
   * @param enclosed Can be nested fields or other Encoded types.
   *                 Should ne NonEmptyList
   */
-case class EncodedSTObject(enclosed: List[EncodedField], isNested: Boolean) extends Encoded {
-  lazy val encoded: List[RawValue] = isNested match {
-    case true  => enclosed.flatMap(_.encoded) ::: List(endMarker)
-    case false => enclosed.flatMap(_.encoded)
+case class EncodedSTObject(enclosed: List[EncodedField], isTopLevel: Boolean) extends Encoded {
+  lazy val encoded: List[RawValue] = isTopLevel match {
+    case false => enclosed.flatMap(_.encoded) ::: List(endMarker)
+    case true  => enclosed.flatMap(_.encoded)
   }
 
   val endMarker: RawValue = DefinitionData.objectEndMarker
@@ -111,13 +112,19 @@ object Encoded {
     case EmptyValue            => "<Empty Value>"
   }
 
+  implicit val encodedNestedValueMonoid: Monoid[EncodedNestedValue] = new Monoid[EncodedNestedValue] {
+    def empty: EncodedNestedValue = EncodedNestedValue(List.empty[Encoded])
+    def combine(x: EncodedNestedValue, y: EncodedNestedValue): EncodedNestedValue =
+      EncodedNestedValue(x.enclosed ::: y.enclosed)
+  }
+
 }
 
 object EncodedSTObject {
   implicit val showEncStObject: Show[EncodedSTObject] = Show.show { nev =>
-    s"\n[STObject (Nested: ${nev.isNested}]: " +
+    s"\n[STObject (Is Top Level: ${nev.isTopLevel}]: " +
       nev.enclosed.map((v: Encoded) => v.show).mkString("\n\t", "\n\t", "\n\n") +
-      s"<--[EndSTObject] ${if (nev.isNested) DefinitionData.objectEndMarker.toHex}\n"
+      s"<--[EndSTObject] ${if (!nev.isTopLevel) DefinitionData.objectEndMarker.toHex}\n"
 
   }
 

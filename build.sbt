@@ -48,13 +48,11 @@ val catsEffectVersion = "2.0.0"
 val spireVersion      = "0.17.0-M1"
 val scribeVersion     = "2.7.10"
 val scalaTestVersion  = "3.0.8"
-val scalaCheckVersion = "1.14.1"
+val scalaCheckVersion = "1.14.2"
 
 val libs = Seq(
-  "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
-  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
   "io.circe"       %% "circe-core"           % circeVersion,
-  "io.circe"       %% "circe-generic"        % circeVersion,
+  "io.circe"       %% "circe-generic"        % circeVersion % Test,
   "io.circe"       %% "circe-generic-extras" % "0.12.2",
   "io.circe"       %% "circe-parser"         % circeVersion,
   "io.circe"       %% "circe-optics"         % "0.12.0",
@@ -62,5 +60,7 @@ val libs = Seq(
   "org.typelevel"  %% "cats-core"            % catsVersion,
   "org.typelevel"  %% "cats-effect"          % catsEffectVersion,
   "org.typelevel"  %% "spire"                % spireVersion,
-  "com.outr"       %% "scribe"               % scribeVersion
+  "com.outr"       %% "scribe"               % scribeVersion,
+  "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
+  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test
 )

@@ -8,17 +8,16 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, ScribeLoggingConfig, JsonUti
 // This should be touched once to config the Scribe logging system prior to testing.
 object TestLoggingConfig {
 
-  ScribeLoggingConfig.defaultSetup.value
+  def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false").equalsIgnoreCase("true")
 
   def debugLevel(): Unit     = setAll(Level.Debug)
-  def setAll(l: Level): Unit = if (!ScribeLoggingConfig.inCI) ScribeLoggingConfig.setAllToLevel(l)
+  def setAll(l: Level): Unit = if (!inCI) ScribeLoggingConfig.setAllToLevel(l)
   def setLogToDebug(): Unit  = TestLoggingConfig.setAll(Level.Debug)
   def setLogToWarn(): Unit   = TestLoggingConfig.setAll(Level.Warn)
 
   val setTestLogging: Eval[Any] = Eval.always {
-    if (!ScribeLoggingConfig.inCI) {
+    if (!inCI) {
       val targetLevel = Level.Debug
-      scribe.warn(s"****** Calling setAllLevel with ${targetLevel}")
       setAll(targetLevel)
 
       val packagesToMute: List[String] = List(
@@ -36,7 +35,5 @@ object TestLoggingConfig {
     }
   }
 
-  def mutePackage(p: String): Unit = {
-    ScribeLoggingConfig.addModifiers(List(p), Level.Warn) // TODO: This really adding, check alter
-  }
+  setTestLogging.value
 }

@@ -16,7 +16,9 @@ object TypeSerializers extends JsonUtils with CodecUtils {
 
   /** The very top level object, which doesn't get an end of object marker */
   def encodeTopLevel(json: Json, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
-    ContainerFields.encodeSTObject(json, isNested = false, isSigning = isSigning)
+    ContainerFields
+      .encodeSTObject(json, isSigning = isSigning)
+      .map(top => top.copy(isTopLevel = true))
   }
 
   /**
@@ -28,13 +30,11 @@ object TypeSerializers extends JsonUtils with CodecUtils {
     * Note that encoding a field may produce nested structure
     *
     * @param fieldData The actual Jaon for the field with the FieldMetaData
-    * @param isNestedObject Not sure we actually need this.
     * @param signingModeOn True if we are encoding for signing vs full serialization
     * @return
     */
   def encodeFieldAndValue(
       fieldData: FieldData,
-      isNestedObject: Boolean,
       signingModeOn: Boolean
   ): Either[BinCodecLibError, EncodedField] = {
 
@@ -43,27 +43,25 @@ object TypeSerializers extends JsonUtils with CodecUtils {
 
     scribe.debug(s"Encoding FieldValue: $fieldData")
 
+    // Could bind the encoder to fieldData but I think this way is clearer
+
     val valueBytes: Either[BinCodecLibError, Encoded] = fieldData.fi.fieldTypeName match {
       case "UInt16" if fieldName === "LedgerEntryType" => MiscCodecs.encodeLedgerEntryType(fieldValue)
       case "UInt16" if fieldName === "TransactionType" => MiscCodecs.encodeTransactionType(fieldValue)
 
-      // I tihnk this is the only case I use nested. The meaning is really if its packed in (like FiatAmount)
-      // not in a JsonObject as plain field below the to object
-      case "AccountID" if isNestedObject  => AccountIdCodecs.encodeAccount(fieldValue)
-      case "AccountID" if !isNestedObject => AccountIdCodecs.encodeAccount(fieldValue)
-
-      case "UInt8"     => UIntCodecs.encodeUIntN(fieldValue, "UInt8")
-      case "UInt16"    => UIntCodecs.encodeUIntN(fieldValue, "UInt16")
-      case "UInt32"    => UIntCodecs.encodeUIntN(fieldValue, "UInt32")
+      case "AccountID" => AccountIdCodecs.encodeAccount(fieldValue)
+      case "UInt8"     => UIntCodecs.encodeUInt8(fieldValue)
+      case "UInt16"    => UIntCodecs.encodeUInt16(fieldValue)
+      case "UInt32"    => UIntCodecs.encodeUInt32(fieldValue)
       case "UInt64"    => UIntCodecs.encodeUInt64(fieldValue)
       case "Hash160"   => HashHexCodecs.encodeHash160(fieldValue)
       case "Hash256"   => HashHexCodecs.encodeHash256(fieldValue)
       case "Blob"      => MiscCodecs.encodeBlob(fieldValue)
       case "Amount"    => MoneyCodecs.encodeAmount(fieldValue)
-      case "PathSet"   => PathCodecs.encodePathSet(fieldData)
-      case "Vector256" => ContainerFields.encodeVector256(fieldData)
-      case "STArray"   => ContainerFields.encodeSTArray(fieldData, signingModeOn)
-      case "STObject"  => ContainerFields.encodeSTObject(fieldValue, isNestedObject, signingModeOn)
+      case "PathSet"   => PathCodecs.encodePathSet(fieldValue)
+      case "Vector256" => ContainerFields.encodeVector256(fieldValue)
+      case "STArray"   => ContainerFields.encodeSTArray(fieldValue, signingModeOn)
+      case "STObject"  => ContainerFields.encodeSTObject(fieldValue, signingModeOn)
 
       case other => BinCodecLibError(s"Not handling Field Type $other").asLeft
 

@@ -58,7 +58,7 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     * @return
     */
   def createResponseHashHex(rsObj: Json): Either[BinCodecLibError, String] = {
-    BinCodecLibError.wrap("Creating Hash Failed") {
+    BinCodecLibError.handlingM("Creating Hash Failed") {
       RippleCodecDebugAPI.binarySerialize(rsObj).map { serialized =>
         // logger.info(s"Raw:\n${rsObj.asJson.spaces4}")
         // logger.info(s"BinarySerialized for Hash:\n ${serialized.show}")

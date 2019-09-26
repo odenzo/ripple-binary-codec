@@ -28,7 +28,7 @@ trait AccountIdCodecs {
   def encodeAccountNoVL(json: Json): Either[BinCodecLibError, RawValue] = {
     for {
       accountChecksum <- json.asString.toRight(BCJsonErr("Account JSON Not String", json))
-      _ = scribe.info(s"Account w/ Checksum: ${accountChecksum}")
+      _ = scribe.debug(s"Account w/ Checksum: ${accountChecksum}")
       decoded <- RippleBase58.decode(accountChecksum)
       unchecked = decoded.drop(1).dropRight(4)
       ubytesL   = unchecked.map(UByte(_)).toList

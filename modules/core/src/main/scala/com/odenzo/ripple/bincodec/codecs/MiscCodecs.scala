@@ -4,7 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
-import spire.math.UByte
+import spire.math.{UByte, ULong}
 
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
@@ -29,7 +29,7 @@ trait MiscCodecs extends CodecUtils with JsonUtils {
     for {
       str     <- json2string(json)
       ttype   <- lookupFn(str)
-      encoded <- UIntCodecs.encodeUIntN(Json.fromLong(ttype), "UInt16")
+      encoded <- UIntCodecs.encodeULong(ULong(ttype), "UInt16")
     } yield encoded
   }
 

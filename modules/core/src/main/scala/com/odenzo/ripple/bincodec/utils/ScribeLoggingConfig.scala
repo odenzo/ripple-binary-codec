@@ -16,8 +16,6 @@ import scribe.Level.{Warn, Debug}
   */
 object ScribeLoggingConfig extends Logger {
 
-  def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") === "true"
-
   /** Helper to filter out messages in the packages given below the given level
     * I am not sure this works with the global scribe object or not.
     * Usage:
@@ -37,20 +35,8 @@ object ScribeLoggingConfig extends Logger {
     select(filters: _*).include(level >= minLevel)
   }
 
-  val defaultSetup: Eval[Unit] = Eval.later {
-
-    if (inCI) { // This should catch case when as a library in someone elses CI
-      scribe.info("defaultSetup for logging IN CONTINUOUS_INTEGRATION")
-      setAllToLevel(Warn)
-    } else {
-      setAllToLevel(Debug) // On Assumption we are in library mode, not testing, which will override.
-    }
-    scribe.info("Done with Default")
-  }
-
   def setAllToLevel(l: Level): Unit = {
     scribe.Logger.root.clearHandlers().withHandler(minimumLevel = Some(l)).replace()
-    //scribe.Logger.root.clearModifiers().withMinimumLevel(l).replace()
   }
 
   def addModifiers(packages: List[String], l: Level): Unit = {
@@ -59,5 +45,12 @@ object ScribeLoggingConfig extends Logger {
 
   }
 
-  defaultSetup.value
+  def mutePackage(p: String, l: Level = Level.Warn): Unit = {
+    ScribeLoggingConfig.addModifiers(List(p), Level.Warn) // TODO: This really adding, check alter
+  }
+
+  /** Set logging level of all com.odenzo.bincodec.* packages to the level (via filter)
+    *  Default is for INFO level
+   **/
+  def setBinCodecLogging(l: Level): Unit = mutePackage("com.odenzo.bincodec", l)
 }

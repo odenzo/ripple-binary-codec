@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.1.4
++ FiatAmount encoding simplication
++ General incremental code clean tidbits
++ Removed testing utils from main
+
 ## v0.1.3
 + Added support for Custom Encoded Currencies
 + Cleanup and Javascript fixtures

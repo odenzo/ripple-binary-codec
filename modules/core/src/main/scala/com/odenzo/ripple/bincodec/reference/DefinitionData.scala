@@ -155,13 +155,13 @@ case class DefinitionData(
 }
 
 object DefinitionData {
-  val pathSetAnother  = RawValue(List(UByte(0xFF))) //  FF indicates another path follows
-  val pathSetEnd      = RawValue(List(UByte(0x00))) // 00 indicates the end of the PathSet
-  val objectEndMarker = RawValue(List(UByte(0xE1))) // 0xE1, this is STObject not blob
-  val arrayEndMarker  = RawValue(List(UByte(0xF1)))
+  val pathSetAnother  = RawValue(List(UByte(0xFF))) // indicates another path follows
+  val pathSetEnd      = RawValue(List(UByte(0x00))) // indicates the end of the PathSet
+  val objectEndMarker = RawValue(List(UByte(0xE1))) // indicates end of object this is STObject not blob
+  val arrayEndMarker  = RawValue(List(UByte(0xF1))) // End of Array
 
-  val objDel: List[UByte] = List(UByte(15))
-  val arrDel: List[UByte] = List(UByte(14))
+  val objDel: List[UByte] = List(UByte(0x0F))
+  val arrDel: List[UByte] = List(UByte(0x0D))
 
   final val objectMarkerEndName: String = "ObjectEndMarker"
   final val arrayMarkerEndName: String  = "ArrayEndMarker"

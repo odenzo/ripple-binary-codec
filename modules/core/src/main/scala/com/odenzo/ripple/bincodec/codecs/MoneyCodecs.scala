@@ -15,7 +15,7 @@ import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
   * This needs some cleanup for sure.
   *  TODO; Deal with Hash160 for currency
   */
-trait MoneyCodecs extends CodecUtils with JsonUtils {
+trait MoneyCodecs extends JsonUtils {
 
   /** Maximum XRP amount expressed in Drops */
   private val maxXrpDrops: BigInt = spire.math.pow(BigInt(10), BigInt(17))
@@ -69,8 +69,9 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
 
     v match {
-      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
-      case other                                     => decodeToUBytes(48, other, info)                   // Fiat
+      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => // Note sure why I have to set sign bit, should be set
+        CodecUtils.decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
+      case other => CodecUtils.decodeToUBytes(48, other, info) // Fiat
     }
 
   }
@@ -78,12 +79,10 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
   /** This is expressed as a string json field representing number of drops **/
   def encodeXrpAmount(v: Json): Either[BinCodecLibError, RawValue] = {
 
-    // Check is its with drops range
-    json2string(v).map(t => BigInt(t)) match {
-      case Left(err)                     => BCJsonErr("Could not decode as Xrp Amount BigInt", v).asLeft
-      case Right(bi) if bi < 0           => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
-      case Right(bi) if bi > maxXrpDrops => BCJsonErr(s"XRP > $maxXrpDrops  $bi", v).asLeft
-      case Right(bi)                     => encodeULong(ULong(bi.toLong) | mask, "UInt64")
+    decode(v, Decoder.decodeBigInt).flatMap {
+      case bi if bi < 0           => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
+      case bi if bi > maxXrpDrops => BCJsonErr(s"XRP > $maxXrpDrops  $bi", v).asLeft
+      case bi                     => UIntCodecs.encodeULong(ULong(bi.toLong) | mask, "UInt64")
     }
 
   }
@@ -95,8 +94,6 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned... TODO: Check if correct
 
-    // TODO: Deal with value of 0 using zeroFiatAmount
-    // TODO: Potentically deal with currency of XRP by using xrpCurrencyCode (real case?)
     for {
       amountField <- findField("value", v)
       amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
@@ -130,9 +127,9 @@ trait MoneyCodecs extends CodecUtils with JsonUtils {
     *              @return   160 bits per   https://xrpl.org/currency-formats.html
     **/
   def encodeCurrency(json: Json): Either[BinCodecLibError, RawValue] = {
-    val bit90Zero: List[UByte]  = List.fill(12)(UByte(0))
-    val bit40Zero: List[UByte]  = List.fill(5)(UByte(0))
-    val bit160Zero: List[UByte] = List.fill(20)(UByte(0))
+    val bit90Zero: List[UByte]  = List.fill(12)(UByte.MinValue)
+    val bit40Zero: List[UByte]  = List.fill(5)(UByte.MinValue)
+    val bit160Zero: List[UByte] = List.fill(20)(UByte.MinValue)
 
     json2string(json).flatMap {
       case "XRP"                                      => RawValue(bit160Zero).asRight
