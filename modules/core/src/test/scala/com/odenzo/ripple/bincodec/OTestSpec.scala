@@ -7,17 +7,10 @@ import io.circe.{Json, JsonObject, Decoder}
 import org.scalatest.{OptionValues, FunSuiteLike, EitherValues, Matchers}
 import scribe.{Logging, Level}
 
-import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, RippleTestUtils, OTestUtils}
+import com.odenzo.ripple.bincodec.testkit.{RippleTestUtils, OTestUtils, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
-trait OTestSpec
-    extends FunSuiteLike
-    with Logging
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with OTestUtils
-    with RippleTestUtils {
+trait OTestSpec extends FunSuiteLike with Logging with Matchers with EitherValues with OptionValues with OTestUtils with RippleTestUtils {
 
   private val touch = TestLoggingConfig.setTestLogging.value
 

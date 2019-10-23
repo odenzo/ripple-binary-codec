@@ -8,6 +8,7 @@ import io.circe.Json
 import scribe.Logging
 
 import com.odenzo.ripple.bincodec.BCJsonErr
+import com.odenzo.ripple.bincodec.testkit.CodecTestCreators
 
 trait TestRegimes extends RippleTestUtils with Logging with CodecTestCreators {
 
@@ -17,8 +18,8 @@ trait TestRegimes extends RippleTestUtils with Logging with CodecTestCreators {
     logger.debug(s"Testing A Signed Request Response:\n ${rr.show}")
 
     for {
-      txjson <- findTxJsonInReply(rr.rs.asJson)
-      _      <- checkTxBlob(rr.rs.asJson)
+      txjson <- findTxJsonInReply(rr.rs)
+      _      <- checkTxBlob(rr.rs)
       _      <- checkHash(txjson.asJson)
     } yield ()
   }

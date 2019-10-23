@@ -6,7 +6,7 @@ import cats.implicits._
 import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, TestRegimes}
+import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 /** This test is designed to process Transaction Request and Response files, usually signing */

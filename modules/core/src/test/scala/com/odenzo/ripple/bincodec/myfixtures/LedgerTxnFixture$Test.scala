@@ -3,14 +3,13 @@ package com.odenzo.ripple.bincodec.myfixtures
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{JsonObject, Decoder, Json}
+import io.circe.{Json, JsonObject, Decoder}
 import io.circe.syntax._
-
 import org.scalatest.FunSuite
 import scribe.Level
 
 import com.odenzo.ripple.bincodec.{OTestSpec, BinCodecLibError}
-import com.odenzo.ripple.bincodec.testkit.{TestLoggingConfig, TestRegimes}
+import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 /** This test is designed to process Transaction Request and Response files, usually signing */

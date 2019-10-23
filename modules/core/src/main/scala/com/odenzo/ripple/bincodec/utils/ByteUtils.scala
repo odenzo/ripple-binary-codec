@@ -115,6 +115,10 @@ private[bincodec] trait ByteUtils extends Logging {
     }
   }
 
+  def zeroEvenPadHexFast(hex: String): String = {
+    if (hex.length % 2 == 1) "0" + hex else hex
+  }
+
   def trimLeftZeroBytes(a: List[Byte]): List[Byte] = a.dropWhile((v: Byte) => v == ZEROBYTE)
 
   /** List of four unsigned bytes representing unsigned long get converted */

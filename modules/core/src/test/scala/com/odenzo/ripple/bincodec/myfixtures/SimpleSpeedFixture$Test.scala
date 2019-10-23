@@ -10,17 +10,14 @@ import com.odenzo.ripple.bincodec.testkit.JsonReqRes
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.{Decoded, OTestSpec, BinCodecLibError}
 
-import io.circe.syntax._
-
 /** This test is designed to process Transaction Request and Response files */
-class DecodingFixture$Test extends FunSuite with OTestSpec with ByteUtils {
+class SimpleSpeedFixture$Test extends FunSuite with OTestSpec with ByteUtils {
 
   val txnFixt: Either[BinCodecLibError, List[JsonReqRes]] = loadRequestResponseFixture("/mytests/SignRqRs.json")
 
   /** See if we can get the correct Signing Public Key and Hash to start */
   def decodeOne(rr: JsonReqRes): Either[BinCodecLibError, List[Decoded]] = {
 
-    scribe.info(s"Response: ${rr.rs.asJson.spaces4}")
     findTxBlobInReply(rr.rs).flatMap(TxBlobBuster.bust)
 
   }

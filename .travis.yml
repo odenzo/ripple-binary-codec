@@ -6,7 +6,8 @@ scala:
 
 # Oracle JDK 8 doesn't work, using openjdk 8 instead.
 jdk:
-  - openjdk8
+  - oraclejdk8
+  - openjdk11
 
 # These directories are cached to a cloud storage provider "close" to the infrastructure the builds run on.
 cache:

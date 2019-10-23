@@ -1,6 +1,9 @@
 //
 //addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 
+// Benchmarking https://github.com/ktoso/sbt-jmh
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")
+
 //  https://github.com/scoverage/sbt-scoverage
 // sbt clean coverage test
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")

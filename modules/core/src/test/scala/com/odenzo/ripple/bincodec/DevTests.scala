@@ -4,6 +4,7 @@ import io.circe.Json
 import io.circe.literal._
 
 import com.odenzo.ripple.bincodec.testkit.TestRegimes
+
 class DevTests extends OTestSpec {
 
   test("OfferCancelLEedgerTxn") {

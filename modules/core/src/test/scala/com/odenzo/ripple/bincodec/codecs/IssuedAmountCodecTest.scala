@@ -10,7 +10,7 @@ import spire.math._
 
 import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
+import com.odenzo.ripple.bincodec.{OTestSpec, RawValue}
 
 /**
   * Trouble with Fiat encoding so a dedicated test suite.

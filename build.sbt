@@ -14,7 +14,7 @@ coverageFailOnMinimum := false
 coverageHighlighting  := true
 
 lazy val bincodec_root = (project in file("."))
-  .aggregate(bincodec)
+  .aggregate(bincodec, benchmark)
   .settings(
     // crossScalaVersions must be set to Nil on the aggregating project
     crossScalaVersions := Nil,
@@ -33,6 +33,16 @@ lazy val bincodec = (project in file("modules/core"))
     commonSettings
   )
 
+lazy val benchmark = (project in file("modules/benchmark"))
+  .settings(
+    publish         := {},
+    publishLocal    := {},
+    publishArtifact := false,
+    javaOptions += "-XX:+UnlockCommercialFeatures"
+  )
+  .enablePlugins(JmhPlugin)
+  .dependsOn(bincodec) // test->compile not working in IntelliJ?
+
 lazy val commonSettings = Seq(
   coverageHighlighting := true,
   libraryDependencies ++= libs,
@@ -42,7 +52,7 @@ lazy val commonSettings = Seq(
   )
 )
 
-val circeVersion      = "0.12.1"
+val circeVersion      = "0.12.2"
 val catsVersion       = "2.0.0"
 val catsEffectVersion = "2.0.0"
 val spireVersion      = "0.17.0-M1"

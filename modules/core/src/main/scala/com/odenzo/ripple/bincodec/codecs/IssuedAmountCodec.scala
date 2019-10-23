@@ -41,7 +41,6 @@ trait IssuedAmountCodec extends CodecUtils {
     * Fiat value can be positive or negative and very large or very
     * small (e.g.
     * 0.0000004)
-    * Adapted from docs and IOUAmount.cpp in rippled code.
     *
     * @param json
     */
@@ -68,9 +67,7 @@ trait IssuedAmountCodec extends CodecUtils {
         val shiftPlaces: Int       = 16 + (amt.scale - amt.precision)
         val normalized: BigDecimal = amt * BigDecimal.exact(10).pow(shiftPlaces)
         val trueExp                = -shiftPlaces
-        scribe.info(s"NEW Exponent/Mant:$amt ${amt.scale} ${amt.precision} =>  $trueExp / $normalized")
-        // We may still have a value with too much precision if after normalizaing there are some items left of decimal
-        // This is where I am not sure the defined behavoir of rippled, truncate would be ok I guess
+
         normalized.isWhole match {
           case false => BinCodecLibError(s"Unsure how to handle too much precision so error ${amount}").asLeft
           case true  => encodeToBinary(normalized, trueExp)
