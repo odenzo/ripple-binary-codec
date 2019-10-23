@@ -58,3 +58,6 @@ script:
 after_success:
   - sbt coveralls
  */
+
+// -------- ScalaJS Experiments ------
+//addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.29")

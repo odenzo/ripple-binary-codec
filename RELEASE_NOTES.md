@@ -1,5 +1,9 @@
 # Release Notes
 
+## v0.1.5
++ Crude benchmarking and timing added, for JMH and Profiling in IntelliJ
+
+
 ## v0.1.4
 + FiatAmount encoding simplication
 + General incremental code clean tidbits

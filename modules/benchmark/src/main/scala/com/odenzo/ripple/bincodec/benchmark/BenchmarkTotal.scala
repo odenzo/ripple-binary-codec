@@ -5,8 +5,6 @@ import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 
 /** Start of setting up JMH Benchmarking as part of the profiling as we move to ScalaJS */
-object BenchmarkTotal {}
-
 /**
   * Compare the performance of various ways of folding JSON values.
   *
@@ -40,7 +38,7 @@ class ByteUtilsBenchmark {
       j <- bytes.indices
       v = bytes(j) & 0xFF
     } {
-      hexChars(j * 2) = hexArray(v >>> 4)
+      hexChars(j * 2)     = hexArray(v >>> 4)
       hexChars(j * 2 + 1) = hexArray(v & 0x0F)
     }
     new String(hexChars)

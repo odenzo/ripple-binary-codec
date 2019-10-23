@@ -35,9 +35,10 @@ lazy val bincodec = (project in file("modules/core"))
 
 lazy val benchmark = (project in file("modules/benchmark"))
   .settings(
-    publish         := {},
-    publishLocal    := {},
-    publishArtifact := false,
+    publish            := {},
+    publishLocal       := {},
+    publishArtifact    := false,
+    crossScalaVersions := Nil,
     javaOptions += "-XX:+UnlockCommercialFeatures"
   )
   .enablePlugins(JmhPlugin)
@@ -52,7 +53,7 @@ lazy val commonSettings = Seq(
   )
 )
 
-val circeVersion      = "0.12.2"
+val circeVersion      = "0.12.3"
 val catsVersion       = "2.0.0"
 val catsEffectVersion = "2.0.0"
 val spireVersion      = "0.17.0-M1"

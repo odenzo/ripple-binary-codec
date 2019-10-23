@@ -14,7 +14,7 @@ The primary use-case is to implement local signing, multi-signing and verificati
 
 It is a developer library, most users will want to use https://github.com/odenzo/ripple-local-signing to do the signing.
 
-Cross-compiled to Scala 2.12 and Scala 2.13 currently
+Cross-compiled to Scala 2.12 and Scala 2.13 currently, migrating to JDK11
 
 1. JSON and serializes into Ripple binary format, e.g. TxBlob
 2. De-serializes Ripple binary encoded – back to a TxBlob style or broken down to hex fields and subfields for debugging
@@ -25,6 +25,8 @@ https://xrpl.org/serialization.html
 
 Note: Please "star" on GitHub if you are using, and I will switch to semantic versioning and keeping past versions
  around.
+ 
+ 
 
 ### Status
 
@@ -32,6 +34,7 @@ Works well enough, and plus/minus is that it is written very simply, so serves a
  gotchas. 
 
 - This is "production" ready in that it works reliably and correcltly.
+- Serializes for signing (and serialization) on the order of 30 tx_json / ms on a slow machine
 - Any exceptions generated are captured, so API is "pure function" in Scala sense.
 - Functional serialization, works on a good set of test cases.
 - Deserialization useful for development and debugging work
@@ -64,6 +67,15 @@ The API is in   `com.odenzo.ripple.bincodec.RippleCodecAPI` and provides the rou
 - Serialize a Ripple address in Base58Check format, no Variable Length encoding. This 
 is useful for implementing SignFor / Multi-signing.
 
+e.g. 
+```scala          
+     val jsonTxt   =  "..."   // Just the tx_json field value
+     for {
+      json    <- io.circe.parser.parse(jsonTxt)
+      txblob  <-  com.odenzo.ripple.bincodec.RippleCodecAPI.signingTxBlob(json)
+     } yield txblob        
+
+```
 Other API are useful but have more specific requirements, e.g. using Circe JsonObject.
 The returned errors are of typer RippleCodecError which extends Throwable.
 There are also some Cats "show" implicits defined in `bincodec.syntax` package.
@@ -88,7 +100,5 @@ XRPL rounds/truncates some amounts with more than 15 significant digits, current
 ## TODOs
 
 1) Cross Compile to ScalaJS 
-2) Benchmark and Optimize as needed
-3) Revisit Issued Amounts with proper conformance tests
 4) Internal: clean-up Scribe logging and other internal test utils
-5) Low Priority: Re-implement decoding, perhaps with scodec
+6) Clean-up code on rainy days

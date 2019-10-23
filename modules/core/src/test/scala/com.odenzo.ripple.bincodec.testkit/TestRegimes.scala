@@ -8,7 +8,6 @@ import io.circe.Json
 import scribe.Logging
 
 import com.odenzo.ripple.bincodec.BCJsonErr
-import com.odenzo.ripple.bincodec.testkit.CodecTestCreators
 
 trait TestRegimes extends RippleTestUtils with Logging with CodecTestCreators {
 

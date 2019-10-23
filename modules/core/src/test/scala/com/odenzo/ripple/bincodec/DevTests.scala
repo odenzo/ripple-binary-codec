@@ -133,7 +133,6 @@ class DevTests extends OTestSpec {
   }     """
 
     val done = for {
-
       rs <- TestRegimes.testLedgerTxn(json)
     } yield rs
     getOrLog(done)
