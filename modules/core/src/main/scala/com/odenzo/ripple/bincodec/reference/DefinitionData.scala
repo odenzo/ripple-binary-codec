@@ -155,13 +155,14 @@ case class DefinitionData(
 }
 
 object DefinitionData {
-  val pathSetAnother  = RawValue(List(UByte(0xFF))) // indicates another path follows
-  val pathSetEnd      = RawValue(List(UByte(0x00))) // indicates the end of the PathSet
-  val objectEndMarker = RawValue(List(UByte(0xE1))) // indicates end of object this is STObject not blob
-  val arrayEndMarker  = RawValue(List(UByte(0xF1))) // End of Array
 
-  val objDel: List[UByte] = List(UByte(0x0F))
-  val arrDel: List[UByte] = List(UByte(0x0D))
+  import scodec.bits._
+  val pathSetAnother  = hex"FF" // indicates another path follows
+  val pathSetEnd      = hex"00" // indicates the end of the PathSet
+  val objDel          = hex"0F" // Object Delimeter in some packed fields forget which
+  val objectEndMarker = hex"E1" // indicates end of object this is STObject not blob
+  val arrDel          = hex"0D" // Array delimeter
+  val arrayEndMarker  = hex"F1" // End of Array
 
   final val objectMarkerEndName: String = "ObjectEndMarker"
   final val arrayMarkerEndName: String  = "ArrayEndMarker"

@@ -4,6 +4,7 @@ import cats.data._
 import cats.implicits._
 import cats.{Show, _}
 import io.circe.JsonObject
+import scodec.bits.ByteVector
 import spire.math.UByte
 
 import com.odenzo.ripple.bincodec.reference.{DefinitionData, FieldData, RippleDataType, FieldMetaData}
@@ -26,11 +27,11 @@ trait Encoded extends CodecValue {
   def toBytes: Array[Byte] = rawBytes.map(_.toByte).toArray
 }
 
-case class RawValue(ubytes: List[UByte]) extends Encoded with Decoded {
+case class RawValue(ubytes: ByteVector) extends Encoded with Decoded {
   lazy val encoded: List[RawValue] = List(this)
 }
 
-case class DecodedField(fi: FieldMetaData, ubytes: List[UByte]) extends Decoded
+case class DecodedField(fi: FieldMetaData, ubytes: ByteVector) extends Decoded
 
 case class DecodedNestedField(fi: FieldMetaData, nested: List[Decoded]) extends Decoded
 
@@ -74,7 +75,7 @@ case class EncodedSTObject(enclosed: List[EncodedField], isTopLevel: Boolean) ex
     case true  => enclosed.flatMap(_.encoded)
   }
 
-  val endMarker: RawValue = DefinitionData.objectEndMarker
+  val endMarker = DefinitionData.objectEndMarker
 }
 
 case class EncodedSTArray(enclosed: List[Encoded]) extends Encoded {
@@ -83,8 +84,11 @@ case class EncodedSTArray(enclosed: List[Encoded]) extends Encoded {
 
 /** Vector256, this is VLEncoded, and data type is always Hash256, but just use RawEncoded */
 case class EncodedVector256(vl: RawValue, enclosed: List[Encoded]) extends Encoded {
+
+  import scodec.bits.ByteVector
+
   lazy val encoded: List[RawValue] = enclosed.flatMap(_.encoded) ++ endMarker
-  val endMarker: List[RawValue]    = List(DefinitionData.arrayEndMarker)
+  val endMarker: ByteVector        = DefinitionData.arrayEndMarker
 }
 
 /** For null type objects, e.g. an empty array of memos. Can be used to replace  payload (e.g. RawValue)

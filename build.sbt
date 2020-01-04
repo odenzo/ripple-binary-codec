@@ -53,25 +53,30 @@ lazy val commonSettings = Seq(
   )
 )
 
-val circeVersion      = "0.12.3"
-val catsVersion       = "2.0.0"
-val catsEffectVersion = "2.0.0"
-val spireVersion      = "0.17.0-M1"
-val scribeVersion     = "2.7.10"
-val scalaTestVersion  = "3.0.8"
-val scalaCheckVersion = "1.14.2"
-
+val circeVersion              = "0.12.3"
+val circeGenericExtrasVersion = "0.12.2"
+val circeOpticsVersion        = "0.12.0"
+val catsVersion               = "2.1.0"
+val catsEffectVersion         = "2.0.0"
+val spireVersion              = "0.17.0-M1"
+val scribeVersion             = "2.7.10"
+val scalaTestVersion          = "3.1.0"
+val scalaCheckVersion         = "1.14.3"
+val scodecV                   = "1.11.4"
 val libs = Seq(
   "io.circe"       %% "circe-core"           % circeVersion,
   "io.circe"       %% "circe-generic"        % circeVersion % Test,
-  "io.circe"       %% "circe-generic-extras" % "0.12.2",
+  "io.circe"       %% "circe-generic-extras" % circeGenericExtrasVersion,
   "io.circe"       %% "circe-parser"         % circeVersion,
-  "io.circe"       %% "circe-optics"         % "0.12.0",
+  "io.circe"       %% "circe-optics"         % circeOpticsVersion,
   "io.circe"       %% "circe-literal"        % circeVersion % Test,
   "org.typelevel"  %% "cats-core"            % catsVersion,
   "org.typelevel"  %% "cats-effect"          % catsEffectVersion,
   "org.typelevel"  %% "spire"                % spireVersion,
   "com.outr"       %% "scribe"               % scribeVersion,
+  "org.scodec"     %% "scodec-core"          % scodecV,
+  "org.scodec"     %% "scodec-bits"          % "1.1.12",
+  "org.scodec"     %% "scodec-cats"          % "1.0.0",
   "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
   "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test
 )
