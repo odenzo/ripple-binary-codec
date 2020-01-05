@@ -19,32 +19,34 @@ case class HashPrefix(v: List[UByte]) {
 
 /** These are all Four Bytes Long with bottom byte 00  */
 object HashPrefix {
-
-  val raw: HashPrefix = fromHex("54584E00")
+  import scodec.bits._
+  import scodec.codecs._
+  import scodec.codecs.literals._
+  val raw = hex"54584E00"
 
   // Unsigned Transaction is "53545800 + TxBlob sha512half
   // Unsigned Multisigned
   // Signed "54584E00 (both kinds I think)
   /** For after a signed (and? multisignd) txn is signed */
-  val transactionID: HashPrefix = fromHex("54584E00")
+  val transactionID = hex"54584E00"
   // For unsigned single signer txn
-  val transaction: HashPrefix = fromHex("534E4400")
+  val transaction = constant(hex"534E4400")
   // account state
-  val accountStateEntry: HashPrefix = fromHex("4D4C4E00")
+  val accountStateEntry = constant(hex"4D4C4E00")
   // inner node in tree
-  val innerNode: HashPrefix = fromHex("4D494E00")
+  val innerNode = constant(hex"4D494E00")
   // ledger master data for signing
-  val ledgerHeader: HashPrefix = fromHex("4C575200")
+  val ledgerHeader = constant(hex"4C575200")
 
   /**  inner transaction to single signed, before signing */
-  val transactionSig: HashPrefix = fromHex("53545800")
+  val transactionSig = constant(hex"53545800")
 
   // inner transaction to sign
-  val transactionMultiSig: HashPrefix = fromHex("534D5400")
+  val transactionMultiSig = constant(hex"534D5400")
   // validation for signing
-  val validation: HashPrefix = fromHex("56414C00")
+  val validation = fromHex("56414C00")
   // proposal for signing
-  val proposal: HashPrefix = fromHex("50525000")
+  val proposal = fromHex("50525000")
   // payment channel claim
   val paymentChannelClaim: HashPrefix = fromHex("434C4D00")
 

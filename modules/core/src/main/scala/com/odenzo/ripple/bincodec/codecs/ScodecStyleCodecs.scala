@@ -44,15 +44,20 @@ class ScodecStyleCodecs {
       case l if Range(0, 192).inclusive.contains(l) => ByteVector.fromInt(l, size = 8).asRight
       case l if Range(193, 12480).inclusive.contains(l) =>
         val l2: Int = l - 193
-        val lowByte = uint8.encode(l2) // Just take bottom 8 bits
-        val highByte =
-          ByteVector(UByte(193 + (l2 >>> 8)), uint8.encode(l2)).asRight
+        for {
+          lowByte <- uint8.encode(l2).map(_.toByteVector) // Just take bottom 8 bits
+          highByte = UByte(193 + (l2 >>> 8))
+          high <- ubyte(8).encode(highByte.byteValue()).map(_.toByteVector)
+        } yield (high ++ lowByte)
+
       case l if Range(12481, 918744).inclusive.contains(l) =>
         val length = l - 12481
-        List(
-          UByte(241 + (length >>> 16)),
-          UByte((length >> 8) & 0xff),
-          UByte(length & 0xff)
+        ByteVector(
+          List(
+            UByte(241 + (length >>> 16)),
+            UByte((length >> 8) & 0xff),
+            UByte(length & 0xff)
+          )
         ).asRight
 
       case l => BinCodecLibError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
