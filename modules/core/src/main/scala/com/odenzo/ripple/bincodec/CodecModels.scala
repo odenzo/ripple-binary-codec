@@ -20,15 +20,12 @@ trait Encoded extends CodecValue {
     *
     * @return Linearized bytes from this and all nested objects rolled up
     */
-  lazy val rawBytes: List[UByte] = encoded.flatMap(_.ubytes)
-  val encoded: List[RawValue]
+  val encoded: List[ByteVector]
 
-  def toHex: String        = ByteUtils.ubytes2hex(rawBytes)
-  def toBytes: Array[Byte] = rawBytes.map(_.toByte).toArray
 }
 
 case class RawValue(ubytes: ByteVector) extends Encoded with Decoded {
-  lazy val encoded: List[RawValue] = List(this)
+  lazy val encoded: List[RawValue] = List(ubytes)
 }
 
 case class DecodedField(fi: FieldMetaData, ubytes: ByteVector) extends Decoded
@@ -38,12 +35,12 @@ case class DecodedNestedField(fi: FieldMetaData, nested: List[Decoded]) extends 
 case class EncodedField(fieldValue: Encoded, data: FieldData) extends Encoded {
   lazy val encoded: List[RawValue] = fieldValue match {
     case EmptyValue => Nil
-    case _          => data.fi.fieldID +: fieldValue.encoded
+    case _          => List(data.fi.fieldID, fieldValue.encoded)
   }
 }
 
-case class EncodedDataType(value: RawValue, rtype: RippleDataType) extends Encoded {
-  lazy val encoded: List[RawValue] = List(value)
+case class EncodedDataType(value: ByteVector, rtype: RippleDataType) extends Encoded {
+  lazy val encoded: List[ByteVector] = List(value)
 
 }
 
@@ -52,8 +49,8 @@ case class EncodedDataType(value: RawValue, rtype: RippleDataType) extends Encod
   * @param vl     The calculated length of ubytes with Ripple special encoding
   * @param ubytes The raw data, prior to being VL encoded
   */
-case class EncodedVL(vl: RawValue, ubytes: RawValue) extends Encoded {
-  lazy val encoded: List[RawValue] = vl.encoded ::: ubytes.encoded
+case class EncodedVL(vl: ByteVector, ubytes: ByteVector) extends Encoded {
+  lazy val encoded: List[ByteVector] = List(vl, ubytes)
 }
 
 /** List of Paths, with each Path have n PathSteps */
@@ -61,22 +58,15 @@ case class EncodedPathSet(enclosed: List[Encoded]) extends Encoded {
   lazy val encoded: List[RawValue] = enclosed.flatMap(_.encoded)
 }
 
-case class EncodedNestedValue(enclosed: List[Encoded]) extends Encoded {
-  lazy val encoded: List[RawValue] = enclosed.flatMap(_.encoded)
+case class EncodedNestedValue(enclosed: List[ByteVector]) extends Encoded {
+  lazy val encoded: List[ByteVector] = enclosed
 }
 
 /**
   * @param enclosed Can be nested fields or other Encoded types.
   *                 Should ne NonEmptyList
   */
-case class EncodedSTObject(enclosed: List[EncodedField], isTopLevel: Boolean) extends Encoded {
-  lazy val encoded: List[RawValue] = isTopLevel match {
-    case false => enclosed.flatMap(_.encoded) ::: List(endMarker)
-    case true  => enclosed.flatMap(_.encoded)
-  }
-
-  val endMarker = DefinitionData.objectEndMarker
-}
+case class EncodedSTObject(enclosed: List[EncodedField]) extends Encoded
 
 case class EncodedSTArray(enclosed: List[Encoded]) extends Encoded {
   lazy val encoded: List[RawValue] = enclosed.flatMap(_.encoded) ++ EncodedSTArray.endMarker
@@ -212,11 +202,12 @@ object EncodedPathSet {
 }
 
 object EncodedSTArray {
-  val endMarker: List[RawValue] = List(DefinitionData.arrayEndMarker)
+  val endMarker = DefinitionData.arrayEndMarker
+
   implicit val showEncArray: Show[EncodedSTArray] = Show.show { nev =>
     "\n[Array]: \n" +
       nev.enclosed.map((v: Encoded) => v.show).mkString("\n\t", "\n\t", "\n\n") +
-      s"\n<--[EndArray:${DefinitionData.arrayEndMarker.toHex}]\n"
+      s"\n<--[EndArray:${endMarker.toHex}]\n"
 
   }
 

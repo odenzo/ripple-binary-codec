@@ -61,7 +61,7 @@ object RippleBase58 extends Logging {
     *
     * @return the decoded data in binary form. Leading r turns into zero pad
     */
-  def decode(input: String): Either[BinCodecLibError, Seq[Byte]] = {
+  def decode2bytes(input: String): Either[BinCodecLibError, Seq[Byte]] = {
     BinCodecLibError.handling(s"Decoding B58 $input") {
       val zeroes: Seq[Byte] = input.takeWhile(c => c === 'r').iterator.map(_ => 0.toByte).toSeq
       val trim: String      = input.dropWhile(c => c === 'r')

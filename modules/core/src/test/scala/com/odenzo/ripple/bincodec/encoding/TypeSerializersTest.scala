@@ -53,7 +53,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
 
   test("TransactionType") {
     // 12 → 0004
-    val code = getOrLog(defdata.getTransactionType("EscrowCancel"))
+    val code = getOrLog(defdata.getTransactionTypeMnemonic("EscrowCancel"))
     scribe.debug(s"TxnCode $code")
 
   }
@@ -67,7 +67,7 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
   }
 
   def encodeField(name: String): Unit = {
-    val fi: FieldMetaData = getOrLog(defdata.getFieldInfo(name))
+    val fi: FieldMetaData = getOrLog(defdata.getFieldInfoByName(name))
     val fieldId: Encoded  = fi.fieldID
     scribe.debug(s"$name => ${fieldId.toHex}")
   }

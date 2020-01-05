@@ -9,6 +9,10 @@ import spire.math.ULong
 import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.JsonUtils
+import scodec.bits._
+
+import scodec.codecs._
+import scodec.codecs.implicits._
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math
@@ -44,21 +48,20 @@ trait IssuedAmountCodec extends CodecUtils {
     *
     * @param json
     */
-  def encodeFiatValue(json: Json): Either[BinCodecLibError, RawValue] = {
+  def encodeFiatValue(json: Json): Either[BinCodecLibError, ByteVector] = {
     BinCodecLibError.handlingM(s"Error Normalizing Fiat Amount ${json.spaces4}") {
-      val doLatest = true
       for {
         str <- JsonUtils.json2string(json)
         amt = BigDecimal(str)
         enc <- normalize(amt)
 
-      } yield enc
+      } yield enc.bytes
     }
   }
 
-  def normalize(amount: BigDecimal): Either[BinCodecLibError, RawValue] = {
+  def normalize(amount: BigDecimal): Either[BCLibErr, BitVector] = {
     amount match {
-      case a if a === 0              => UIntCodecs.encodeULong(ULong(1) << 63, "UInt64") // This is 8 bytes.
+      case a if a === 0              => (bin"1" << 63).asRight
       case a if a < minVal           => BinCodecLibError(s"amount too small $a").asLeft
       case a if a > maxVal           => BinCodecLibError(s"amount too big $a").asLeft
       case a if a.abs < minAbsAmount => BinCodecLibError(s"amount too close to zero $a").asLeft
@@ -70,26 +73,25 @@ trait IssuedAmountCodec extends CodecUtils {
 
         normalized.isWhole match {
           case false => BinCodecLibError(s"Unsure how to handle too much precision so error ${amount}").asLeft
-          case true  => encodeToBinary(normalized, trueExp)
+          case true  => encodeToBinary(normalized, trueExp).asRight
         }
     }
   }
 
-  protected def encodeToBinary(amtNormalized: BigDecimal, exp: Int): Either[BinCodecLibError, RawValue] = {
+  protected def encodeToBinary(amtNormalized: BigDecimal, exp: Int): BitVector = {
 
-    val negativeBits = ULong(2) << 62
-    val positiveBits = ULong(3) << 62
+    val negativeBits = bin"10" << 62
+    val positiveBits = bin"11" << 62
 
     scribe.debug(s"Encoding BigDecimal Fiat $amtNormalized  True Exp: $exp")
 
-    val mantissa              = ULong(amtNormalized.abs.longValue)
-    val signBits: ULong       = if (amtNormalized.signum == -1) negativeBits else positiveBits // 2 for negative
-    val expBitsShifted: ULong = ULong(exp + 97L) << 54
-    val top10: ULong          = signBits | expBitsShifted
-    val full: ULong           = top10 | mantissa
+    val mantissa       = ulong(63).encode(amtNormalized.abs.longValue).require.padLeft(64)
+    val signBits       = if (amtNormalized.signum == -1) negativeBits else positiveBits // 2 for negative
+    val expBitsShifted = BitVector.fromLong(exp + 97L) << 54
+    val top10          = signBits | expBitsShifted
+    val full           = top10 | mantissa
 
-    val asBytes: Either[BinCodecLibError, RawValue] = UIntCodecs.encodeULong(full, "UInt64")
-    asBytes
+    full
 
   }
 }

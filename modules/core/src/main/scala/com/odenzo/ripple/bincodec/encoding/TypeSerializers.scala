@@ -14,6 +14,8 @@ import com.odenzo.ripple.bincodec.{EncodedSTObject, EncodedField, BinCodecLibErr
   */
 object TypeSerializers extends JsonUtils with CodecUtils {
 
+  import com.odenzo.ripple.bincodec.codecs.ScodecStyleCodecs._
+
   /** The very top level object, which doesn't get an end of object marker */
   def encodeTopLevel(json: Json, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
     ContainerFields
@@ -37,31 +39,29 @@ object TypeSerializers extends JsonUtils with CodecUtils {
       fieldData: FieldData,
       signingModeOn: Boolean
   ): Either[BinCodecLibError, EncodedField] = {
-
-    val fieldName: String = fieldData.fieldName
-    val fieldValue: Json  = fieldData.json
-
     scribe.debug(s"Encoding FieldValue: $fieldData")
+
+    val fname: String = fieldData.fieldName
+    val fv: Json      = fieldData.json
 
     // Could bind the encoder to fieldData but I think this way is clearer
 
     val valueBytes: Either[BinCodecLibError, Encoded] = fieldData.fi.fieldTypeName match {
-      case "UInt16" if fieldName === "LedgerEntryType" => MiscCodecs.encodeLedgerEntryType(fieldValue)
-      case "UInt16" if fieldName === "TransactionType" => MiscCodecs.encodeTransactionType(fieldValue)
-
-      case "AccountID" => AccountIdCodecs.encodeAccount(fieldValue)
-      case "UInt8"     => UIntCodecs.encodeUInt8(fieldValue)
-      case "UInt16"    => UIntCodecs.encodeUInt16(fieldValue)
-      case "UInt32"    => UIntCodecs.encodeUInt32(fieldValue)
-      case "UInt64"    => UIntCodecs.encodeUInt64(fieldValue)
-      case "Hash160"   => HashHexCodecs.encodeHash160(fieldValue)
-      case "Hash256"   => HashHexCodecs.encodeHash256(fieldValue)
-      case "Blob"      => MiscCodecs.encodeBlob(fieldValue)
-      case "Amount"    => MoneyCodecs.encodeAmount(fieldValue)
-      case "PathSet"   => PathCodecs.encodePathSet(fieldValue)
-      case "Vector256" => ContainerFields.encodeVector256(fieldValue)
-      case "STArray"   => ContainerFields.encodeSTArray(fieldValue, signingModeOn)
-      case "STObject"  => ContainerFields.encodeSTObject(fieldValue, signingModeOn)
+      case "UInt16" if fname === "LedgerEntryType" => json2string(fv) >>= MiscCodecs.encodeLedgerEntryType
+      case "UInt16" if fname === "TransactionType" => json2string(fv) >>= MiscCodecs.encodeTransactionType
+      case "AccountID"                             => AccountIdCodecs.encodeAccount(fv)
+      case "UInt8"                                 => json2long(fv) >>= scodecUInt8
+      case "UInt16"                                => json2long(fv) >>= scodecUInt16(_)
+      case "UInt32"                                => json2long(fv) >>= scodecUInt32()
+      case "UInt64"                                => json2bigint(fv) >>= scodecUInt64()
+      case "Hash160"                               => json2string(fv) >>= HashHexCodecs.encodeHash160(fv)
+      case "Hash256"                               => json2string(fv) >>= HashHexCodecs.encodeHash256(fv)
+      case "Blob"                                  => json2string(fv) >>= MiscCodecs.encodeBlob(fv)
+      case "Amount"                                => MoneyCodecs.encodeAmount(fv)
+      case "PathSet"                               => PathCodecs.encodePathSet(fv)
+      case "Vector256"                             => ContainerFields.encodeVector256(fv)
+      case "STArray"                               => ContainerFields.encodeSTArray(fv, signingModeOn)
+      case "STObject"                              => ContainerFields.encodeSTObject(fv, signingModeOn)
 
       case other => BinCodecLibError(s"Not handling Field Type $other").asLeft
 

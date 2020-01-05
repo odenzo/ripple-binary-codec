@@ -11,20 +11,40 @@ import com.odenzo.ripple.bincodec.reference.RippleDataType
 import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
 import com.odenzo.ripple.bincodec.{EncodedDataType, BCLibErr, RawValue, BinCodecLibError}
 
+import scodec.Attempt
+import scodec.bits.BitVector
+import scodec.Codec
+
+import com.odenzo.scodec.spire
+import scodec.bits
+import scodec.bits._
+import scodec.codecs._
+import scodec.codecs.implicits._
+
 /** Deals with Blobs and Hashes and things that are plain hex encoded in Json */
 trait HashHexCodecs extends CodecUtils {
 
-  def encodeHash(json: Json, byteLen: Int): Either[BinCodecLibError, RawValue] = {
-    // This looks like Hex Already... in fact just round tripping
+  import cats._
+  import cats.data._
+  import cats.implicits._
 
-    for {
-      str <- JsonUtils.decode(json, Decoder[String])
-      ans <- ByteUtils.hex2ubytes(str)
-      _   <- ByteUtils.ensureMaxLength(ans, byteLen)
-    } yield RawValue(ans)
+  import cats.effect._
+
+  def encodeHash(json: Json, byteLen: Int): Either[BCLibErr, ByteVector] = {
+    import scodec.bits.Bases.Alphabets
+    // This looks like Hex Already... in fact just round tripping
+    // throws IllegalArgumentException is not valie
+
+    Either
+      .fromOption(json.asString, s"JSON was not a String")
+      .map(_.toUpperCase)
+      .flatMap(txt => ByteVector.fromHexDescriptive(txt, Alphabets.HexUppercase))
+      .ensure(s"Hash was not length $byteLen")(_.size === byteLen)
+      .leftMap(BinCodecLibError(_))
+
   }
 
-  def encodeHash160(json: Json): Either[BinCodecLibError, EncodedDataType] = {
+  def encodeHash160(json: Json): Either[BCLibErr, EncodedDataType] = {
     for {
       rtype   <- dd.getTypeObj("Hash160")
       encoded <- encodeHash(json, 20)

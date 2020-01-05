@@ -22,7 +22,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
   val byteIso = Prop.forAll(byteGen) { b: Byte =>
     val in: Seq[Byte]                            = Seq(b)
     val out: String                              = RippleBase58.encode(in)
-    val iso: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode(out)
+    val iso: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode2bytes(out)
     iso match {
       case Right(v: Seq[Byte]) =>
         logger.info(s"IN ${in.toList} => $out => ${v.toList}")
@@ -33,7 +33,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
 
   val strIso = Prop.forAll(alphaGen) { b58: Char =>
     val in: String                               = b58.toString()
-    val out: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode(in)
+    val out: Either[BinCodecLibError, Seq[Byte]] = RippleBase58.decode2bytes(in)
     out match {
       case Left(err) => fail(err)
       case Right(v) =>
@@ -50,7 +50,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
 
   test("Zero Prefix B58") {
     val data          = "rrrrS"
-    val ub: Seq[Byte] = getOrLog(RippleBase58.decode(data))
+    val ub: Seq[Byte] = getOrLog(RippleBase58.decode2bytes(data))
     logger.debug(s"${data} $ub")
     ub.length shouldEqual 5 // Well, I guess so...
   }
@@ -64,7 +64,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
 
   def B582Decoded2Encoded(b58: String): Either[Throwable, (String, Seq[Byte], String)] = {
     for {
-      decoded <- RippleBase58.decode(b58).map(_.toSeq)
+      decoded <- RippleBase58.decode2bytes(b58).map(_.toSeq)
       reencoded = RippleBase58.encode(decoded)
       _         = logger.debug(s"$b58 => $decoded => $reencoded")
     } yield (b58, decoded, reencoded)
@@ -86,7 +86,7 @@ class RippleBase58Test extends OTestSpec with Checkers {
       "r9tYoofcDdYrpk3FhYPatvySgjYfkKeUJs"
     ).map { s =>
       val j                 = Json.fromString(s)
-      val decoded           = ByteUtils.bytes2hex(getOrLog(RippleBase58.decode(s)))
+      val decoded           = ByteUtils.bytes2hex(getOrLog(RippleBase58.decode2bytes(s)))
       val txblob: EncodedVL = getOrLog(AccountIdCodecs.encodeAccount(j))
       logger.info(s"$j\n $decoded \n ${txblob.show}")
     }

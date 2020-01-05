@@ -14,6 +14,18 @@ import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 trait STObjectCodec extends CodecUtils with JsonUtils {
 
+  /** Encode the top level JSON Object */
+  def encodePayload(j: Json, isSigning: Boolean) {}
+
+  def encodeObject(o: Json, isSigning: Boolean) {
+    scribe.debug(s"Encoding STObject ${o.spaces4}")
+    o.asObject.map(_.toMap)
+    for {
+      obj    <- prepareJsonObject(o, isSigning)
+      fields <- obj.traverse(TypeSerializers.encodeFieldAndValue(_, signingModeOn = isSigning))
+    } yield EncodedSTObject(fields)
+  }
+
   /**
     * Top level object has no matching FieldInfo :-/
     *
@@ -25,6 +37,14 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
     */
   def encodeSTObject(o: Json, isSigning: Boolean): Either[BinCodecLibError, EncodedSTObject] = {
     scribe.debug(s"Encoding STObject ${o.spaces4}")
+    encodeObject(o,isSigning )
+    List(endMarker)
+    case true
+    => enclosed.flatMap(_.encoded)
+  }
+
+  val endMarker = DefinitionData.objectEndMarker
+    o.asObject.map(_.toMap)
     for {
       obj    <- prepareJsonObject(o, isSigning)
       fields <- obj.traverse(TypeSerializers.encodeFieldAndValue(_, signingModeOn = isSigning))

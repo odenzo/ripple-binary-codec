@@ -6,6 +6,7 @@ import cats.implicits._
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import scodec.bits.ByteVector
 import spire.math.{UByte, UInt}
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
@@ -17,8 +18,13 @@ import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
   *
   * @param name  Name of the "type" of the field
   * @param value used as ordinal in javascript to order the fields in an object
+  *  @param encoded UInt16 endoded bits of the value. Negative numbers will be wrapped (this is probably broken)
+  *
   */
-case class RippleDataType(name: String, value: Long)
+case class RippleDataType(name: String, value: Long, encoded: ByteVector)
+
+/** For Ledger, Transaction, and Transaction Entry Types. Encoded as UINT16 but values vary */
+case class MnemonicType(name: String, value: Long, encoded: ByteVector)
 
 /** Note that tipe is a String matching kv */
 case class FieldType(nth: Long, isVLEncoded: Boolean, isSerialized: Boolean, isSigningField: Boolean, tipe: String)
@@ -40,8 +46,10 @@ case class FieldMetaData(
     datatype: RippleDataType
 ) {
 
-  val fieldID: RawValue = RawValue(FieldMetaData.encodeFieldID(nth.toInt, datatype.value.toInt))
-  val sortKey: UInt     = UInt(datatype.value) << 16 | UInt(nth)
+  import scodec.bits.BitVector
+
+  val fieldID: BitVector = FieldMetaData.encodeFieldID(nth.toInt, datatype.value.toInt)
+  val sortKey: UInt      = UInt(datatype.value) << 16 | UInt(nth)
 
   def fieldTypeName: String = datatype.name
 
@@ -59,11 +67,14 @@ case class FieldData(json: Json, fi: FieldMetaData) {
 
 object FieldMetaData {
 
+  import scodec.bits.BitVector
+
   /*
    * Encodes the field id marker by field code and type code.
    * https://developers.ripple.com/serialization.html#field-ids
+   * 1, 2, or 3 bytes result
    */
-  def encodeFieldID(fName: Int, fType: Int): List[UByte] = {
+  def encodeFieldID(fName: Int, fType: Int): BitVector = {
     scribe.debug(s"Encoding Field $fName and Data Type: $fType")
     val fieldCode = UByte(fName)
     val typeCode  = UByte(fType)
@@ -77,76 +88,48 @@ object FieldMetaData {
       case (false, true)  => fieldCode :: typeCode :: Nil
       case (true, true)   => UByte(0) :: typeCode :: fieldCode :: Nil
     }
-    packed
+    import scodec.codecs._
+
+    scodec.Codec[List[UByte]].encode(packed).require
   }
 
 }
 
-/**
-  * Caution, plenty of room for error with same type signature.
-  *
-  * @param fieldsInfo
-
-  * @param types
-  * @param ledgerTypes
-  * @param txnTypes
-  * @param txnResultTypes
-  */
 case class DefinitionData(
-    fieldsInfo: Map[String, FieldMetaData],
-    types: Map[String, Long],
-    ledgerTypes: Map[String, Long],
-    txnTypes: Map[String, Long],
-    txnResultTypes: Map[String, Long]
+    fieldByName: Map[String, FieldMetaData],
+    fieldByMarker: Map[ByteVector, FieldMetaData],
+    dataTypes: Map[String, RippleDataType],
+    ledgerTypes: Map[String, MnemonicType],
+    txnTypes: Map[String, MnemonicType],
+    txnResultTypes: Map[String, MnemonicType]
 ) {
 
   /** Tries to find the fieldnInfo for the fieldName. This may not exist (e.g. hash)
     * because the field is not (isSerialized or isSigning)
-    *
-    * @param fieldName
-    * @param fieldValue
-    *
-    * @return
     */
   def optFieldData(fieldName: String, fieldValue: Json): Option[FieldData] = {
-    findFieldInfo(fieldName).map(fi => FieldData(fieldValue, fi))
+    findFieldInfoByName(fieldName).map(fi => FieldData(fieldValue, fi))
   }
 
   def getFieldsByNth(nth: Long): Iterable[FieldMetaData] = {
-    fieldsInfo.filter { case (_: String, fi: FieldMetaData) => fi.nth === nth }.values
+    fieldByName.filter { case (_: String, fi: FieldMetaData) => fi.nth === nth }.values
   }
 
   def getFieldData(fieldName: String, fieldValue: Json): Either[BCLibErr, FieldData] = {
     Either.fromOption(optFieldData(fieldName, fieldValue), BinCodecLibError(s"$fieldName not found"))
   }
 
-  def getFieldInfo(name: String): Either[BCLibErr, FieldMetaData] = getMapEntry(fieldsInfo, name)
+  def getFieldInfoByName(name: String): Either[BCLibErr, FieldMetaData] = getMapEntry(fieldByName, name)
 
-  def findFieldInfo(fieldName: String): Option[FieldMetaData] = fieldsInfo.get(fieldName)
+  def findFieldInfoByName(fieldName: String): Option[FieldMetaData] = fieldByName.get(fieldName)
 
-  def getTypeObj(name: String): Either[BCLibErr, RippleDataType] =
-    getType(name).map(RippleDataType(name, _)) // Optimize
+  def getDataType(name: String): Either[BCLibErr, RippleDataType]             = getMapEntry(dataTypes, name)
+  def getTransactionTypeMnemonic(txn: String): Either[BCLibErr, MnemonicType] = getMapEntry(txnTypes, txn)
+  def getLedgerEntryMnemonic(lt: String): Either[BCLibErr, MnemonicType]      = getMapEntry(ledgerTypes, lt)
+  def getTxnResultMnemonic(lt: String): Either[BCLibErr, MnemonicType]        = getMapEntry(txnResultTypes, lt)
 
-  def getType(name: String): Either[BCLibErr, Long] = getMapEntry(types, name)
-
-  // Optimize We should map these to UInt16 bytes as they are always encoded that way
-  def getTransactionType(txn: String): Either[BCLibErr, Long] = getMapEntry(txnTypes, txn)
-
-  // Optimize We should map these to UInt16 bytes as they are always encoded that way
-  def getLedgerEntryType(lt: String): Either[BCLibErr, Long] = getMapEntry(ledgerTypes, lt)
-
-  def getTxnResultType(lt: String): Either[BCLibErr, Long] = getMapEntry(txnResultTypes, lt)
-
-  /** Each field has a marker, for debugging I find the fieldinfo from that
-    * Meh, easier to do this via bytes */
-  def findByFieldMarker(ub: List[UByte]): Either[BCLibErr, FieldMetaData] = {
-    val ms: Map[String, FieldMetaData] = fieldsInfo.filter { case (_, fi: FieldMetaData) => fi.fieldID.ubytes === ub }
-    ms.foreach(ms => scribe.info(s" Field Info ${ByteUtils.ubytes2hex(ub)}: $ms"))
-    if (ms.size > 1) BinCodecLibError(s"FieldMarker ${ub} found ${ms.size} times in fieldinfo.").asLeft
-    else {
-      ms.headOption.map(_._2).toRight(BinCodecLibError(s"FieldMarker ${ub} not found in fieldinfo."))
-    }
-  }
+  /** Each field has a marker. Pre-filtered had duplicate markers (context dependant) */
+  def findFieldByMarker(ub: ByteVector): Either[BCLibErr, FieldMetaData] = getMapEntry(fieldByMarker, ub)
 
   private def getMapEntry[T, V](map: Map[T, V], key: T): Either[BCLibErr, V] = {
     map.get(key).toRight(BinCodecLibError(s" $key not found in map"))
@@ -173,7 +156,7 @@ object DefinitionData {
   }
   implicit val show: Show[DefinitionData] = Show[DefinitionData] { dd =>
     val sortedFields: String =
-      dd.fieldsInfo.values.toList
+      dd.fieldByName.values.toList
         .sortBy(e => (e.fieldID.toHex.length, e.fieldID.toHex))
         .map(info => info.show)
         .mkString("\n")

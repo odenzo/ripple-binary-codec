@@ -29,6 +29,18 @@ private[bincodec] trait JsonUtils {
     json.asArray.map(_.toList).toRight(BinCodecLibError("Expected JSON Array", json))
   }
 
+  def json2bigint(json: Json): Either[BinCodecLibError, BigInt] = {
+    json.asNumber
+      .toRight(BinCodecLibError("Expected JSON Number", json))
+      .flatMap(_.toBigInt.toRight(BinCodecLibError("JSON Number Not a Valid BigInt")))
+  }
+
+  def json2long(json: Json): Either[BinCodecLibError, Long] = {
+    json.asNumber
+      .toRight(BinCodecLibError("Expected JSON Number", json))
+      .flatMap(_.toLong.toRight(BinCodecLibError("JSON Number Not a Valid Long")))
+  }
+
   def json2string(json: Json): Either[BinCodecLibError, String] = {
     json.asString.toRight(BinCodecLibError("Expected JSON String", json))
   }

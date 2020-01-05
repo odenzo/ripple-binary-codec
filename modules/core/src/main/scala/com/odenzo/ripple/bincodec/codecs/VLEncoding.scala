@@ -9,13 +9,25 @@ import com.odenzo.ripple.bincodec.{EncodedVL, BCLibErr, RawValue, BinCodecLibErr
 
 trait VLEncoding {
 
+  import scodec.Attempt
+  import scodec.bits.BitVector
+  import scodec.Codec
+
+  import com.odenzo.scodec.spire
+  import scodec.bits
+  import scodec.bits._
+  import scodec.codecs._
+  import scodec.codecs.implicits._
+
   /** Prepend Variable Length encoding the the list of Bytes.
     * Special case is empty list, which returns encoded with length 0 and empty rawvalue
+    *
     * @param bytes
+    *
     * @return
     */
-  def prependVL(bytes: List[UByte]): Either[BCLibErr, EncodedVL] = {
-    encodeVL(bytes.length).map(v => EncodedVL(v, RawValue(bytes)))
+  def prependVL(bytes: ByteVector): Either[BCLibErr, EncodedVL] = {
+    encodeVL(bytes.length.toInt).map(v => EncodedVL(v, bytes))
   }
 
   /** We are going to encode the len in an array of bytes betwen 0 and 4 bytes long.
@@ -25,26 +37,37 @@ trait VLEncoding {
     *
     * @return The encodedVL, which 1, 2, or 3 bytes. There is no RiplpleType for this
     */
-  def encodeVL(lengthToEnc: Int): Either[BCLibErr, RawValue] = {
-    val vl = lengthToEnc match {
+  def encodeVL(lengthToEnc: Int): Either[BCLibErr, ByteVector] = {
+    import scodec.bits.ByteVector
+    val enc = lengthToEnc match {
 
       // Is this really inclusive 192 = 11000000
-      case l if Range(0, 192).inclusive.contains(l) => (UByte(l) :: Nil).asRight
+      case l if Range(0, 192).inclusive.contains(l) =>
+        // Top 2 bits not set of n1, return nib1,nib2
+        Codec.encode(UByte(l)).asRight
+
       case l if Range(193, 12480).inclusive.contains(l) =>
+        // Bottom Two bits of n1 from nib1, nib2, nib3, nib4
         val l2: Int = l - 193
-        List(UByte(193 + (l2 >>> 8)), UByte(l2 & 0xff)).asRight
+        Codec.encode(List(UByte(193 + (l2 >>> 8)), UByte(l2 & 0xff))).asRight
+
       case l if Range(12481, 918744).inclusive.contains(l) =>
         val length = l - 12481
-        List(
-          UByte(241 + (length >>> 16)),
-          UByte((length >> 8) & 0xff),
-          UByte(length & 0xff)
-        ).asRight
+        Codec
+          .encode(
+            List(
+              UByte(241 + (length >>> 16)),
+              UByte((length >> 8) & 0xff),
+              UByte(length & 0xff)
+            )
+          )
+          .asRight
 
       case l => BinCodecLibError(s"Length $l was not in range 1..918744 for EncodeVL Length").asLeft
-    }
 
-    vl.map(RawValue.apply)
+    }
+    enc.map(_.require.bytes)
+
   }
 
   /**  This just calculates the number of bytes in VL and consumes. Don't rely on answer */
