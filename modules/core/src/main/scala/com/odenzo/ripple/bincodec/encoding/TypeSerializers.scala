@@ -50,13 +50,13 @@ object TypeSerializers extends JsonUtils with CodecUtils {
       case "UInt16" if fname === "LedgerEntryType" => json2string(fv) >>= MiscCodecs.encodeLedgerEntryType
       case "UInt16" if fname === "TransactionType" => json2string(fv) >>= MiscCodecs.encodeTransactionType
       case "AccountID"                             => AccountIdCodecs.encodeAccount(fv)
-      case "UInt8"                                 => json2long(fv) >>= scodecUInt8
-      case "UInt16"                                => json2long(fv) >>= scodecUInt16(_)
-      case "UInt32"                                => json2long(fv) >>= scodecUInt32()
-      case "UInt64"                                => json2bigint(fv) >>= scodecUInt64()
-      case "Hash160"                               => json2string(fv) >>= HashHexCodecs.encodeHash160(fv)
-      case "Hash256"                               => json2string(fv) >>= HashHexCodecs.encodeHash256(fv)
-      case "Blob"                                  => json2string(fv) >>= MiscCodecs.encodeBlob(fv)
+      case "UInt8"                                 => json2long(fv) >>= (scodecUInt8 _)
+      case "UInt16"                                => json2long(fv) >>= (scodecUInt16 _)
+      case "UInt32"                                => json2long(fv) >>= (scodecUInt32 _)
+      case "UInt64"                                => json2bigint(fv) >>= (scodecUInt64 _)
+      case "Hash160"                               => json2string(fv) >>= HashHexCodecs.encodeHash160
+      case "Hash256"                               => json2string(fv) >>= HashHexCodecs.encodeHash256
+      case "Blob"                                  => json2string(fv) >>= MiscCodecs.encodeBlob
       case "Amount"                                => MoneyCodecs.encodeAmount(fv)
       case "PathSet"                               => PathCodecs.encodePathSet(fv)
       case "Vector256"                             => ContainerFields.encodeVector256(fv)

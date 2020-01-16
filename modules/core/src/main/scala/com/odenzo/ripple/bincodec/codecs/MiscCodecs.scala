@@ -20,8 +20,8 @@ trait MiscCodecs extends CodecUtils {
   /** Encodes the hex including the Variable Length info
     * This string must not be zero length string, or we maybe return a EmptyVal is it is.
     **/
-  def encodeBlob(json: Json): Either[BinCodecLibError, Encoded] = {
-    json2string(json).flatMap(encodeHex).flatMap(VLEncoding.prependVL)
+  def encodeBlob(hex: String): Either[BinCodecLibError, Encoded] = {
+    encodeHex(hex).flatMap(VLEncoding.prependVL)
   }
 
   /** Hex can have spaces and _ and optionally 0x in front, case ignored but migrate to uppercase as standard.*/

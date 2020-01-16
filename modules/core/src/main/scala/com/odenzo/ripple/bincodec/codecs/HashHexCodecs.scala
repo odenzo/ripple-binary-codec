@@ -30,33 +30,14 @@ trait HashHexCodecs extends CodecUtils {
 
   import cats.effect._
 
-  def encodeHash(json: Json, byteLen: Int): Either[BCLibErr, ByteVector] = {
-    import scodec.bits.Bases.Alphabets
-    // This looks like Hex Already... in fact just round tripping
-    // throws IllegalArgumentException is not valie
-
-    Either
-      .fromOption(json.asString, s"JSON was not a String")
-      .map(_.toUpperCase)
-      .flatMap(txt => ByteVector.fromHexDescriptive(txt, Alphabets.HexUppercase))
-      .ensure(s"Hash was not length $byteLen")(_.size === byteLen)
-      .leftMap(BinCodecLibError(_))
-
+  def encodeHash(hex: String, byteLen: Int): Either[BCLibErr, ByteVector] = {
+    MiscCodecs
+      .encodeHex(hex)
+      .ensure(BinCodecLibError(s"Hash was not length $byteLen"))(_.size === byteLen)
   }
 
-  def encodeHash160(json: Json): Either[BCLibErr, EncodedDataType] = {
-    for {
-      rtype   <- dd.getTypeObj("Hash160")
-      encoded <- encodeHash(json, 20)
-    } yield EncodedDataType(encoded, rtype)
-  }
-
-  def encodeHash256(json: Json): Either[BinCodecLibError, EncodedDataType] = {
-    for {
-      rtype   <- dd.getTypeObj("Hash256")
-      encoded <- encodeHash(json, 32)
-    } yield EncodedDataType(encoded, rtype)
-  }
+  def encodeHash160(hex: String): Either[BCLibErr, ByteVector] = encodeHash(hex, 20)
+  def encodeHash256(hex: String): Either[BCLibErr, ByteVector] = encodeHash(hex, 32)
 
 }
 
