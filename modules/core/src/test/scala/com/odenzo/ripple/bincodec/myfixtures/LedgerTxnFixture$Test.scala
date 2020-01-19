@@ -13,7 +13,7 @@ import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 /** This test is designed to process Transaction Request and Response files, usually signing */
-class LedgerTxnFixture$Test extends FunSuite with OTestSpec with ByteUtils {
+class LedgerTxnFixture$Test extends OTestSpec with ByteUtils {
 
   val files = List("ledger_direct_txn_good_3.json", "ledger_direct_txn_good_2.json", "ledger_direct_txn_good_1.json")
 

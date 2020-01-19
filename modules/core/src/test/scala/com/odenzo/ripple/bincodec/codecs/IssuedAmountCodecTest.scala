@@ -59,8 +59,8 @@ class IssuedAmountCodecTest extends OTestSpec {
       scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
       val res = getOrLog(IssuedAmountCodec.encodeFiatValue(v.value))
-      scribe.info(s"Res: ${res.show}")
-      assert(res.ubytes.length == 8)
+      scribe.info(s"Res: ${res.toHex}")
+      assert(res.length == 8)
       scribe.info(s"Got Res: ${res.toHex}")
       val hex = res.toHex
 
@@ -96,7 +96,7 @@ class IssuedAmountCodecTest extends OTestSpec {
       json <- parseAsJson(fixture)
       data <- decode(json, Decoder[List[TData]])
       _ = data.foreach { fix =>
-        val bin: RawValue = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+        val bin = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
         bin.toHex == fix.bin
         bin.toHex shouldEqual fix.bin
       }

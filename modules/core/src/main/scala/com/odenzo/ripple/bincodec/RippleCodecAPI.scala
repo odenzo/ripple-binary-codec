@@ -12,11 +12,13 @@ import com.odenzo.ripple.bincodec.utils.JsonUtils
   */
 object RippleCodecAPI {
 
+  import scodec.bits.ByteVector
+
   //scribe.warn("RippleCodeAPI Setup")
   //com.odenzo.ripple.bincodec.defaultSetup()
 
   private def encode(json: Json, forSign: Boolean): Either[BinCodecLibError, Array[Byte]] = {
-    TypeSerializers.encodeTopLevel(json, isSigning = false).map(_.toBytes)
+    TypeSerializers.encodeTopLevel(json, isSigning = false)
   }
 
   def parseJson(json: String): Either[BinCodecLibError, Json] = JsonUtils.parseAsJson(json)
@@ -51,6 +53,6 @@ object RippleCodecAPI {
     * @return Array of bytes or an error. This currently is NOT VLEncoded, just raw bytes.
     */
   def serializedAddress(addressBase58Check: String): Either[BinCodecLibError, Array[Byte]] = {
-    AccountIdCodecs.encodeAccountNoVL(Json.fromString(addressBase58Check)).map(_.toBytes)
+    AccountIdCodecs.encodeAccountNoVL(Json.fromString(addressBase58Check)).map(x => x.toArray)
   }
 }

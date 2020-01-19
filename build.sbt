@@ -1,6 +1,6 @@
 import MyCompileOptions._
 
-lazy val supportedScalaVersions = List("2.13.1", "2.12.10")
+lazy val supportedScalaVersions = List("2.13.1")
 
 ThisBuild / organization := "com.odenzo"
 ThisBuild / name         := "ripple-binary-codec"
@@ -78,5 +78,6 @@ val libs = Seq(
   "org.scodec"     %% "scodec-bits"          % "1.1.12",
   "org.scodec"     %% "scodec-cats"          % "1.0.0",
   "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
-  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test
+  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
+  "dev.zio"        %% "zio"                  % "1.0.0-RC17"
 )

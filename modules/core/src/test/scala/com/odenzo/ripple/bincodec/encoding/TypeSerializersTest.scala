@@ -6,13 +6,17 @@ import cats.implicits._
 import io.circe.Json
 import io.circe.literal._
 import spire.math.ULong
+import scodec.bits._
 
-import com.odenzo.ripple.bincodec.{EncodedField, OTestSpec, BinCodecLibError, Encoded}
-import com.odenzo.ripple.bincodec.codecs.{MoneyCodecs, UIntCodecs}
+import com.odenzo.ripple.bincodec.BinCodecLibError
+import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
 import com.odenzo.ripple.bincodec.reference._
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 class TypeSerializersTest extends OTestSpec with CodecUtils {
+
+  import scodec.bits.ByteVector
 
   val defdata: DefinitionData = Definitions.fieldData
 
@@ -26,23 +30,18 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
   """
 
   val sample =
+    json"""
+      {
+       "Owner": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2",
+       "Account": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"    ,
+       "TransactionType": "EscrowCancel"   ,
+      "OfferSequence": 25
+      }
     """
-      |{
-      | "Owner": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2",
-      | "Account": "r4jQDHCUvgcBAa5EzcB1D8BHGcjYP9eBC2"    ,
-      | "TransactionType": "EscrowCancel"   ,
-      | "OfferSequence": 25                               
-      |}
-    """.stripMargin
 
-  val json: Json = {
-    val res = JsonUtils.parseAsJson(sample)
-    getOrLog(res)
-  }
+  val bin = hex"1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
 
-  val bin = "1200042019000000198114EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA8214EE5F7CF61504C7CF7E0C22562EB19CC7ACB0FCBA"
-
-  def encodeSingle(fieldName: String, data: Json): Either[BinCodecLibError, EncodedField] = {
+  def encodeSingle(fieldName: String, data: Json): Either[BinCodecLibError, ByteVector] = {
     val req = dd.getFieldData(fieldName, data)
     req.foreach(v => scribe.info(s"encoding Single Field: $v"))
     req
@@ -55,29 +54,6 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
     // 12 → 0004
     val code = getOrLog(defdata.getTransactionTypeMnemonic("EscrowCancel"))
     scribe.debug(s"TxnCode $code")
-
-  }
-
-  test("UInt32") {
-    val sequence: Int = 25
-    val v             = Json.fromInt(sequence)
-    val res: Encoded  = getOrLog(UIntCodecs.encodeUIntN(v, "UInt32"))
-    val hex           = res.toHex
-    scribe.info(s"Result: $hex")
-  }
-
-  def encodeField(name: String): Unit = {
-    val fi: FieldMetaData = getOrLog(defdata.getFieldInfoByName(name))
-    val fieldId: Encoded  = fi.fieldID
-    scribe.debug(s"$name => ${fieldId.toHex}")
-  }
-
-  test("Sample Fields") {
-
-    encodeField("TransactionType")
-    encodeField("OfferSequence")
-    encodeField("Account")
-    encodeField("Owner")
 
   }
 
@@ -107,16 +83,16 @@ class TypeSerializersTest extends OTestSpec with CodecUtils {
       val jsonV: String = v.toString()
       val json: Json    = Json.fromString(jsonV)
       scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
-      val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(json))
-      val hex          = res.toHex
+      val res: ByteVector = getOrLog(MoneyCodecs.encodeXrpAmount(json))
+      val hex             = res.toHex
       scribe.debug(s"$v  => $hex")
       hex
     }
   }
 
   test("XRP Encode") {
-    val xrp: Json    = Json.fromString("10000")
-    val res: Encoded = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
+    val xrp = json"10000"
+    val res = getOrLog(MoneyCodecs.encodeXrpAmount(xrp))
     scribe.info(s"XRP ${xrp.noSpaces}  => ${res.toHex}")
   }
 

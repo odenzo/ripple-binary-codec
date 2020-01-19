@@ -4,15 +4,13 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
-import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
+import com.odenzo.ripple.bincodec.BCLibErr
+import com.odenzo.ripple.bincodec.BinCodecLibError
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 import scodec.bits._
-
 import scodec.codecs._
-import scodec.codecs.implicits._
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math

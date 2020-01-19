@@ -3,11 +3,10 @@ package com.odenzo.ripple.bincodec.encoding
 import cats._
 import cats.data._
 import cats.implicits._
-import spire.math.{UByte, ULong}
 
-import com.odenzo.ripple.bincodec.reference.{DefinitionData, Definitions, FieldMetaData}
+import com.odenzo.ripple.bincodec.reference.DefinitionData
+import com.odenzo.ripple.bincodec.reference.Definitions
 import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{DecodedField, BCLibErr, RawValue, BinCodecLibError}
 
 /**
   * Better dealing with definitions data ?

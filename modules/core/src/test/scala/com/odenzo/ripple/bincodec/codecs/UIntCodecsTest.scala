@@ -5,11 +5,11 @@ import io.circe._
 import io.circe.syntax._
 import io.circe.generic.extras.semiauto._
 import io.circe.literal._
-class UIntCodecsTest extends OTestSpec with UIntCodecs {
+class UIntCodecsTest extends OTestSpec with ScodecStyleCodecs {
 
   test("UInt 64") {
-    val big = json""" "1024"  """
-    encodeUInt64(big) match {
+    val big = BigInt("1024")
+    scodecUInt64(big) match {
       case Right(v) => scribe.info(s"Result ${v.toHex}")
       case Left(e)  => scribe.error(e)
     }
@@ -21,8 +21,8 @@ class UIntCodecsTest extends OTestSpec with UIntCodecs {
     scribe.debug(s"Res; $res")
   }
   test("UInt 16") {
-    val big = json""" 255  """
-    encodeUInt16(big) match {
+
+    scodecUInt16(255) match {
       case Right(v) => scribe.info(s"Result ${v.toHex}")
       case Left(e)  => scribe.error(e)
     }

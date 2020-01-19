@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
 
-class JsonUtilsTest extends FunSuite with OTestSpec with JsonUtils {
+class JsonUtilsTest extends OTestSpec with JsonUtils {
 
   val badJson = " feofiwjeoifjoe"
 

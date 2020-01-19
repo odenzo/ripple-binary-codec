@@ -1,14 +1,12 @@
 package com.odenzo.ripple.bincodec.testkit
 
-import com.odenzo.ripple.bincodec.{EncodedSTObject, BinCodecLibError, RippleCodecAPI, RippleCodecDebugAPI}
+import com.odenzo.ripple.bincodec.BinCodecLibError
 import java.security.MessageDigest
 
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.reference.HashPrefix
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import scribe.Logging
-
-import com.odenzo.ripple.bincodec.decoding.TxBlobBuster
 import cats._
 import cats.data._
 import cats.implicits._
@@ -20,16 +18,17 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     *
     * @param reply  The tope level object in reply (id level). Traverses to result and gets infso
     */
-  def checkTxBlob(reply: Json): Either[Throwable, Boolean] = {
+  def checkTxBlob(reply: Json) = {
+    import scodec.bits.ByteVector
+
+    import com.odenzo.ripple.bincodec.RippleCodecAPI
 
     for {
-
       txjson        <- findTxJsonInReply(reply)
       kTxBlob       <- findTxBlobInReply(reply)
-      txBlobEncoded <- RippleCodecDebugAPI.binarySerialize(txjson.asJson)
-      txBlobHex = txBlobEncoded.toHex
-      passFail <- compareTxBlobs(kTxBlob, txBlobHex, txBlobEncoded)
-    } yield passFail
+      txBlobEncoded <- RippleCodecAPI.serializedTxBlob(txjson.asJson)
+      txBlobHex = ByteVector(txBlobEncoded).toHex
+    } yield (kTxBlob, txBlobEncoded)
   }
 
   /**
@@ -44,8 +43,9 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
       hash  <- createResponseHashHex(jobj)
       passed <- if (hash === kHash) jobj.asRight
       else {
+        import com.odenzo.ripple.bincodec.RippleCodecAPI
         logger.warn(s"Hash Not Correct, Got vs Expected: \n$hash \n$kHash")
-        RippleCodecDebugAPI.binarySerialize(jobj).foreach(v => logger.warn(s"ENcoding Was ${v.show}"))
+        RippleCodecAPI.serializedTxBlob(jobj).foreach(v => logger.warn(s"ENcoding Was ${v}"))
         BinCodecLibError(s"Hash Computation Mismatch \n$hash \n$kHash").asLeft
       }
 
@@ -59,10 +59,13 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     */
   def createResponseHashHex(rsObj: Json): Either[BinCodecLibError, String] = {
     BinCodecLibError.handlingM("Creating Hash Failed") {
-      RippleCodecDebugAPI.binarySerialize(rsObj).map { serialized =>
+      import com.odenzo.ripple.bincodec.RippleCodecAPI
+      RippleCodecAPI.serializedTxBlob(rsObj).map { serialized =>
         // logger.info(s"Raw:\n${rsObj.asJson.spaces4}")
         // logger.info(s"BinarySerialized for Hash:\n ${serialized.show}")
-        val payload: Seq[Byte]    = HashPrefix.transactionID.asBytes ++ serialized.toBytes
+        import scodec.bits.ByteVector
+        val tx                    = ByteVector(serialized)
+        val payload: ByteVector   = HashPrefix.transactionID.encode(()).require.bytes ++ tx
         val digest: MessageDigest = MessageDigest.getInstance("SHA-512")
         digest.update(payload.toArray)
         val fullHash: Array[Byte] = digest.digest()
@@ -72,28 +75,6 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
     }
   }
 
-  def compareTxBlobs(expected: String, got: String, encoded: EncodedSTObject): Either[BinCodecLibError, Boolean] = {
-    (expected == got) match {
-      case true =>
-        logger.info("TxBlobs Matched")
-        true.asRight
-      case false =>
-        logger.warn(s"Got  vs Expected Blob Len: ${got.length} and Got ${expected.length}")
-        logger.warn(s"Got vs Expected Blob \n $got \n $expected")
-        logger.warn(s"My Encoded Version:\n ${encoded.show}")
-        for { // Now see what other details we can provide
-          exEnc <- TxBlobBuster.bust(expected)
-          _ = logger.info(s"TxBlob Expected Field: ${exEnc.show}")
-          gotEnv <- TxBlobBuster.bust(got)
-          _ = logger.info(s"TxBlob Got      Field: ${gotEnv.show}")
-
-        } yield false
-    }
-  }
-
-  def dumpEncoded(st: EncodedSTObject): Unit = {
-    logger.warn(s"Encoded: ${st.show}")
-  }
 }
 
 object CodecTestCreators extends CodecTestCreators

@@ -29,6 +29,18 @@ private[bincodec] trait JsonUtils {
     json.asArray.map(_.toList).toRight(BinCodecLibError("Expected JSON Array", json))
   }
 
+  /** JSON which is Array and each Array element is JsonObject */
+  def json2arrobj(json: Json) = {
+    json.asArray
+      .toRight(BinCodecLibError("Expected JSON Array", json))
+      .map(_.toList)
+      .flatMap(elemList =>
+        elemList
+          .traverse(_.asObject)
+          .toRight(BinCodecLibError("Not all Array ELements were JSONObjects"))
+      )
+  }
+
   def json2bigint(json: Json): Either[BinCodecLibError, BigInt] = {
     json.asNumber
       .toRight(BinCodecLibError("Expected JSON Number", json))

@@ -10,7 +10,7 @@ import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ByteUtils
 
 /** This test is designed to process Transaction Request and Response files, usually signing */
-class SerializationFixture$Test extends FunSuite with OTestSpec with ByteUtils {
+class SerializationFixture$Test extends OTestSpec {
 
   private val allTxn = loadRequestResponseFixture("/mytests/SignRqRs.json")
 

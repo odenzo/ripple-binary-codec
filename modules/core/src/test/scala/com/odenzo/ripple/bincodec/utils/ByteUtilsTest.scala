@@ -7,7 +7,7 @@ import spire.math._
 
 import com.odenzo.ripple.bincodec.{OTestSpec, BinCodecLibError}
 
-class ByteUtilsTest extends FunSuite with OTestSpec {
+class ByteUtilsTest extends OTestSpec {
 
   import ByteUtils._
 

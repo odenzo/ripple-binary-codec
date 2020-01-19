@@ -89,8 +89,8 @@ object FieldMetaData {
       case (true, true)   => UByte(0) :: typeCode :: fieldCode :: Nil
     }
     import scodec.codecs._
-
-    scodec.Codec[List[UByte]].encode(packed).require
+    import com.odenzo.scodec.spire._
+    packed.map(subyte.encode(_).require).reduce(_ ++ _)
   }
 
 }

@@ -1,19 +1,17 @@
 package com.odenzo.ripple.bincodec.codecs
 
 import cats.implicits._
-import io.circe.{Json, JsonObject, Decoder}
-import spire.math.{UByte, ULong}
+import io.circe.Decoder
+import io.circe.Json
 
-import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.reference.{FieldData, FieldMetaData}
 import com.odenzo.ripple.bincodec._
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 /**
   * Binary Encoders for XRP and IOUAmount, including currency
   * Some objects may not have an amount ...
   * This needs some cleanup for sure.
-  *  TODO; Deal with Hash160 for currency
+
   */
 trait MoneyCodecs extends JsonUtils {
 
@@ -53,29 +51,29 @@ trait MoneyCodecs extends JsonUtils {
     *
     * @param json FieldData  representing an amount, either one line XRP of object with IOU/Fiat
     */
-  def encodeAmount(json: Json): Any = {
+  def encodeAmount(json: Json): Either[BinCodecLibError, ByteVector] = {
     json.asObject match {
       case None      => encodeXrpAmount(json)
       case Some(obj) => encodeIOU(json)
     }
   }
 
-  /**
-    *
-    * @return XRP Hex with the 63th bit set to 1 (not checked) or 48 bytes of fiat amount
-    */
-  def decodeAmount(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedField, List[UByte])] = {
-
-    val TOP_BIT_MASK: UByte = UByte(128)
-    val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
-
-    v match {
-      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => // Note sure why I have to set sign bit, should be set
-        CodecUtils.decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
-      case other => CodecUtils.decodeToUBytes(48, other, info) // Fiat
-    }
-
-  }
+//  /**
+//    *
+//    * @return XRP Hex with the 63th bit set to 1 (not checked) or 48 bytes of fiat amount
+//    */
+//  def decodeAmount(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedField, List[UByte])] = {
+//
+//    val TOP_BIT_MASK: UByte = UByte(128)
+//    val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
+//
+//    v match {
+//      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => // Note sure why I have to set sign bit, should be set
+//        CodecUtils.decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
+//      case other => CodecUtils.decodeToUBytes(48, other, info) // Fiat
+//    }
+//
+//  }
 
   /** This is expressed as a string json field representing number of drops **/
   def encodeXrpAmount(v: Json): Either[BinCodecLibError, ByteVector] = {
@@ -90,7 +88,7 @@ trait MoneyCodecs extends JsonUtils {
   }
 
   /** Encode IOU / Issued Amount , in this case account has VL encoding */
-  def encodeIOU(v: Json): Either[BinCodecLibError, Object] = {
+  def encodeIOU(v: Json): Either[BinCodecLibError, ByteVector] = {
     // currency , value and issuer
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
@@ -107,7 +105,7 @@ trait MoneyCodecs extends JsonUtils {
     } yield full
   }
 
-  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, EncodedNestedValue] = {
+  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, ByteVector] = {
     val json = jobj.dropNullValues
     def encodeField(name: String, fn: Json => Either[BinCodecLibError, ByteVector]): Either[BinCodecLibError, ByteVector] = {
       findField(name, json).flatMap(fn)
@@ -116,7 +114,7 @@ trait MoneyCodecs extends JsonUtils {
       currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
       value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
       issuer   <- encodeField("issuer", AccountIdCodecs.encodeAccountNoVL)
-    } yield EncodedNestedValue(List(value, currency, issuer))
+    } yield value ++ currency ++ issuer
 
   }
 
@@ -138,8 +136,7 @@ trait MoneyCodecs extends JsonUtils {
       case s if s.length === 20 && s.startsWith("00") => MiscCodecs.encodeHex(s)
       case s if s.length === 20 && s.startsWith("01") => MiscCodecs.encodeHex(s) // Legacy Demurrage
       case s if s.length === 3 && isRippleAscii(s)    => (bit90Zero ++ utf8.encode(s).require.bytes ++ bit40Zero).asRight
-
-      case other => BinCodecLibError(s"Invalid Currency $other").asLeft
+      case other                                      => BinCodecLibError(s"Invalid Currency $other").asLeft
     }
 
   }

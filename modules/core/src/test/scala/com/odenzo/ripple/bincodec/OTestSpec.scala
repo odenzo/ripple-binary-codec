@@ -2,16 +2,30 @@ package com.odenzo.ripple.bincodec
 
 import cats.data._
 import cats.implicits._
-import cats.{Eval, _}
-import io.circe.{Json, JsonObject, Decoder}
-import org.scalatest.{OptionValues, FunSuiteLike, EitherValues, Matchers}
-import scribe.{Logging, Level}
+import cats.Eval
+import cats._
+import io.circe.Decoder
+import io.circe.JsonObject
+import org.scalatest.funsuite.AnyFunSuiteLike
+import org.scalatest.matchers.should
+import org.scalatest.EitherValues
+import org.scalatest.OptionValues
+import scribe.Level
+import scribe.Logging
 
-import com.odenzo.ripple.bincodec.testkit.{RippleTestUtils, OTestUtils, TestLoggingConfig}
+import com.odenzo.ripple.bincodec.testkit.OTestUtils
+import com.odenzo.ripple.bincodec.testkit.RippleTestUtils
+import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
-trait OTestSpec extends FunSuiteLike with Logging with Matchers with EitherValues with OptionValues with OTestUtils with RippleTestUtils {
-
+trait OTestSpec
+    extends AnyFunSuiteLike
+    with Logging
+    with should.Matchers
+    with EitherValues
+    with OptionValues
+    with OTestUtils
+    with RippleTestUtils {
   private val touch = TestLoggingConfig.setTestLogging.value
 
   def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") == "true"
@@ -21,7 +35,7 @@ trait OTestSpec extends FunSuiteLike with Logging with Matchers with EitherValue
   def setLogDebug(): Unit = setTestLog(Level.Debug)
 
   def getOrLog[T](ee: Either[Throwable, T], msg: String = "Error: "): T = {
-    import BCException.showThrowables
+    import com.odenzo.ripple.bincodec.BCException.showThrowables
     ee match {
       case Right(v) => v
       case Left(emsg) =>

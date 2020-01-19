@@ -40,6 +40,8 @@ case class BCJsonDecodingErr(msg: String, json: Json, err: DecodingFailure) exte
   */
 object BinCodecLibError extends ErrorUtils {
 
+  import scodec.Attempt
+
   def apply(json: Json): BinCodecLibError                                 = BCJsonErr("Invalid Json", json)
   def apply(m: String): BCLibErr                                          = BCLibErr(m, None)
   def apply(m: String, e: BinCodecLibError): BCLibErr                     = BCLibErr(m, e.some)
@@ -48,7 +50,15 @@ object BinCodecLibError extends ErrorUtils {
   def apply(m: String, ex: Throwable): BCException                        = BCException(m, ex)
   def apply(ex: Throwable): BCException                                   = BCException(err = ex)
 
-  val NOT_IMPLEMENTED_ERROR: Either[BCLibErr, Nothing] = BinCodecLibError("Not Implemented").asLeft
+  def from[T](ex: scodec.Attempt[T]) = ex match {
+    case Attempt.Successful(value) => value.asRight
+    case Attempt.Failure(cause)    => BCLibErr(cause.messageWithContext).asLeft
+  }
+
+  val NOT_IMPLEMENTED_ERROR: Either[BCLibErr, Nothing] = BinCodecLibError(
+    "Not " +
+      "Implemented"
+  ).asLeft
 
   implicit val showBaseError: Show[BinCodecLibError] = Show.show[BinCodecLibError] {
     case err: BCLibErr          => err.show

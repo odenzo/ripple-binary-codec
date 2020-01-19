@@ -49,7 +49,7 @@ package object spire {
 //    }
   }
 
-  val subyte: Codec[UByte] = codecs.byte.toUByte.withToString("8-bit unsigned byte")
+  implicit val subyte: Codec[UByte] = codecs.byte.toUByte.withToString("8-bit unsigned byte")
 
   val sushort8: Codec[UShort]  = codecs.ushort8.toUShort
   val sushort16: Codec[UShort] = codecs.short16.toUShort.withToString("16-bit unsigned short")
