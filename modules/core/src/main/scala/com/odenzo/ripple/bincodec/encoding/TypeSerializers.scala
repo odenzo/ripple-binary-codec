@@ -6,19 +6,16 @@ import io.circe.Json
 
 import com.odenzo.ripple.bincodec.codecs._
 import com.odenzo.ripple.bincodec.reference.FieldData
-import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.BinCodecLibError
-import com.odenzo.ripple.bincodec.Encoded
 
 /**
   *  Goes throught and deep serializes a JsonObject
   */
-object TypeSerializers extends JsonUtils with CodecUtils {
+object TypeSerializers extends CodecUtils {
 
   import scodec.bits.ByteVector
 
   import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
-  import com.odenzo.ripple.bincodec.codecs.ScodecStyleCodecs._
 
   /** The very top level object, which doesn't get an end of object marker */
   def encodeTopLevel(json: Json, isSigning: Boolean): Either[BinCodecLibError, Array[Byte]] = {
@@ -52,21 +49,21 @@ object TypeSerializers extends JsonUtils with CodecUtils {
       case "UInt16" if fname === "LedgerEntryType" => json2string(fv) >>= MiscCodecs.encodeLedgerEntryType
       case "UInt16" if fname === "TransactionType" => json2string(fv) >>= MiscCodecs.encodeTransactionType
 
-      case "UInt8"   => json2long(fv) >>= (scodecUInt8)
-      case "UInt16"  => json2long(fv) >>= (scodecUInt16)
-      case "UInt32"  => json2long(fv) >>= (scodecUInt32)
-      case "UInt64"  => json2bigint(fv) >>= (scodecUInt64)
-      case "Hash160" => json2string(fv) >>= HashHexCodecs.encodeHash160
-      case "Hash256" => json2string(fv) >>= HashHexCodecs.encodeHash256
-      case "Blob"    => json2string(fv) >>= MiscCodecs.encodeBlob
+      case "UInt8"   => json2long(fv) >>= TrivialCodecFn.encodeUInt8
+      case "UInt16"  => json2long(fv) >>= TrivialCodecFn.encodeUInt16
+      case "UInt32"  => json2long(fv) >>= TrivialCodecFn.encodeUInt32
+      case "UInt64"  => json2bigint(fv) >>= TrivialCodecFn.encodeUInt64
+      case "Hash160" => json2string(fv) >>= TrivialCodecFn.encodeHash160
+      case "Hash256" => json2string(fv) >>= TrivialCodecFn.encodeHash256
+      case "Blob"    => json2string(fv) >>= TrivialCodecFn.encodeBlob
+
+      case "Vector256" => JsonCodecs.encodeVector256(fv)
+      case "STArray"   => JsonCodecs.encodeSTArray(fv, signingModeOn)
 
       case "AccountID" => AccountIdCodecs.encodeAccount(fv)
       case "Amount"    => MoneyCodecs.encodeAmount(fv)
       case "PathSet"   => PathCodecs.encodePathSet(fv)
-      case "Vector256" => ContainerFields.encodeVector256(fv)
-
-      case "STArray"  => ContainerFields.encodeSTArray(fv, signingModeOn)
-      case "STObject" => ContainerFields.encodeSTObject(fv, signingModeOn)
+      case "STObject"  => ContainerFields.encodeSTObject(fv, signingModeOn)
 
       case other => throw BinCodecLibError(s"Not handling Field Type $other")
 

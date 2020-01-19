@@ -3,14 +3,15 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{Json, Decoder}
+import io.circe.Decoder
+import io.circe.Json
 import org.scalatest.Assertion
 import scribe.Level
 import spire.math._
 
 import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
-import com.odenzo.ripple.bincodec.{OTestSpec, RawValue}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
+import com.odenzo.ripple.bincodec.OTestSpec
 
 /**
   * Trouble with Fiat encoding so a dedicated test suite.
@@ -55,8 +56,6 @@ class IssuedAmountCodecTest extends OTestSpec {
 
     fixes.take(3).map { v: AmountFixture =>
       scribe.debug(s"Fixture $v")
-
-      scribe.info(s"0 ${ByteUtils.ubyte2hex(UByte(0))}")
 
       val res = getOrLog(IssuedAmountCodec.encodeFiatValue(v.value))
       scribe.info(s"Res: ${res.toHex}")

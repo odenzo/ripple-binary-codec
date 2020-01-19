@@ -3,17 +3,19 @@ package com.odenzo.ripple.bincodec.myfixtures
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{Json, JsonObject, Decoder}
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.syntax._
-import org.scalatest.FunSuite
 import scribe.Level
 
-import com.odenzo.ripple.bincodec.{OTestSpec, BinCodecLibError}
-import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
-import com.odenzo.ripple.bincodec.utils.ByteUtils
+import com.odenzo.ripple.bincodec.BinCodecLibError
+import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
+import com.odenzo.ripple.bincodec.testkit.TestRegimes
 
 /** This test is designed to process Transaction Request and Response files, usually signing */
-class LedgerTxnFixture$Test extends OTestSpec with ByteUtils {
+class LedgerTxnFixture$Test extends OTestSpec {
 
   val files = List("ledger_direct_txn_good_3.json", "ledger_direct_txn_good_2.json", "ledger_direct_txn_good_1.json")
 

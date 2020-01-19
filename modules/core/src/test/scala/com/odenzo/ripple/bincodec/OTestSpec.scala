@@ -26,6 +26,11 @@ trait OTestSpec
     with OptionValues
     with OTestUtils
     with RippleTestUtils {
+
+  import scodec.bits.ByteVector
+
+  import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
+
   private val touch = TestLoggingConfig.setTestLogging.value
 
   def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") == "true"
@@ -56,4 +61,21 @@ trait OTestSpec
     implicit val decoder: Decoder[TestFixData] = deriveDecoder[TestFixData]
   }
 
+  def expectSuccess[T](rs: ErrorOr[ByteVector])(fn: ByteVector => T): T = {
+    rs match {
+      case Left(err: BinCodecLibError) =>
+        scribe.error(s"Unexpected Failure: ${err.show} ", err)
+        fail(err)
+      case Right(v) =>
+        scribe.debug(s"Result ${v.toHex}")
+        fn(v)
+    }
+  }
+
+  def expectFailure(rs: ErrorOr[ByteVector])(fn: Throwable => Any): Any = {
+    rs match {
+      case Left(err: Throwable) => fn(err)
+      case Right(v)             => fail(s"Expected Failure But Got Result ${v.toHex}")
+    }
+  }
 }

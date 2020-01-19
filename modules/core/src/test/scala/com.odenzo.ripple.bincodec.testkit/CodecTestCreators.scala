@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec.testkit
 import com.odenzo.ripple.bincodec.BinCodecLibError
 import java.security.MessageDigest
 
-import com.odenzo.ripple.bincodec.utils.ByteUtils
 import com.odenzo.ripple.bincodec.reference.HashPrefix
 import io.circe.Json
 import scribe.Logging
@@ -70,7 +69,7 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
         digest.update(payload.toArray)
         val fullHash: Array[Byte] = digest.digest()
         val rHash                 = fullHash.take(32)
-        ByteUtils.bytes2hex(rHash)
+        ByteVector(rHash).toHex
       }
     }
   }

@@ -2,9 +2,13 @@ package com.odenzo.ripple.bincodec.testkit
 
 import com.odenzo.ripple.bincodec.BinCodecLibError
 import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
-import io.circe.{Json, Decoder, ACursor, JsonObject}
+import io.circe.ACursor
+import io.circe.Decoder
+import io.circe.Json
+import io.circe.JsonObject
 import java.net.URL
-import scala.io.{Source, BufferedSource}
+import scala.io.BufferedSource
+import scala.io.Source
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 

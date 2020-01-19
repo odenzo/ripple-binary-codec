@@ -3,11 +3,10 @@ package com.odenzo.ripple.bincodec.myfixtures
 import cats._
 import cats.data._
 import cats.implicits._
-import org.scalatest.FunSuite
 
 import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
-import com.odenzo.ripple.bincodec.utils.ByteUtils
+import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
+import com.odenzo.ripple.bincodec.testkit.TestRegimes
 
 /** This test is designed to process Transaction Request and Response files, usually signing */
 class SerializationFixture$Test extends OTestSpec {

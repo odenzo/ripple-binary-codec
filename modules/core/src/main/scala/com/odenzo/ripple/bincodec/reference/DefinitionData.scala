@@ -7,10 +7,12 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import scodec.bits.ByteVector
-import spire.math.{UByte, UInt}
+import spire.math.UByte
+import spire.math.UInt
 
-import com.odenzo.ripple.bincodec.utils.ByteUtils
-import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
+import com.odenzo.ripple.bincodec.BCLibErr
+import com.odenzo.ripple.bincodec.BinCodecLibError
+import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 
 /**
   *
@@ -18,13 +20,13 @@ import com.odenzo.ripple.bincodec.{BCLibErr, RawValue, BinCodecLibError}
   *
   * @param name  Name of the "type" of the field
   * @param value used as ordinal in javascript to order the fields in an object
-  *  @param encoded UInt16 endoded bits of the value. Negative numbers will be wrapped (this is probably broken)
+  *  @param encoded UInt16 endoded bits of the value. Invalid numbers will have error
   *
   */
-case class RippleDataType(name: String, value: Long, encoded: ByteVector)
+case class RippleDataType(name: String, value: Long, encoded: ErrorOr[ByteVector])
 
 /** For Ledger, Transaction, and Transaction Entry Types. Encoded as UINT16 but values vary */
-case class MnemonicType(name: String, value: Long, encoded: ByteVector)
+case class MnemonicType(name: String, value: Long, encoded: ErrorOr[ByteVector])
 
 /** Note that tipe is a String matching kv */
 case class FieldType(nth: Long, isVLEncoded: Boolean, isSerialized: Boolean, isSigningField: Boolean, tipe: String)
@@ -88,7 +90,6 @@ object FieldMetaData {
       case (false, true)  => fieldCode :: typeCode :: Nil
       case (true, true)   => UByte(0) :: typeCode :: fieldCode :: Nil
     }
-    import scodec.codecs._
     import com.odenzo.scodec.spire._
     packed.map(subyte.encode(_).require).reduce(_ ++ _)
   }

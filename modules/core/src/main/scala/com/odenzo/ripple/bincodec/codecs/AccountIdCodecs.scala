@@ -4,7 +4,6 @@ import cats.implicits._
 import io.circe.Json
 
 import com.odenzo.ripple.bincodec.utils.JsonUtils._
-import com.odenzo.ripple.bincodec.utils.RippleBase58
 import com.odenzo.ripple.bincodec.BinCodecLibError
 
 /**
@@ -14,6 +13,7 @@ import com.odenzo.ripple.bincodec.BinCodecLibError
   */
 trait AccountIdCodecs {
 
+  import scodec.bits.Bases.Alphabet
   import scodec.bits.ByteVector
 
   /**
@@ -28,11 +28,11 @@ trait AccountIdCodecs {
   }
 
   def encodeAccountNoVL(json: Json): Either[BinCodecLibError, ByteVector] = {
-    import scodec.bits.ByteVector
+    import com.odenzo.ripple.bincodec.reference.RippleConstants
     for {
       accountChecksum <- json2string(json)
-      decoded         <- RippleBase58.decode2bytes(accountChecksum)
-      bv        = ByteVector(decoded)
+      decoded         <- ByteVector.fromBase58Descriptive(accountChecksum, RippleBase58).leftMap(BinCodecLibError(_))
+      bv        = decoded
       unchecked = bv.drop(1).dropRight(4) // Remove the leading marker (which is bits) and checksum
       res = unchecked.length match {
         case len if len === 20 => unchecked

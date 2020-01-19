@@ -4,14 +4,13 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.Json
-import io.circe.syntax._
-import org.scalatest.{BeforeAndAfterAll, Assertion}
+import org.scalatest.Assertion
+import org.scalatest.BeforeAndAfterAll
 import spire.math._
 import spire.implicits._
 import io.circe.literal._
 
-import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.{OTestSpec, RawValue, BinCodecLibError}
+import com.odenzo.ripple.bincodec.OTestSpec
 import scodec.interop.cats._
 import scodec.bits._
 class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {

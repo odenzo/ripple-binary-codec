@@ -18,30 +18,7 @@ trait MoneyCodecs extends JsonUtils {
   import scodec.Codec
   import scodec.bits._
   import scodec.codecs._
-
-  /** Maximum XRP amount expressed in Drops, which requires only 7 bytes so safe in a Long  */
-  private val maxXrpDrops: BigInt = spire.math.pow(BigInt(10), BigInt(17))
-
-  /** represents special case encoding of 0 fiatamount  */
-  private val zeroFiatAmount: Codec[Unit] = constant(hex"0x80".padRight(20))
-
-  /** Packaged up zeroFiatAmount  */
-  private val rawEncodedZeroFiatAmount = zeroFiatAmount.encode(()).require.bytes
-
-  private val xrpCurrencyCode: Codec[Unit] = constant(hex"00".padLeft(20))
-
-  // The raw hex form in json can be handled, but can't be XRP
-  // This should be 24 bits, 'X'.ascii , 'R'.ascii, 'P'.ascii (UTF-8 equivalent in that range)
-  private val correctXrpHexCode: ByteVector = utf8.encode("XRP").require.bytes
-
-  /**  Standard XRP encoding, like an ISO **/
-  private val xrpHex: ByteVector = hex"0158415500000000C1F76FF6ECB0BAC600000000"
-
-  /** Valid currency characters */
-  private val rippleAscii: String =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "0123456789" +
-      "<>(){}[]|?!@#$%^&*"
+  import TrivialCodecFn._
 
   /** Mask to set the top bits of an XRP Amount */
   private val mask: ByteVector = hex"0x4000000000000000"
@@ -77,12 +54,12 @@ trait MoneyCodecs extends JsonUtils {
 
   /** This is expressed as a string json field representing number of drops **/
   def encodeXrpAmount(v: Json): Either[BinCodecLibError, ByteVector] = {
-
+    import com.odenzo.ripple.bincodec.reference.RippleConstants.maxDrops
+    import com.odenzo.ripple.bincodec.reference.RippleConstants
     decode(v, Decoder.decodeBigInt).flatMap {
-      case bi if bi < 0           => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
-      case bi if bi > maxXrpDrops => BCJsonErr(s"XRP > $maxXrpDrops  $bi", v).asLeft
-      case bi                     => (ulong(60).encode(bi.toLong).require.padLeft(64).bytes | mask).asRight
-      // TODO: Make a use a more generic UINT64 that works for positive Longs >0 and less than UInt64.max and padd to 64 bitss
+      case bi if bi < 0        => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
+      case bi if bi > maxDrops => BCJsonErr(s"XRP > $maxDrops  $bi", v).asLeft
+      case bi                  => (ulong(60).encode(bi.toLong).require.padLeft(64).bytes | mask).asRight
     }
 
   }
@@ -93,12 +70,12 @@ trait MoneyCodecs extends JsonUtils {
     // 384 bits (64 + 160 + 160)     (currency, ?, ?)
     // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
     // If the amount is zero a special amount if returned... TODO: Check if correct
-
+    import com.odenzo.ripple.bincodec.reference.RippleConstants
     for {
       amountField <- findField("value", v)
       amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
       full <- if (amount.compareTo(BigDecimal(0)) === 0) {
-        rawEncodedZeroFiatAmount.asRight
+        RippleConstants.rawEncodedZeroFiatAmount.asRight
       } else {
         encodeFullIOU(v)
       }
@@ -133,8 +110,8 @@ trait MoneyCodecs extends JsonUtils {
 
     json2string(json).flatMap {
       case "XRP"                                      => bit160Zero.asRight
-      case s if s.length === 20 && s.startsWith("00") => MiscCodecs.encodeHex(s)
-      case s if s.length === 20 && s.startsWith("01") => MiscCodecs.encodeHex(s) // Legacy Demurrage
+      case s if s.length === 20 && s.startsWith("00") => encodeHex(s)
+      case s if s.length === 20 && s.startsWith("01") => encodeHex(s)
       case s if s.length === 3 && isRippleAscii(s)    => (bit90Zero ++ utf8.encode(s).require.bytes ++ bit40Zero).asRight
       case other                                      => BinCodecLibError(s"Invalid Currency $other").asLeft
     }
@@ -148,7 +125,10 @@ trait MoneyCodecs extends JsonUtils {
     *
     * @return true is valid
     */
-  protected def isRippleAscii(s: String): Boolean = { s.forall(c => rippleAscii.contains(c)) }
+  protected def isRippleAscii(s: String): Boolean = {
+    import com.odenzo.ripple.bincodec.reference.RippleConstants
+    s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
+  }
 
 }
 

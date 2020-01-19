@@ -71,48 +71,9 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
   * Each object has exactly one named field. The field can be any type, including object or array.
   * Account is VLEncoded in here.
   */
-trait STArrayCodec extends CodecUtils with JsonUtils {
+trait STArrayCodec extends CodecUtils with JsonUtils {}
 
-  import scodec.bits.ByteVector
-
-  /** Encodes each element of an array as an STObject.  */
-  def encodeSTArray(data: Json, isSigning: Boolean): Either[BinCodecLibError, ByteVector] = {
-    scribe.debug(s"Encoding STArray ${data.spaces4}")
-    val bvl = for {
-      arr <- json2arrobj(data)
-      vals <- arr.traverse {
-        case jo if jo.size == 1 => STObjectCodec.encodeSTObject(jo.asJson, isSigning = isSigning)
-        case jo                 => BCJsonErr("Array wasnt all single field nested object", jo.asJson).asLeft
-      }
-    } yield (vals)
-    bvl.map(_.reduce(_ ++ _))
-  }
-
-}
-
-trait Vector256Codec extends CodecUtils with JsonUtils {
-
-  import scodec.bits.ByteVector
-
-  /**
-    * @param data Json and the FieldData, FieldData is redundant
-    *
-    * @return
-    */
-  def encodeVector256(data: Json): Either[BinCodecLibError, ByteVector] = {
-
-    val bvl = for {
-      arr    <- json2array(data)
-      arrTxt <- arr.traverse(json2string)
-      hashes <- arrTxt.traverse(HashHexCodecs.encodeHash256)
-      // Pendantic as we know the length for each really.
-      totalLen = hashes.map(_.length).sum
-      vl <- VLEncoding.encodeVL(totalLen.toInt)
-    } yield (vl :: hashes)
-
-    bvl.map(_.reduce(_ ++ _))
-  }
-}
+trait Vector256Codec extends CodecUtils with JsonUtils {}
 
 object STArrayCodec extends STArrayCodec
 

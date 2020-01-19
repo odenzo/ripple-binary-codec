@@ -24,10 +24,11 @@ class DefinitionDataTest extends OTestSpec {
   }
 
   test("Constants") {
-    DefinitionData.pathSetEnd.toHex shouldEqual "00"
-    DefinitionData.pathSetAnother.toHex shouldEqual "FF"
-    DefinitionData.objectEndMarker.toHex shouldEqual "E1"
-    DefinitionData.arrayEndMarker.toHex shouldEqual "F1"
+    import scodec.bits.Bases.Alphabets.HexUppercase
+    DefinitionData.pathSetEnd.toHex(HexUppercase) shouldEqual "00"
+    DefinitionData.pathSetAnother.toHex shouldEqual "ff"
+    DefinitionData.objectEndMarker.toHex shouldEqual "e1"
+    DefinitionData.arrayEndMarker.toHex shouldEqual "f1"
 
   }
 

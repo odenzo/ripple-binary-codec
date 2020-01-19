@@ -40,8 +40,17 @@ object DefinitionsDecoding extends JsonUtils {
     import scodec.codecs._
     for {
       decoded <- JsonUtils.decode(json, Decoder[DefinitionJson])
-      dataTypes      = decoded.types.transform { case (name, num) => RippleDataType(name, num, uint16.encode(num.toInt).require.bytes) }
-      filteredFields = decoded.fields.filter { case (k, v)        => v.isSerialized || v.isSigningField }
+      // Well, this are UInt6 but some are negatice
+      dataTypes = decoded.types.transform {
+        case (name, num) =>
+          val preEncode = uint16
+            .encode(num.toInt)
+            .map(_.bytes)
+            .toEither
+            .leftMap(e => BinCodecLibError(e.messageWithContext))
+          RippleDataType(name, num, preEncode)
+      }
+      filteredFields = decoded.fields.filter { case (k, v) => v.isSerialized || v.isSigningField }
       fields <- convertToFieldMetaData(filteredFields, dataTypes)
       fieldsByName   = fields.map(field => field.name          -> field).toMap
       fieldsByMarker = fields.map(field => field.fieldID.bytes -> field).toMap
@@ -58,6 +67,6 @@ object DefinitionsDecoding extends JsonUtils {
 
   def toMnemonicType(name: String, num: Long): MnemonicType = {
     import scodec.codecs.uint16
-    MnemonicType(name, num, uint16.encode(num.toInt).require.bytes)
+    MnemonicType(name, num, uint16.encode(num.toInt).toEither.leftMap(err => BinCodecLibError(err.messageWithContext)).map(_.bytes))
   }
 }

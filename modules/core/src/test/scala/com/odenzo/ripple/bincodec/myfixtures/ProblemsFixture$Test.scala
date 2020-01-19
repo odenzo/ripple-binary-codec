@@ -3,15 +3,14 @@ package com.odenzo.ripple.bincodec.myfixtures
 import cats._
 import cats.data._
 import cats.implicits._
-import org.scalatest.FunSuite
 import scribe.Level
 
-import com.odenzo.ripple.bincodec.testkit.{TestRegimes, TestLoggingConfig}
-import com.odenzo.ripple.bincodec.utils.ByteUtils
+import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
+import com.odenzo.ripple.bincodec.testkit.TestRegimes
 import com.odenzo.ripple.bincodec.OTestSpec
 
 /** This test is designed to process Transaction Request and Response files */
-class ProblemsFixture$Test extends OTestSpec with ByteUtils {
+class ProblemsFixture$Test extends OTestSpec {
 
   private val allTxn = loadRequestResponseFixture("/mytests/SignRqRs_Problems.json")
 
@@ -38,3 +37,5 @@ class ProblemsFixture$Test extends OTestSpec with ByteUtils {
   }
 
 }
+
+object ProblemsFixture$Test {}

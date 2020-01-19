@@ -1,23 +1,29 @@
 package com.odenzo.ripple.bincodec.codecs
 
-import spire.math.{UByte, ULong}
+import spire.math.ULong
 
-import com.odenzo.ripple.bincodec.utils.{ByteUtils, JsonUtils}
+import com.odenzo.ripple.bincodec.utils.JsonUtils
 import com.odenzo.ripple.bincodec.BinCodecLibError
 import cats._
 import cats.data._
 import cats.implicits._
 import scribe.Logging
 
-object IssuedAmountScratch extends ByteUtils with JsonUtils with Logging {
+object IssuedAmountScratch extends JsonUtils with Logging {
+
+  import com.odenzo.ripple.bincodec.BCLibErr
+  import scodec.bits.ByteVector
 
   /** Breaks down to UBytes for the amount, currency amd issuer */
-  def breakFiat(hex: String): Either[BinCodecLibError, (List[UByte], List[UByte], List[UByte])] = {
+  def breakFiat(hex: String): Either[BCLibErr, (ByteVector, ByteVector, ByteVector)] = {
+    import scodec.bits.ByteVector
 
-    val all: Either[BinCodecLibError, List[UByte]] = ByteUtils.hex2ubytes(hex)
-    val amount                                     = all.map(_.take(8)) // Top 64 is amount in sign and flag
-    val currency                                   = all.map(_.slice(8, 28)) // 160 bits
-    val issuer                                     = all.map(_.slice(32, 52)) // another 160 bits
+    import com.odenzo.ripple.bincodec.BCLibErr
+
+    val all: Either[BCLibErr, ByteVector] = ByteVector.fromHex(hex).toRight(BinCodecLibError("Bad Hex"))
+    val amount                            = all.map(_.take(8)) // Top 64 is amount in sign and flag
+    val currency                          = all.map(_.slice(8, 28)) // 160 bits
+    val issuer                            = all.map(_.slice(32, 52)) // another 160 bits
     (amount, currency, issuer).mapN((_, _, _))
   }
 

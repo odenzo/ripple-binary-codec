@@ -4,12 +4,13 @@ import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.optics.JsonPath.root
-import io.circe.{Json, JsonObject}
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.syntax._
 import monocle.Optional
 import scribe.Logging
 
-import com.odenzo.ripple.bincodec.{BCJsonErr, BinCodecLibError}
+import com.odenzo.ripple.bincodec.BCJsonErr
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 trait RippleTestUtils extends Logging with JsonUtils {
