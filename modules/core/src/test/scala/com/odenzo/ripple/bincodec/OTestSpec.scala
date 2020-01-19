@@ -74,8 +74,11 @@ trait OTestSpec
 
   def expectFailure(rs: ErrorOr[ByteVector])(fn: Throwable => Any): Any = {
     rs match {
-      case Left(err: Throwable) => fn(err)
-      case Right(v)             => fail(s"Expected Failure But Got Result ${v.toHex}")
+      case Left(err: Throwable) =>
+        scribe.debug(s"Got Expceted Failure ${err.show}")
+        fn(err)
+      case Right(v) =>
+        fail(s"Expected Failure But Got Result ${v.toHex}")
     }
   }
 }
