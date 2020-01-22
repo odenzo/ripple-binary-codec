@@ -30,7 +30,7 @@ class IssuedAmountCodecTest extends OTestSpec {
     )
 
     fixture.foreach { txt =>
-      val res = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(txt)))
+      val res = getOrLog(IssuedAmountCodec.encodeFiatValue(txt))
       scribe.info(s"Res: $txt => $res")
     }
   }
@@ -47,7 +47,7 @@ class IssuedAmountCodecTest extends OTestSpec {
   import io.circe.generic.auto._
 
   case class ByField(topBits: ULong, exp: ULong, mantissa: ULong)
-  case class AmountFixture(value: Json, bin: String, passed: Option[Boolean] = None)
+  case class AmountFixture(value: String, bin: String, passed: Option[Boolean] = None)
 
   val parsed: Json               = getOrLog(JsonUtils.parseAsJson(fixture))
   val fixes: List[AmountFixture] = getOrLog(JsonUtils.decode(parsed, Decoder[List[AmountFixture]]))
@@ -95,18 +95,12 @@ class IssuedAmountCodecTest extends OTestSpec {
       json <- parseAsJson(fixture)
       data <- decode(json, Decoder[List[TData]])
       _ = data.foreach { fix =>
-        val bin = getOrLog(IssuedAmountCodec.encodeFiatValue(Json.fromString(fix.value)))
+        val bin = getOrLog(IssuedAmountCodec.encodeFiatValue(fix.value))
         bin.toHex == fix.bin
         bin.toHex shouldEqual fix.bin
       }
     } yield ()
 
-  }
-
-  def testOne(v: Json, expected: Json): Assertion = {
-    val expectedHex = expected.asString.get
-    val bytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(v))
-    bytes.toHex shouldEqual expectedHex
   }
 
 }

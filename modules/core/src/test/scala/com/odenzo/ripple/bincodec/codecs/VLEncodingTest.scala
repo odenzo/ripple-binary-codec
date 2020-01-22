@@ -7,7 +7,7 @@ import scodec.bits._
 import spire.math.UInt
 import com.odenzo.ripple.bincodec.OTestSpec
 
-class AccountVLTest extends OTestSpec with TrivialCodecFn {
+class VLEncodingTest extends OTestSpec with VLEncodingOldBroken {
 
   import org.scalacheck.Gen
   val hexGen = Gen.hexStr
@@ -46,6 +46,7 @@ class AccountVLTest extends OTestSpec with TrivialCodecFn {
       }
     }
   }
+
   def extract(i: Int, bv: ByteVector) = {
     scribe.debug(s"Extracting $i from ${bv.toHex}")
     bv.lift(i).map { b =>
@@ -62,8 +63,9 @@ class AccountVLTest extends OTestSpec with TrivialCodecFn {
     /*
      *
      * If the first length byte has a value of 192 or less, then that's the only length byte and it contains the exact length of the field contents in bytes.
+     * (Top 4 bit 1100 or less)
      * If the first length byte has a value of 193 to 240, then there are two length bytes.
-     * If the first length byte has a value of 241 to 254, then there are three length bytes.
+     * If the first length byte has a value of 241 to 254, then there are three length bytes.  (Top 4 bits 1)
      */
     val first = extract(0, res)
     scribe.info(s"First: $first  from ${res.toHex}")

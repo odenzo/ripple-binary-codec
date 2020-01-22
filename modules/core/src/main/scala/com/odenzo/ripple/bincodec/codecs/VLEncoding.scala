@@ -25,7 +25,7 @@ trait VLEncoding {
   }
 
   def encodeVL(len: Int): Either[BCLibErr, ByteVector] = {
-    import TrivialCodecFn._
+    import VLEncodingOldBroken._
 
     Either
       .cond(len >= 0 && len <= 918744, len, BinCodecLibError(s"Length $len was not in range 1..918744 for EncodeVL Length"))

@@ -68,6 +68,7 @@ package object spire {
     else sushort16L
   }
 
+  val suint4: Codec[UInt]   = codecs.uint4.toUInt
   val suint8: Codec[UInt]   = codecs.uint8.toUInt
   val suint16: Codec[UInt]  = codecs.uint16.toUInt
   val suint24: Codec[UInt]  = codecs.uint24.toUInt

@@ -9,7 +9,7 @@ import com.odenzo.ripple.bincodec.OTestSpec
 
 import org.scalatest._
 
-class HexCodecsTest extends OTestSpec with TrivialCodecFn {
+class HexCodecsTest extends OTestSpec with VLEncodingOldBroken {
 
   import org.scalacheck.Arbitrary
   import org.scalacheck.Gen
@@ -59,7 +59,7 @@ class HexCodecsTest extends OTestSpec with TrivialCodecFn {
 
   test("UInt 64 Max") {
     import spire.math.ULong
-    expectSuccess(TrivialCodecFn.encodeUInt64(ULong.MaxValue)) { bv =>
+    expectSuccess(VLEncodingOldBroken.encodeUInt64(ULong.MaxValue)) { bv =>
       bv.length shouldBe 8
       bv.toHex.iterator.forall(_ == 'f') shouldBe true
     }

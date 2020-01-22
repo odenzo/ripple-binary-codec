@@ -12,6 +12,7 @@ import com.odenzo.ripple.bincodec.encoding.TypeSerializers
 import com.odenzo.ripple.bincodec.reference.DefinitionData
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 
+/** How to deal with this I don't know yet, as its is really a control loop and Codec */
 trait STObjectCodec extends CodecUtils with JsonUtils {
 
   import scodec.bits.ByteVector
@@ -64,21 +65,20 @@ trait STObjectCodec extends CodecUtils with JsonUtils {
       sorted   = filtered.sortBy(_.fi.sortKey)
     } yield sorted
   }
+
+  /** Encodes each element of an array as an STObject.  */
+  def encodeSTArray(data: Json, isSigning: Boolean): Either[BinCodecLibError, ByteVector] = {
+    import io.circe.syntax._
+    scribe.debug(s"Encoding STArray ${data.spaces4}")
+    val bvl = for {
+      arr <- json2arrobj(data)
+      vals <- arr.traverse {
+        case jo if jo.size == 1 => STObjectCodec.encodeSTObject(jo.asJson, isSigning = isSigning)
+        case jo =>
+          import com.odenzo.ripple.bincodec.BCJsonErr
+          BCJsonErr("Array wasnt all single field nested object", jo.asJson).asLeft
+      }
+    } yield (vals)
+    bvl.map(_.reduce(_ ++ _))
+  }
 }
-
-/**
-  * Kind of special case now until proven wrong. Array is always an array of objects.
-  * Each object has exactly one named field. The field can be any type, including object or array.
-  * Account is VLEncoded in here.
-  */
-trait STArrayCodec extends CodecUtils with JsonUtils {}
-
-trait Vector256Codec extends CodecUtils with JsonUtils {}
-
-object STArrayCodec extends STArrayCodec
-
-object STObjectCodec extends STObjectCodec
-
-object Vector256Codec extends Vector256Codec
-
-object ContainerFields extends STArrayCodec with STObjectCodec with Vector256Codec

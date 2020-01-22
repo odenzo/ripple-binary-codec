@@ -15,9 +15,6 @@ import scodec.interop.cats._
 import scodec.bits._
 class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
 
-  // Ripple method working, but we can make more concise using Java Math
-  // This tries to compare the two.
-
   test("Fixture") {
 
     val f =
@@ -73,28 +70,26 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
       "0000000000000000000000005553440000000000" + // Currency
       "E14829DB4C6419A8EFCAC1EC21D891A1A4339871"   // Issuer with no VL Encoding
 
-    val fieldExpected    = "67"
-    val amountExpected   = "D4C38D7EA4C68000"
-    val currencyExpected = "0000000000000000000000005553440000000000"
-    val issuerExpected   = "E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
+    val fieldExpected    = hex"67"
+    val amountExpected   = hex"D4C38D7EA4C68000"
+    val currencyExpected = hex"0000000000000000000000005553440000000000"
+    val issuerExpected   = hex"E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
 
     val currency = "USD"
-    val res      = getOrLog(MoneyCodecs.encodeCurrency(Json.fromString(currency)))
+    val res      = getOrLog(MoneyCodecs.encodeCurrency(currency))
     val hex      = res.toHex
     scribe.debug(s"$currency => $hex")
 
-    val amount: Json      = Json.fromString("10")
+    val amount: String    = ("10")
     val amountBytes       = getOrLog(IssuedAmountCodec.encodeFiatValue(amount))
     val amountHex: String = amountBytes.toHex
-    scribe.info(s"Amount: ${amount.spaces2} => $amountHex")
+    scribe.info(s"Amount: $amount => $amountHex")
 
-    val issuer: Json = Json.fromString(issuerStr)
-    val issuerBytes  = getOrLog(AccountIdCodecs.encodeAccountNoVL(issuer))
-    val issuerHex    = issuerBytes.toHex
-    scribe.debug(s"Issuer [$issuer] Len ${issuerHex.length * 4} : $issuerHex")
+    val issuer      = (issuerStr)
+    val issuerBytes = getOrLog(AccountIdCodecs.encodeAccountNoVL(issuer))
+    scribe.debug(s"Issuer [$issuer] Len ${issuerBytes.length} : ${issuerBytes.toHex.toUpperCase}")
 
     hex shouldEqual currencyExpected
-    issuerHex shouldEqual issuerHex
     amountHex shouldEqual amountExpected
   }
 
@@ -143,7 +138,7 @@ class MoneyCodecsTest extends OTestSpec with BeforeAndAfterAll {
     passFail.foreach { case (v, exp) => encode(v, exp) }
 
     def encode(v: String, expectedOK: Boolean): Assertion = {
-      val res = MoneyCodecs.encodeCurrency(Json.fromString(v))
+      val res = MoneyCodecs.encodeCurrency(v)
       logger.debug(s"$v expected $expectedOK got  $res")
 
       res.isRight shouldEqual expectedOK

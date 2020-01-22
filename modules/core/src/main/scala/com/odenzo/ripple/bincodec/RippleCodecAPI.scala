@@ -53,6 +53,6 @@ object RippleCodecAPI {
     * @return Array of bytes or an error. This currently is NOT VLEncoded, just raw bytes.
     */
   def serializedAddress(addressBase58Check: String): Either[BinCodecLibError, Array[Byte]] = {
-    AccountIdCodecs.encodeAccountNoVL(Json.fromString(addressBase58Check)).map(x => x.toArray)
+    AccountIdCodecs.encodeAccountNoVL(addressBase58Check).map(x => x.toArray)
   }
 }

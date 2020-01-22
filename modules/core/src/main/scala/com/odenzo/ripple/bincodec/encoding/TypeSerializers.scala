@@ -49,21 +49,21 @@ object TypeSerializers extends CodecUtils {
       case "UInt16" if fname === "LedgerEntryType" => json2string(fv) >>= MiscCodecs.encodeLedgerEntryType
       case "UInt16" if fname === "TransactionType" => json2string(fv) >>= MiscCodecs.encodeTransactionType
 
-      case "UInt8"   => json2long(fv) >>= TrivialCodecFn.encodeUInt8
-      case "UInt16"  => json2long(fv) >>= TrivialCodecFn.encodeUInt16
-      case "UInt32"  => json2long(fv) >>= TrivialCodecFn.encodeUInt32
-      case "UInt64"  => json2bigint(fv) >>= TrivialCodecFn.encodeUInt64
-      case "Hash160" => json2string(fv) >>= TrivialCodecFn.encodeHash160
-      case "Hash256" => json2string(fv) >>= TrivialCodecFn.encodeHash256
-      case "Blob"    => json2string(fv) >>= TrivialCodecFn.encodeBlob
+      case "UInt8"   => json2long(fv) >>= VLEncodingOldBroken.encodeUInt8
+      case "UInt16"  => json2long(fv) >>= VLEncodingOldBroken.encodeUInt16
+      case "UInt32"  => json2long(fv) >>= VLEncodingOldBroken.encodeUInt32
+      case "UInt64"  => json2bigint(fv) >>= VLEncodingOldBroken.encodeUInt64
+      case "Hash160" => json2string(fv) >>= VLEncodingOldBroken.encodeHash160
+      case "Hash256" => json2string(fv) >>= VLEncodingOldBroken.encodeHash256
+      case "Blob"    => json2string(fv) >>= VLEncodingOldBroken.encodeBlob
 
       case "Vector256" => JsonCodecs.encodeVector256(fv)
       case "STArray"   => JsonCodecs.encodeSTArray(fv, signingModeOn)
+      case "STObject"  => ContainerFields.encodeSTObject(fv, signingModeOn)
 
-      case "AccountID" => AccountIdCodecs.encodeAccount(fv)
+      case "AccountID" => json2string(fv) >>= AccountIdCodecs.encodeAccount
       case "Amount"    => MoneyCodecs.encodeAmount(fv)
       case "PathSet"   => PathCodecs.encodePathSet(fv)
-      case "STObject"  => ContainerFields.encodeSTObject(fv, signingModeOn)
 
       case other => throw BinCodecLibError(s"Not handling Field Type $other")
 

@@ -1,27 +1,28 @@
-package com.odenzo.ripple.bincodec.codecs
+package com.odenzo.ripple.bincodec.scodecs
 
 import cats._
-import cats.data._
-import cats.implicits._
-import cats.data.NonEmptyList
+import cats.data.{NonEmptyList, _}
 import cats.implicits._
 import io.circe.syntax._
-import io.circe.Json
-import io.circe.JsonObject
+import io.circe.{Json, JsonObject}
 import scodec.interop.cats._
 import scodec.bits._
 
-import com.odenzo.ripple.bincodec.reference.DefinitionData
 import com.odenzo.ripple.bincodec._
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 
-trait PathCodecs extends JsonUtils {
+/** These should fall under the delimited fields stuff */
+trait PathsetScodecs extends JsonUtils {
 
   import com.odenzo.ripple.bincodec.codecs.PathCodecs._
 
+  // Better to decode data into a Model object list PathSet(p:List[Path])  Path(steps:List[PathSte],
+  // and maybe PathSetp is one of AccountPathStep, CurrencyPathStep, IssuerPathStep, CurrencyAndIsserPathStep
+  // The json encoding is kinda odd...
   /** These is really a container. Inside is a list of  datasteps and delimeters. Equalivalent to paths **/
   def encodePathSet(data: Json): Either[BinCodecLibError, ByteVector] = {
     scribe.debug(s"Encoding PathSet/Path:  : \n ${data.spaces4}")
+    // So, a pathset starts with no special marker, each path and DEL_A except last is DEL_B see the foldSmash
     val pathList = for {
       pathArr <- json2array(data)
       paths   <- pathArr.traverse(encodePath)
@@ -40,6 +41,7 @@ trait PathCodecs extends JsonUtils {
     */
   private[codecs] def encodePath(json: Json): Either[BinCodecLibError, ByteVector] = {
     // There are no delimeters at the end of each pathstep in a path
+    // So this is just pure packing
     for {
       arr       <- json2array(json)
       steps     <- arr.traverse(json2object)
@@ -54,44 +56,21 @@ trait PathCodecs extends JsonUtils {
     import com.odenzo.ripple.bincodec.codecs.PathCodecs._
     scribe.debug(s"Encoding Path Step\n ${json.asJson.spaces2}")
 
+    // Break down to ADT case classes with Codec for each
+
     // TODO: Validate currency is not XRP , with special currency encoding TBC
 
-    val fields: List[Option[Json]] = List("account", "currency", "issuer").map(k => json(k))
-    import com.odenzo.ripple.bincodec.codecs.AccountIdCodecs._
+    val fields: List[Option[String]] = List("account", "currency", "issuer").map(k => json(k)).map(_.flatMap(_.asString))
     val res = fields match {
-      case Some(account) :: None :: None :: Nil => encodeAccountNoVL(account).fmap(List(accountPrefix, _))
-      case None :: Some(curr) :: None :: Nil    => MoneyCodecs.encodeCurrency(curr).fmap(List(currencyPrefix, _))
-      case None :: None :: Some(issuer) :: Nil  => encodeAccountNoVL(issuer).fmap(List(issuerPrefix, _))
+      case Some(account) :: None :: None :: Nil      => accountPrefix ~ xrpaccount
+      case None :: Some(curr) :: None :: Nil         => currrencyPrefix ~ xrpcurrency
+      case None :: None :: Some(issuer) :: Nil       => issuerPrefix ~ xrpaccount
+      case None :: Some(curr) :: Some(issuer) :: Nil => currencyAndIssuerPrefix ~ xrpcurrency ~ xrpaccount // (for issuer)
 
-      case None :: Some(curr) :: Some(issuer) :: Nil =>
-        for {
-          c <- MoneyCodecs.encodeCurrency(curr)
-          i <- AccountIdCodecs.encodeAccountNoVL(issuer)
-        } yield List(currencyAndIssuerPrefix, c, i)
-
-      case _ => BinCodecLibError("Illegal Path", json.asJson).asLeft
     }
 
     res.map(v => v.reduce(_ ++ _))
 
   }
-
-}
-
-object PathCodecs extends PathCodecs {
-  val kZERO                    = hex"00"
-  val kAddressStep             = hex"01"
-  val kCurrencyStep            = hex"10"
-  val kIssuerStep              = hex"20"
-  val accountType: ByteVector  = hex"0x01"
-  val currencyType: ByteVector = hex"0x10"
-  val issuerType: ByteVector   = hex"0x20"
-  val accountPrefix            = accountType
-  val currencyPrefix           = currencyType
-  val issuerPrefix             = issuerType
-  val currencyAndIssuerPrefix  = currencyType | issuerType
-
-  val anotherPathMarker: ByteVector = DefinitionData.pathSetAnother
-  val endOfPathsMarker: ByteVector  = DefinitionData.pathSetEnd
 
 }
