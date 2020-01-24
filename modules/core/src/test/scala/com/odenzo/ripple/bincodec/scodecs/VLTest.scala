@@ -1,8 +1,9 @@
 package com.odenzo.ripple.bincodec.scodecs
 
-import scodec.Attempt
+import scodec.{Attempt, DecodeResult}
 import scodec.bits.BitVector
 import scodec.bits._
+
 import com.odenzo.ripple.bincodec.OTestSpec
 
 class VLTest extends OTestSpec {
@@ -57,10 +58,28 @@ class VLTest extends OTestSpec {
 
   }
 
-  test("VL") {
-    vlEnc2.encode(12481).map { bv =>
-      printBits(bv)
-      bv.bytes.length shouldBe 1
+  test("VL Decoding") {
+
+    val rs = encodeVL(100000).map { rs =>
+      val something                       = hex"0F3D0C7D2CFAB2EC8295451F0B3CA038E8E9CDCD".bits
+      val res: Attempt[DecodeResult[Int]] = decodeVL.decode(something)
+
+      //res shouldEqual "0f"
+
+      enc2.encode(15).map { bv: BitVector =>
+        bv.length shouldEqual 8
+        bv shouldEqual hex"0F".bits
+      }
+
+      enc2.encode(1000).map { bv: BitVector =>
+        bv.length shouldEqual 16
+        bv shouldEqual hex"0F".bits
+      }
+
+      enc2.encode(1000).map { bv: BitVector =>
+        bv.length shouldEqual 16
+        bv shouldEqual hex"0F".bits
+      }
     }
   }
 

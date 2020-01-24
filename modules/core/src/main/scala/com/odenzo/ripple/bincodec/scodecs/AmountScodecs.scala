@@ -2,21 +2,16 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import cats._
 import cats.data._
-import cats.implicits._
 
 import com.odenzo.ripple.bincodec.{BCJsonErr, BCLibErr, BinCodecLibError}
 import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import scodec.bits._
-import scodec.codecs._
+import com.odenzo.scodec.spire._
 import cats.implicits._
 import io.circe.{Decoder, Json}
-import scodec.bits.Bases.Alphabets
-import scodec.bits.{BitVector, ByteVector}
+import scodec.bits.{BitVector, ByteVector, _}
 import scodec._
 import scodec.codecs._
-import spire.math.UInt
-
-import com.odenzo.ripple.bincodec.codecs.MoneyCodecs
+import spire.math.ULong
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math
@@ -60,6 +55,9 @@ trait AmountScodecs extends CodecUtils {
       .fold(e => Attempt.failure[ByteVector](Err(e.msg)), Attempt.successful)
       .map(_.bits)
   }
+
+  //val encoded: Attempt[BitVector] = stringToBigInt.encode("123")
+  // val xrpEnc: Codec[BitVector]    = bits(64).contramap[BigInt](bi => )
 
   /** Encoder Only as this point */
   val xrpfiat: Encoder[String] = scodec.Encoder(xrpFiatEnc _)
@@ -107,14 +105,14 @@ trait AmountScodecs extends CodecUtils {
   /**
     * https://developers.ripple.com/currency-formats.html
     *
-    * @param json FieldData  representing an amount, either one line XRP of object with IOU/Fiat
+
     */
-  def encodeAmount(json: Json): Either[BinCodecLibError, ByteVector] = {
-    json.asObject match {
-      case None      => encodeXrpAmount(json)
-      case Some(obj) => encodeIOU(json)
-    }
-  }
+//  def encodeAmount(json: Json): Either[BinCodecLibError, ByteVector] = {
+//    json.asObject match {
+//      case None      => encodeXrpAmount(json)
+//      case Some(obj) => encodeIOU(json)
+//    }
+//  }
 
   //  /**
   //    *
@@ -136,7 +134,6 @@ trait AmountScodecs extends CodecUtils {
   /** This is expressed as a string json field representing number of drops **/
   def encodeXrpAmount(v: Json): Either[BinCodecLibError, ByteVector] = {
     import com.odenzo.ripple.bincodec.reference.RippleConstants.maxDrops
-    import com.odenzo.ripple.bincodec.reference.RippleConstants
     decode(v, Decoder.decodeBigInt).flatMap {
       case bi if bi < 0        => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
       case bi if bi > maxDrops => BCJsonErr(s"XRP > $maxDrops  $bi", v).asLeft
@@ -145,63 +142,63 @@ trait AmountScodecs extends CodecUtils {
 
   }
 
-  /** Encode IOU / Issued Amount , in this case account has VL encoding */
-  def encodeIOU(v: Json): Either[BinCodecLibError, ByteVector] = {
-    // currency , value and issuer
-    // 384 bits (64 + 160 + 160)     (currency, ?, ?)
-    // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
-    // If the amount is zero a special amount if returned... TODO: Check if correct
-    import com.odenzo.ripple.bincodec.reference.RippleConstants
-    for {
-      amountField <- findField("value", v)
-      amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
-      full <- if (amount.compareTo(BigDecimal(0)) === 0) {
-        RippleConstants.rawEncodedZeroFiatAmount.asRight
-      } else {
-        encodeFullIOU(v)
-      }
-    } yield full
-  }
+//  /** Encode IOU / Issued Amount , in this case account has VL encoding */
+//  def encodeIOU(v: Json): Either[BinCodecLibError, ByteVector] = {
+//    // currency , value and issuer
+//    // 384 bits (64 + 160 + 160)     (currency, ?, ?)
+//    // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
+//    // If the amount is zero a special amount if returned... TODO: Check if correct
+//    import com.odenzo.ripple.bincodec.reference.RippleConstants
+//    for {
+//      amountField <- findField("value", v)
+//      amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
+//      full <- if (amount.compareTo(BigDecimal(0)) === 0) {
+//        RippleConstants.rawEncodedZeroFiatAmount.asRight
+//      } else {
+//        encodeFullIOU(v)
+//      }
+//    } yield full
+//  }
 
-  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, ByteVector] = {
-    val json = jobj.dropNullValues
+//  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, ByteVector] = {
+//    val json = jobj.dropNullValues
+//
+//    def encodeField(name: String, fn: String => Either[BinCodecLibError, ByteVector]): Either[BinCodecLibError, ByteVector] = {
+//      findField(name, json).flatMap(json2string).flatMap(fn)
+//    }
+////
+////    for {
+////      currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
+////      value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
+////      issuer   <- encodeField("issuer", AccountIdCodecs.encodeAccountNoVL)
+////    } yield value ++ currency ++ issuer
+//
+//  }
 
-    def encodeField(name: String, fn: String => Either[BinCodecLibError, ByteVector]): Either[BinCodecLibError, ByteVector] = {
-      findField(name, json).flatMap(json2string).flatMap(fn)
-    }
-
-    for {
-      currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
-      value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
-      issuer   <- encodeField("issuer", AccountIdCodecs.encodeAccountNoVL)
-    } yield value ++ currency ++ issuer
-
-  }
-
-  /**
-    * Encodes non-XRP currency.
-    * Currency must be three ASCII characters. could pad left if short I guess
-    * Note that "00000000000..." is used for currency XRP in some places.
-    * TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
-    *
-    * @param currency This is expected to be the  String corresponding to just currency field
-    *
-    * @return 160 bits per   https://xrpl.org/currency-formats.html
-   **/
-  def encodeCurrency(currency: String): Either[BinCodecLibError, ByteVector] = {
-    val bit90Zero: ByteVector  = hex"00".padTo(12)
-    val bit40Zero: ByteVector  = hex"00".padTo(5)
-    val bit160Zero: ByteVector = hex"00".padTo(20)
-
-    currency match {
-      case "XRP"                                      => bit160Zero.asRight
-      case s if s.length === 20 && s.startsWith("00") => encodeHex(s)
-      case s if s.length === 20 && s.startsWith("01") => encodeHex(s)
-      case s if s.length === 3 && isRippleAscii(s)    => (bit90Zero ++ utf8.encode(s).require.bytes ++ bit40Zero).asRight
-      case other                                      => BinCodecLibError(s"Invalid Currency $other").asLeft
-    }
-
-  }
+//  /**
+//    * Encodes non-XRP currency.
+//    * Currency must be three ASCII characters. could pad left if short I guess
+//    * Note that "00000000000..." is used for currency XRP in some places.
+//    * TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
+//    *
+//    * @param currency This is expected to be the  String corresponding to just currency field
+//    *
+//    * @return 160 bits per   https://xrpl.org/currency-formats.html
+//   **/
+//  def encodeCurrency(currency: String): Either[BinCodecLibError, ByteVector] = {
+//    val bit90Zero: ByteVector  = hex"00".padTo(12)
+//    val bit40Zero: ByteVector  = hex"00".padTo(5)
+//    val bit160Zero: ByteVector = hex"00".padTo(20)
+//
+//    currency match {
+//      case "XRP"                                      => bit160Zero.asRight
+//      case s if s.length === 20 && s.startsWith("00") => BitVector.fromHex(s.toUpperCase)
+//      case s if s.length === 20 && s.startsWith("01") => encodeHex(s)
+//      case s if s.length === 3 && isRippleAscii(s)    => (bit90Zero ++ utf8.encode(s).require.bytes ++ bit40Zero).asRight
+//      case other                                      => BinCodecLibError(s"Invalid Currency $other").asLeft
+//    }
+//
+//  }
 
   /**
     * Used to check if ISO currency codes are ok.

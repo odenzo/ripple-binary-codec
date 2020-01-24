@@ -10,6 +10,7 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should
 import org.scalatest.EitherValues
 import org.scalatest.OptionValues
+import scodec.Attempt
 import scribe.Level
 import scribe.Logging
 
@@ -27,7 +28,7 @@ trait OTestSpec
     with OTestUtils
     with RippleTestUtils {
 
-  import scodec.bits.ByteVector
+  import scodec.bits._
 
   import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 
@@ -80,5 +81,17 @@ trait OTestSpec
       case Right(v) =>
         fail(s"Expected Failure But Got Result ${v.toHex}")
     }
+  }
+
+  def shouldSucceedAs[T](a: Attempt[T])(b: T) = shouldSucceed(a) shouldEqual (b)
+
+  def shouldSucceed[T](a: Attempt[T]): T = a match {
+    case Attempt.Failure(e)        => fail(e.messageWithContext)
+    case Attempt.Successful(value) => value
+  }
+
+  def shouldFail[T](a: Attempt[T]): Unit = a match {
+    case Attempt.Failure(e)        => scribe.info(s"Expected Failure $e")
+    case Attempt.Successful(value) => fail(s"Should have failed but got $value")
   }
 }

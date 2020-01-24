@@ -38,64 +38,40 @@ object VL {
     }
   )
 
-  def discEnc(l: Int): Codec[Int] = {
-    scribe.info(s"Discriminating on $l for Enc")
-    l match {
-      case l if l <= 192    => smallVL.withContext("S Enc")
-      case l if l <= 12480  => mediumVL.withContext("M Enc")
-      case l if l <= 918744 => largeVL.withContext("L End")
-
-      case l => fail[Int](Err(s"Variable Length to Encode  $l > 918744  "))
-    }
-  }
-
-  def discDec(l: Int): Codec[Int] = {
-    l match {
-      case l if l <= 192 => smallVL
-      case l if l <= 240 => mediumVL
-      case l if l <= 255 => largeVL
-
-      case l => fail[Int](Err(s"First Byte   $l = 255  "))
-    }
-  }
-  val x = 12
-
-  def fn(x: Int): Decoder[Int] =
-    choice[Option[Int]](
-      conditional(x >= 0 & x <= 192, provide(1)),
-      conditional(x >= 193 & x <= 12480, provide(2)),
-      conditional(x >= 12481 & x <= 918744, provide(3))
-    ).asDecoder.emap {
-      case Some(i) => Attempt.Successful(i)
-      case None    => Attempt.Failure(Err(s"Could get byte size for $x"))
-    }
-
-//  val base = variableSizeBytes( ).consume(discEnc)((x: Int) => {
-//      scribe.info(s"Reverse Mapping $x")
-//
-//    }
-//                                    )
-//
-//  val vlEnc: Encoder[Int] =  limitedSizeBits(3,)
-//    .asEncoder
-//
-//  // Because we start with uint16 we are always getting 16 bits back
-//
-//  // Not quite
-//
-//  val vlEnc2: GenCodec[Long, BitVector] = limitedSizeBytes[A](limit: Long, codec: Codec[A])vlong.emap(l => discEnc(l.toInt).encode(l.toInt))
-//  val vlDec: Decoder[Int]               = uint8.consume(discDec)(identity).asDecoder
-//
-
-  //val vl = Codec(vlEnc2, vlDec)
+  def enc2: GenCodec[Long, BitVector] = vlong.emap(encodeVL)
 
   /** Until I figure out the variable length combinator */
-  def encodeVL(len: UInt): Attempt[BitVector] = {
+  def encodeVL(len: Long): Attempt[BitVector] = {
     len match {
-      case len if len <= UInt(92)     => smallVL.encode(len.toInt)
-      case len if len <= UInt(12481)  => mediumVL.encode(len.toInt)
-      case len if len <= UInt(918744) => largeVL.encode(len.toInt)
-      case other                      => Attempt.Failure(Err(s"len was > 918744"))
+      case len if len <= 0      => Attempt.failure(Err(s"$len was less than 0"))
+      case len if len <= 92     => smallVL.encode(len.toInt)
+      case len if len <= 12481  => mediumVL.encode(len.toInt)
+      case len if len <= 918744 => largeVL.encode(len.toInt)
+      case _                    => Attempt.failure(Err(s"$len was > 918744"))
+    }
+  }
+//
+//  def decodeVLAttempt(bv: BitVector): Decoder[Nothing] = {
+//    peek(uint(8)).flatMap { x: Int =>
+//      x match {
+//        case l if l < 0    => Attempt.failure[Int](Err(s"$l was less than 0"))
+//        case l if l <= 192 => smallVL.decode(bv)
+//        case l if l <= 240 => mediumVL.decode(bv)
+//        case l if l <= 255 => largeVL.decode(bv)
+//        case l             => Attempt.failure[Int](Err(s"$l > 255"))
+//      }
+//    }
+//  }
+
+  def decodeVL: Decoder[Int] = {
+    peek(uint(8)).flatMap { x: Int =>
+      x match {
+        case l if l < 0    => fail[Int](Err(s"Marker Bytes too Small $l"))
+        case l if l <= 192 => smallVL
+        case l if l <= 240 => mediumVL
+        case l if l <= 255 => largeVL
+        case l             => fail[Int](Err(s"First Byte   $l = 255  "))
+      }
     }
   }
 

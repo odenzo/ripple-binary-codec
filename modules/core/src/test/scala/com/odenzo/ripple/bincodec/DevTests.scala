@@ -3,8 +3,6 @@ package com.odenzo.ripple.bincodec
 import io.circe.Json
 import io.circe.literal._
 
-import com.odenzo.ripple.bincodec.testkit.TestRegimes
-
 class DevTests extends OTestSpec {
 
   test("OfferCancelLEedgerTxn") {
@@ -131,11 +129,6 @@ class DevTests extends OTestSpec {
     },
     "owner_funds" : "20297955889"
   }     """
-
-    val done = for {
-      rs <- TestRegimes.testLedgerTxn(json)
-    } yield rs
-    getOrLog(done)
 
   }
 }

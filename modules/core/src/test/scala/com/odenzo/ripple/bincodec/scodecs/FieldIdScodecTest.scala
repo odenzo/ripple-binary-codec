@@ -1,9 +1,11 @@
-package com.odenzo.ripple.bincodec
+package com.odenzo.ripple.bincodec.scodecs
 
-import scodec.{Attempt, DecodeResult}
-import scodec.bits.BitVector
+import scodec.DecodeResult
 import spire.math.UInt
 
+import com.odenzo.ripple.bincodec.OTestSpec
+
+/** Inidivudual Codecs Work, need a Combinator */
 class FieldIdScodecTest extends OTestSpec {
 
   import com.odenzo.ripple.bincodec.scodecs.FieldIdScodec._

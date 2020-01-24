@@ -1,18 +1,14 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.{Attempt, Codec}
-import scodec.codecs._
-import scodec.codecs.utf8
+import scodec.codecs.{utf8, _}
 import scodec.bits._
 
-import com.odenzo.ripple.bincodec.BinCodecLibError
-import com.odenzo.ripple.bincodec.codecs.PathCodecs
 import com.odenzo.ripple.bincodec.reference.DefinitionData
 
 object ScodecConstants {
 
   import cats.Show
-  import scodec.bits.Bases.Alphabets
   import scodec.bits._
 
   val pathSetAnother  = constant(hex"FF") // indicates another path follows
@@ -33,7 +29,7 @@ object ScodecConstants {
   val correctXrpHexCode: Attempt[BitVector] = utf8.encode("XRP")
 
   /** Standard XRP encoding, like an ISO **/
-  val xrpHex: ByteVector = constant(hex"0158415500000000C1F76FF6ECB0BAC600000000")
+  val xrpHex: Codec[Unit] = constant(hex"0158415500000000C1F76FF6ECB0BAC600000000")
 
   /** Valid currency characters */
   val rippleCurrencyAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -42,7 +38,7 @@ object ScodecConstants {
 
 }
 
-object PathCodecs extends PathCodecs {
+object PathCodecs {
   val kZERO                    = hex"00"
   val kAddressStep             = hex"01"
   val kCurrencyStep            = hex"10"
