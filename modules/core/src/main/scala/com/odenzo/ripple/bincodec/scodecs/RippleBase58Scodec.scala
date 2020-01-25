@@ -2,27 +2,24 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import scala.annotation.tailrec
 
-import scodec.bits.Bases.{Alphabet, Alphabets}
 import scodec.bits.{Bases, BitVector, ByteVector}
-import scodec.codecs._
-import scodec.{Attempt, Encoder, Err}
-
-import com.odenzo.ripple.bincodec.scodecs.RippleBase58Alphabet.rippleAlphabet
+import scodec.{Attempt, Codec, Err}
 
 object RippleBase58Scodec {
 
-  val xrpbase58 = utf8.exmap[BitVector](rippleEnc, rippleDec)
+  val enc: String => Attempt[BitVector] = rippleB58Enc _
+//  val dec: BitVector => Attempt[String] = rippleB58Dec _
+//  val xrpbase58                         = scodec.Codec.apply(enc, dec)
 
-  def rippleEnc(str: String): Attempt[BitVector] = fromBase58Descriptive(str, rippleAlphabet) match {
+  def rippleB58Enc(str: String): Attempt[BitVector] = fromBase58Descriptive(str, RippleBase58Alphabet) match {
     case Left(value)  => Attempt.failure(Err(value))
     case Right(value) => Attempt.successful(value.bits)
   }
 
-  def rippleDec(bv: BitVector): Attempt[String] = Attempt.successful(toBase58(bv.bytes, rippleAlphabet))
+  // Have to tell how greedy to be?
+  def rippleB58Dec(bv: BitVector): Attempt[String] = Attempt.successful(toBase58(bv.bytes))
 
-  val xrpBase58Enc = Encoder[String](rippleEnc _)
-
-  final def toBase58(bv: ByteVector, alphabet: Bases.Alphabet = rippleAlphabet): String = {
+  private final def toBase58(bv: ByteVector, alphabet: Bases.Alphabet = RippleBase58Alphabet): String = {
 
     val zeroChar = alphabet.toChar(0)
     if (bv.isEmpty) {
@@ -45,7 +42,7 @@ object RippleBase58Scodec {
 
   }
 
-  def fromBase58Descriptive(str: String, alphabet: Bases.Alphabet = Bases.Alphabets.Base58): Either[String, ByteVector] = {
+  private def fromBase58Descriptive(str: String, alphabet: Bases.Alphabet = RippleBase58Alphabet): Either[String, ByteVector] = {
     val zeroChar   = alphabet.toChar(0)
     val zeroLength = str.takeWhile(_ == zeroChar).length
     val zeroes     = ByteVector.fill(zeroLength.toLong)(0)

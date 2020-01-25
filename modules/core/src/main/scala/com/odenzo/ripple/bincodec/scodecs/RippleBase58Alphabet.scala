@@ -1,15 +1,11 @@
 package com.odenzo.ripple.bincodec.scodecs
 
-import scodec.bits.Bases.{Alphabet, Alphabets}
-import scodec.bits.{Bases, ByteVector}
+import scodec.bits.Bases.Alphabet
 
 /** This is not happy... go back to manual or investigate. Maybe it is the dreaded r */
 object RippleBase58Alphabet extends Alphabet {
 
-  import com.odenzo.ripple.bincodec.reference.RippleConstants
-
-  val base58RippleAlphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
-  val rippleAlphabet       = Alphabets.Base58
+  private val base58RippleAlphabet = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
 
   private val Chars = base58RippleAlphabet.toIndexedSeq
 
