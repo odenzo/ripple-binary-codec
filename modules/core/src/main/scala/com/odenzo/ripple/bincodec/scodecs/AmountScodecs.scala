@@ -11,6 +11,7 @@ import io.circe.{Decoder, Json}
 import scodec.bits.{BitVector, ByteVector, _}
 import scodec._
 import scodec.codecs._
+import scodec.codecs.implicits._
 import spire.math.ULong
 
 /**
@@ -23,182 +24,25 @@ import spire.math.ULong
   */
 trait AmountScodecs extends CodecUtils {
 
-  protected val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
-  protected val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
-  protected val minAbsAmount: BigDecimal = BigDecimal("1000000000000000E-96")
+  final val maxXrp: Double = Math.pow(10, 17)
 
-  protected val maxPrecision: Int = 15
-
-  /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
-  protected val minExponent: Int    = -96
-  protected val maxExponent: Int    = 80
-  protected val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
-  protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
-
-  // 64 bits!=  20 * 8  160 bits which  doesn't match 2*160 or 3*160
-  val ZERO_SPECIAL_CASE = hex"0x8000000000000000000000000000000000000000"
-
-  /** This is closest number to zero that is valid, ie smallest absolute value  */
-  /**
-    * Encode the amount field of a fiat value structure.
-    * Fiat value can be positive or negative and very large or very
-    * small (e.g.
-    * 0.0000004)
-    *
-
-    */
-  def xrpFiatEnc(issuedAmt: String): Attempt[BitVector] = {
-    BinCodecLibError
-      .handlingM(s"Error Normalizing Fiat Amount ${issuedAmt}") {
-        normalize(BigDecimal(issuedAmt))
-      }
-      .fold(e => Attempt.failure[ByteVector](Err(e.msg)), Attempt.successful)
-      .map(_.bits)
+  def xprAmountEncFn(xrp: Long) = {
+    if (xrp < 0) Attempt.failure(Err(s"$xrp < 0"))
+    else if (xrp > maxXrp) Attempt.failure(Err(s"$xrp < 0"))
+    else ulong(62).encode(xrp).map(bin"01" ++ _)
   }
 
-  //val encoded: Attempt[BitVector] = stringToBigInt.encode("123")
-  // val xrpEnc: Codec[BitVector]    = bits(64).contramap[BigInt](bi => )
+  val xrpAmountDec: Codec[Long] = constant(bin"01") dropLeft ulong(62)
 
-  /** Encoder Only as this point */
-  val xrpfiat: Encoder[String] = scodec.Encoder(xrpFiatEnc _)
+  def xprAmountDecFn(bitv: BitVector) = xrpAmountDec.decode(bitv)
 
-  def normalize(amount: BigDecimal): Either[BCLibErr, ByteVector] = {
-    amount match {
-      case a if a === 0              => (bin"1" << 63).bytes.asRight
-      case a if a < minVal           => BinCodecLibError(s"amount too small $a").asLeft
-      case a if a > maxVal           => BinCodecLibError(s"amount too big $a").asLeft
-      case a if a.abs < minAbsAmount => BinCodecLibError(s"amount too close to zero $a").asLeft
-      case amt                       =>
-        // Okay, now lets get a mantissa that fits in a ULong, or better in 10^15 .. 10^16-1 to fit in 54-bits
-        val shiftPlaces: Int       = 16 + (amt.scale - amt.precision)
-        val normalized: BigDecimal = amt * BigDecimal.exact(10).pow(shiftPlaces)
-        val trueExp                = -shiftPlaces
+  // We also have the Ripple alphabet to verify the ASCII pseudo-ISO (ISO4127)
+  // Don't forget the legacy currency code which is removed from current XRPL docs
+  // This sure looks like a peek() or flatZip case
+  def currencycodeLegacy = constant(hex"01") ~> bitsStrict(152)
 
-        normalized.isWhole match {
-          case false => BinCodecLibError(s"Unsure how to handle too much precision so error ${amount}").asLeft
-          case true  => normalized2bytes(normalized, trueExp).asRight
-        }
-    }
-  }
-
-  /** Encodes to 8 bytes */
-  protected def normalized2bytes(amtNormalized: BigDecimal, exp: Int): ByteVector = {
-
-    val negativeBits = bin"10" << 62
-    val positiveBits = bin"11" << 62
-
-    scribe.debug(s"Encoding BigDecimal Fiat $amtNormalized  True Exp: $exp")
-
-    val mantissa       = ulong(63).encode(amtNormalized.abs.longValue).require.padLeft(64)
-    val signBits       = if (amtNormalized.signum == -1) negativeBits else positiveBits // 2 for negative
-    val expBitsShifted = BitVector.fromLong(exp + 97L) << 54
-    val top10          = signBits | expBitsShifted
-    val full           = top10 | mantissa
-
-    full.bytes
-
-  }
-
-  /** Mask to set the top bits of an XRP Amount */
-  private val mask: ByteVector = hex"0x4000000000000000"
-
-  /**
-    * https://developers.ripple.com/currency-formats.html
-    *
-
-    */
-//  def encodeAmount(json: Json): Either[BinCodecLibError, ByteVector] = {
-//    json.asObject match {
-//      case None      => encodeXrpAmount(json)
-//      case Some(obj) => encodeIOU(json)
-//    }
-//  }
-
-  //  /**
-  //    *
-  //    * @return XRP Hex with the 63th bit set to 1 (not checked) or 48 bytes of fiat amount
-  //    */
-  //  def decodeAmount(v: List[UByte], info: FieldMetaData): Either[BCLibErr, (DecodedField, List[UByte])] = {
-  //
-  //    val TOP_BIT_MASK: UByte = UByte(128)
-  //    val SIGN_BIT_MASK       = ~UByte(64) // Sign Bit is always 1 for XRP
-  //
-  //    v match {
-  //      case h :: t if (h & TOP_BIT_MASK) === UByte(0) => // Note sure why I have to set sign bit, should be set
-  //        CodecUtils.decodeToUBytes(8, (h | SIGN_BIT_MASK) :: t, info) // XRP
-  //      case other => CodecUtils.decodeToUBytes(48, other, info) // Fiat
-  //    }
-  //
-  //  }
-
-  /** This is expressed as a string json field representing number of drops **/
-  def encodeXrpAmount(v: Json): Either[BinCodecLibError, ByteVector] = {
-    import com.odenzo.ripple.bincodec.reference.RippleConstants.maxDrops
-    decode(v, Decoder.decodeBigInt).flatMap {
-      case bi if bi < 0        => BCJsonErr(s"XRP Cant Be <0  $bi", v).asLeft
-      case bi if bi > maxDrops => BCJsonErr(s"XRP > $maxDrops  $bi", v).asLeft
-      case bi                  => (ulong(60).encode(bi.toLong).require.padLeft(64).bytes | mask).asRight
-    }
-
-  }
-
-//  /** Encode IOU / Issued Amount , in this case account has VL encoding */
-//  def encodeIOU(v: Json): Either[BinCodecLibError, ByteVector] = {
-//    // currency , value and issuer
-//    // 384 bits (64 + 160 + 160)     (currency, ?, ?)
-//    // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
-//    // If the amount is zero a special amount if returned... TODO: Check if correct
-//    import com.odenzo.ripple.bincodec.reference.RippleConstants
-//    for {
-//      amountField <- findField("value", v)
-//      amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
-//      full <- if (amount.compareTo(BigDecimal(0)) === 0) {
-//        RippleConstants.rawEncodedZeroFiatAmount.asRight
-//      } else {
-//        encodeFullIOU(v)
-//      }
-//    } yield full
-//  }
-
-//  protected def encodeFullIOU(jobj: Json): Either[BinCodecLibError, ByteVector] = {
-//    val json = jobj.dropNullValues
-//
-//    def encodeField(name: String, fn: String => Either[BinCodecLibError, ByteVector]): Either[BinCodecLibError, ByteVector] = {
-//      findField(name, json).flatMap(json2string).flatMap(fn)
-//    }
-////
-////    for {
-////      currency <- encodeField("currency", MoneyCodecs.encodeCurrency)
-////      value    <- encodeField("value", IssuedAmountCodec.encodeFiatValue)
-////      issuer   <- encodeField("issuer", AccountIdCodecs.encodeAccountNoVL)
-////    } yield value ++ currency ++ issuer
-//
-//  }
-
-//  /**
-//    * Encodes non-XRP currency.
-//    * Currency must be three ASCII characters. could pad left if short I guess
-//    * Note that "00000000000..." is used for currency XRP in some places.
-//    * TODO: Non ASCII currency (pre-hex encoded) is not tested or validated  yet
-//    *
-//    * @param currency This is expected to be the  String corresponding to just currency field
-//    *
-//    * @return 160 bits per   https://xrpl.org/currency-formats.html
-//   **/
-//  def encodeCurrency(currency: String): Either[BinCodecLibError, ByteVector] = {
-//    val bit90Zero: ByteVector  = hex"00".padTo(12)
-//    val bit40Zero: ByteVector  = hex"00".padTo(5)
-//    val bit160Zero: ByteVector = hex"00".padTo(20)
-//
-//    currency match {
-//      case "XRP"                                      => bit160Zero.asRight
-//      case s if s.length === 20 && s.startsWith("00") => BitVector.fromHex(s.toUpperCase)
-//      case s if s.length === 20 && s.startsWith("01") => encodeHex(s)
-//      case s if s.length === 3 && isRippleAscii(s)    => (bit90Zero ++ utf8.encode(s).require.bytes ++ bit40Zero).asRight
-//      case other                                      => BinCodecLibError(s"Invalid Currency $other").asLeft
-//    }
-//
-//  }
+  def currencycode: Codec[String] =
+    constant(hex"00") ~> constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40))
 
   /**
     * Used to check if ISO currency codes are ok.
@@ -210,6 +54,23 @@ trait AmountScodecs extends CodecUtils {
   protected def isRippleAscii(s: String): Boolean = {
     import com.odenzo.ripple.bincodec.reference.RippleConstants
     s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
+  }
+
+  // Leave off the account codec for now
+  val fiatAmount: Codec[BigDecimal] =
+    (constant(bin"1") ~> bool(1) ~ ulong(8) ~ ulong(54))
+      .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
+
+  def unpackToBigDecimal(isPositive: Boolean, exponent: Long, mantissa: Long): Attempt[BigDecimal] = {
+    val answer = BigDecimal(BigInt(mantissa), exponent.toInt) // Bastard, exponent cannot be above Int Max Value s
+    Attempt.successful(answer)
+  }
+
+  // Placeholder and where most of the work is
+  def packToBigDecimal(bd: BigDecimal): Attempt[((Boolean, Long), Long)] = {
+    val answer: ((Boolean, Long), Long) = ((true, 10L), 20023L)
+    val success                         = Attempt.successful(answer)
+    success
   }
 
 }

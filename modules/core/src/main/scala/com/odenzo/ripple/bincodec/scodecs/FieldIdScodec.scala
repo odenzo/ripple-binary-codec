@@ -61,22 +61,4 @@ object FieldIdScodec {
     )
   }
 
-  //  def encodeFieldID(fName: Int, fType: Int): BitVector = {
-//    scribe.debug(s"Encoding Field $fName and Data Type: $fType")
-//    val fieldCode = UByte(fName)
-//    val typeCode  = UByte(fType)
-//
-//    val fcBig = fieldCode >= UByte(16)
-//    val tcBig = typeCode >= UByte(16)
-//
-//    val packed: List[UByte] = (fcBig, tcBig) match {
-//      case (false, false) => ((typeCode << 4) | fieldCode) :: Nil
-//      case (true, false)  => (typeCode << 4) :: fieldCode :: Nil
-//      case (false, true)  => fieldCode :: typeCode :: Nil
-//      case (true, true)   => UByte(0) :: typeCode :: fieldCode :: Nil
-//    }
-//    import com.odenzo.scodec.spire._
-//    packed.map(subyte.encode(_).require).reduce(_ ++ _)
-//  }
-
 }

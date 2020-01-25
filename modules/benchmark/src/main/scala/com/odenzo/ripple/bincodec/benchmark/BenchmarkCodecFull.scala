@@ -57,31 +57,32 @@ class BenchmarkCodecSignRq {
 //   @Fork(value = 1, jvmArgsAppend = Array("-XX:+UnlockCommercialFeatures",
 //    "-XX:+FlightRecorder", "-XX:+UnlockDiagnosticVMOptions", "-XX:+DebugNonSafepoints",
 //    "-XX:FlightRecorderOptions=defaultrecording=true,dumponexit=true,dumponexitpath=/tmp/mapOnFunctionsAndList.jfr"))
-  @Benchmark
-  def singers(bh: Blackhole): Unit = {
-    val rs = signTx(randomSign())
-    bh.consume(rs)
-  }
+//  @Benchmark
+//  def singers(bh: Blackhole): Unit = {
+//    val rs = signTx(randomSign())
+//    bh.consume(rs)
+//  }
+//
+//  @Benchmark
+//  def serializeSigners(bh: Blackhole): Unit = {
+//    val rs = serialTx(randomSign())
+//    bh.consume(rs)
+//  }
+//
+//  @Benchmark
+//  def signLedgers(bh: Blackhole): Unit = {
+//    val rs = signTx(randomSign())
+//    bh.consume(rs)
+//  }
+//
+//  @Benchmark
+//  def seralizeLedgers(bh: Blackhole): Unit = {
+//    val rs = serialTx(randomSign())
+//    bh.consume(rs)
+//  }
 
-  @Benchmark
-  def serializeSigners(bh: Blackhole): Unit = {
-    val rs = serialTx(randomSign())
-    bh.consume(rs)
-  }
-
-  @Benchmark
-  def signLedgers(bh: Blackhole): Unit = {
-    val rs = signTx(randomSign())
-    bh.consume(rs)
-  }
-  @Benchmark
-  def seralizeLedgers(bh: Blackhole): Unit = {
-    val rs = serialTx(randomSign())
-    bh.consume(rs)
-  }
-
-  def signTx(tx_json: Json): Either[BinCodecLibError, Array[Byte]] = RippleCodecAPI.signingTxBlob(tx_json)
-
-  def serialTx(tx_json: Json): Either[BinCodecLibError, Array[Byte]] = RippleCodecAPI.serializedTxBlob(tx_json)
+//  def signTx(tx_json: Json): Either[BinCodecLibError, Array[Byte]] = RippleCodecAPI.signingTxBlob(tx_json)
+//
+//  def serialTx(tx_json: Json): Either[BinCodecLibError, Array[Byte]] = RippleCodecAPI.serializedTxBlob(tx_json)
 
 }

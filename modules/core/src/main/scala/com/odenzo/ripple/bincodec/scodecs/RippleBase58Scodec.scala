@@ -4,8 +4,13 @@ import scala.annotation.tailrec
 
 import scodec.bits.{Bases, BitVector, ByteVector}
 import scodec.{Attempt, Codec, Err}
+import scodec.codecs._
 
 object RippleBase58Scodec {
+
+  //def xrpb58(len:Int) = fixedSizeBytes(len, ascii)
+
+  // A base 58 that will eagerly eat, use fixedSizeBytes
 
   val enc: String => Attempt[BitVector] = rippleB58Enc _
 //  val dec: BitVector => Attempt[String] = rippleB58Dec _
