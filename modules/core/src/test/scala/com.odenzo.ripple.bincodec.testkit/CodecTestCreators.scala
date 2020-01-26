@@ -3,13 +3,14 @@ package com.odenzo.ripple.bincodec.testkit
 import com.odenzo.ripple.bincodec.BinCodecLibError
 import java.security.MessageDigest
 
-import com.odenzo.ripple.bincodec.reference.HashPrefix
 import io.circe.Json
 import scribe.Logging
 import cats._
 import cats.data._
 import cats.implicits._
 import io.circe.syntax._
+
+import com.odenzo.ripple.bincodec.scodecs.HashPrefix
 
 trait CodecTestCreators extends Logging with RippleTestUtils {
 

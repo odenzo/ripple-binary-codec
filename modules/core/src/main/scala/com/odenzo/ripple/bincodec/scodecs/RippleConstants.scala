@@ -1,7 +1,5 @@
-package com.odenzo.ripple.bincodec.reference
+package com.odenzo.ripple.bincodec.scodecs
 
-import scodec.Codec
-import scodec.codecs.constant
 import scodec.codecs.utf8
 
 import com.odenzo.ripple.bincodec.BinCodecLibError
@@ -9,7 +7,6 @@ import com.odenzo.ripple.bincodec.BinCodecLibError
 object RippleConstants {
 
   import cats.Show
-  import scodec.bits.Bases.Alphabets
   import scodec.bits._
 
   val pathSetAnother  = hex"FF" // indicates another path follows
@@ -50,7 +47,6 @@ object HashPrefix {
   import scodec.Codec
   import scodec.bits._
   import scodec.codecs._
-  import spire.math.UInt
 
   val raw = hex"54584E00"
 

@@ -6,6 +6,7 @@ import scodec.codecs._
 import scodec.bits._
 import shapeless._
 import shapeless.Generic.Aux
+
 import com.odenzo.scodec.spire._
 
 /** This is for using Scodec Properly, with an initial focus on Decoding */
@@ -13,6 +14,9 @@ object FieldIdScodec {
 
   // fType and fCode in that order make more sense
   case class FieldId(fName: UInt, fType: UInt)
+
+  val nameFirst = (name: UInt, tipe: UInt) => FieldId(name, tipe)
+  val typeFirst = (tipe: UInt, name: UInt) => FieldId(name, tipe)
 
   val genResp: Aux[(Int, Int), Int :: Int :: HNil] = Generic[(Int, Int)]
 
@@ -27,29 +31,17 @@ object FieldIdScodec {
     * */
   implicit val g = Generic[FieldId] //.xmap[(UInt, UInt)](v => v, v => v)
 
-  val typeAndName = (constant(hex"00") ~ suint8 ~ suint8)
-    .flattenLeftPairs
-    .dropUnits
-    .as[(UInt, UInt)]
-    .xmap[(UInt, UInt)](a => a.swap, b => b.swap)
-    .xmap[FieldId](v => FieldId.tupled(v), v => (v.fName, v.fType))
+  val typeAndName = (constant(hex"00") ~> suint8 ~ suint8)
+    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
 
-  val smallTypeAndName = (constant(bin"0000") ~ suint4 ~ suint8)
-    .flattenLeftPairs
-    .dropUnits
-    .as[(UInt, UInt)]
-    .xmap[(UInt, UInt)](a => a.swap, b => b.swap)
-    .xmap[FieldId](v => FieldId.tupled(v), v => (v.fName, v.fType))
+  val smallTypeAndName = (constant(bin"0000") ~> suint4 ~ suint8)
+    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
 
-  val smallNameAndType = (suint4 ~ constant(bin"0000") ~ suint8)
-    .flattenLeftPairs
-    .dropUnits
-    .as[(UInt, UInt)]
-    .xmap[FieldId](v => FieldId.tupled(v), v => (v.fName, v.fType))
+  val smallNameAndType = ((suint4 <~ constant(bin"0000")) ~ suint8)
+    .xmap[FieldId](nameFirst.tupled, v => (v.fName, v.fType))
 
   val smallTypeAndSmallName = (suint4 ~ suint4)
-    .xmap[(UInt, UInt)](a => a.swap, b => b.swap)
-    .xmap[FieldId](v => FieldId.tupled(v), v => (v.fName, v.fType))
+    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
 
   // Woops, for encoding we need to reverse the choice list. Maybe a peek for decoding is better and lets have a different encoder and
   // decoder
@@ -60,5 +52,11 @@ object FieldIdScodec {
       choice(orderedChoice: _*)
     )
   }
+
+//  val fieldID: BitVector = FieldMetaData.encodeFieldID(nth.toInt, datatype.value.toInt)
+//  val sortKey: UInt      = UInt(datatype.value) << 16 | UInt(nth)
+
+  //  Try this approach: peak(1 byte) that can give us length and also code.   zero/zero = 3 0/not0 - 2, notz,0 -2 not/not = 1
+  //val foo = peekVariableSizeXXX()
 
 }

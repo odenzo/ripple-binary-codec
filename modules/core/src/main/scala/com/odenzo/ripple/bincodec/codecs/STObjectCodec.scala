@@ -3,15 +3,11 @@ package com.odenzo.ripple.bincodec.codecs
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe._
 
-import com.odenzo.ripple.bincodec._
-import com.odenzo.ripple.bincodec.encoding.{CodecUtils, TypeSerializers}
-import com.odenzo.ripple.bincodec.reference.DefinitionData
 import com.odenzo.ripple.bincodec.utils.JsonUtils
 
 /** How to deal with this I don't know yet, as its is really a control loop and Codec */
-trait STObjectCodec extends CodecUtils with JsonUtils {
+trait STObjectCodec extends JsonUtils {
 //
 //  import scodec.bits.ByteVector
 //

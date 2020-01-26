@@ -2,20 +2,11 @@ package com.odenzo.ripple.bincodec.encoding
 
 import cats.data._
 import cats.implicits._
-import io.circe.Json
-
-import com.odenzo.ripple.bincodec.codecs._
-import com.odenzo.ripple.bincodec.reference.FieldData
-import com.odenzo.ripple.bincodec.BinCodecLibError
 
 /**
   *  Goes throught and deep serializes a JsonObject
   */
-object TypeSerializers extends CodecUtils {
-
-  import scodec.bits.ByteVector
-
-  import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
+object TypeSerializers {
 
 //  /** The very top level object, which doesn't get an end of object marker */
 //  def encodeTopLevel(json: Json, isSigning: Boolean): Either[BinCodecLibError, Array[Byte]] = {

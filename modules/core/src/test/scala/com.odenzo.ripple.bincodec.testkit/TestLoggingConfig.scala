@@ -25,7 +25,7 @@ object TestLoggingConfig {
         "com.odenzo.ripple.bincodec.reference"
         //"com.odenzo.ripple.bincodec.codecs.STObjectCodec"
       )
-      ScribeLoggingConfig.addModifiers(packagesToMute, Level.Warn)
+      ScribeLoggingConfig.addModifiers(packagesToMute, Level.Trace)
 
       val clz: List[Class[JsonUtils]] = List(classOf[JsonUtils])
 

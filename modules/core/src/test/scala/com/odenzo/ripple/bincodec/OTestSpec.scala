@@ -32,6 +32,10 @@ trait OTestSpec
 
   import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 
+  def smartprint(a: Any) = {
+    pprint.apply(a)
+
+  }
   private val touch = TestLoggingConfig.setTestLogging.value
 
   def inCI: Boolean = scala.sys.env.getOrElse("CONTINUOUS_INTEGRATION", "false") == "true"

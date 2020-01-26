@@ -4,10 +4,8 @@ import cats._
 import cats.data._
 
 import com.odenzo.ripple.bincodec.{BCLibErr, BinCodecLibError}
-import com.odenzo.ripple.bincodec.encoding.CodecUtils
 import cats.implicits._
 import scodec.bits.{BitVector, ByteVector, _}
-import scodec._
 import scodec.codecs._
 
 /**
@@ -18,7 +16,7 @@ import scodec.codecs._
   *  54-bit mantissa normalized to (10^15 ,10^16-1)
   *  8-bit exponent which is math exponent encoded +97 (uint)
   */
-trait FiatAmountScodecs extends CodecUtils {
+trait FiatAmountScodecs {
 
   protected val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
   protected val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
@@ -31,6 +29,12 @@ trait FiatAmountScodecs extends CodecUtils {
   protected val maxExponent: Int    = 80
   protected val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
   protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
+
+  // This is dedicated to taking a BigDecimal or a String from Ripple Fiat Amount Json
+  // and packing it into [SignBit][exponent-8bit][mantissaa-54bit]
+  // But, it is not that simple because I think you HAVE to normalize to encode it.
+  // I should check that assunmption, since the doc page has even less now.
+  // Perhaps any valid exponent and mantissa, so only need stuff when precisions doesn't fit etc.
 
   // 64 bits!=  20 * 8  160 bits which  doesn't match 2*160 or 3*160
   val ZERO_SPECIAL_CASE = hex"0x8000000000000000000000000000000000000000"
@@ -72,21 +76,4 @@ trait FiatAmountScodecs extends CodecUtils {
 
   }
 
-  //  /** Encode IOU / Issued Amount , in this case account has VL encoding */
-//  def encodeIOU(v: Json): Either[BinCodecLibError, ByteVector] = {
-//    // currency , value and issuer
-//    // 384 bits (64 + 160 + 160)     (currency, ?, ?)
-//    // 10 (8bit mantisa) 54 bit mantissa, 160 bit currency code, 160 bit account
-//    // If the amount is zero a special amount if returned... TODO: Check if correct
-//    import com.odenzo.ripple.bincodec.reference.RippleConstants
-//    for {
-//      amountField <- findField("value", v)
-//      amount      <- decode(amountField, Decoder.decodeBigDecimal, "Decoding Fiat Value".some)
-//      full <- if (amount.compareTo(BigDecimal(0)) === 0) {
-//        RippleConstants.rawEncodedZeroFiatAmount.asRight
-//      } else {
-//        encodeFullIOU(v)
-//      }
-//    } yield full
-//  }
 }

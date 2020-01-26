@@ -4,8 +4,6 @@ import scodec.{Attempt, Codec}
 import scodec.codecs.{utf8, _}
 import scodec.bits._
 
-import com.odenzo.ripple.bincodec.reference.DefinitionData
-
 object ScodecConstants {
 
   import cats.Show
@@ -50,8 +48,5 @@ object PathCodecs {
   val currencyPrefix           = currencyType
   val issuerPrefix             = issuerType
   val currencyAndIssuerPrefix  = currencyType | issuerType
-
-  val anotherPathMarker: ByteVector = DefinitionData.pathSetAnother
-  val endOfPathsMarker: ByteVector  = DefinitionData.pathSetEnd
 
 }

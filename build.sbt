@@ -14,7 +14,7 @@ coverageFailOnMinimum := false
 coverageHighlighting  := true
 
 lazy val bincodec_root = (project in file("."))
-  .aggregate(bincodec, benchmark)
+  .aggregate(bincodec)
   .settings(
     // crossScalaVersions must be set to Nil on the aggregating project
     crossScalaVersions := Nil,
@@ -32,17 +32,6 @@ lazy val bincodec = (project in file("modules/core"))
     }),
     commonSettings
   )
-
-lazy val benchmark = (project in file("modules/benchmark"))
-  .settings(
-    publish            := {},
-    publishLocal       := {},
-    publishArtifact    := false,
-    crossScalaVersions := Nil,
-    javaOptions += "-XX:+UnlockCommercialFeatures"
-  )
-  .enablePlugins(JmhPlugin)
-  .dependsOn(bincodec) // test->compile not working in IntelliJ?
 
 lazy val commonSettings = Seq(
   coverageHighlighting := true,
@@ -63,9 +52,10 @@ val scribeVersion             = "2.7.10"
 val scalaTestVersion          = "3.1.0"
 val scalaCheckVersion         = "1.14.3"
 val scodecV                   = "1.11.4"
+
 val libs = Seq(
   "io.circe"       %% "circe-core"           % circeVersion,
-  "io.circe"       %% "circe-generic"        % circeVersion % Test,
+  "io.circe"       %% "circe-generic"        % circeVersion,
   "io.circe"       %% "circe-generic-extras" % circeGenericExtrasVersion,
   "io.circe"       %% "circe-parser"         % circeVersion,
   "io.circe"       %% "circe-optics"         % circeOpticsVersion,
@@ -79,5 +69,5 @@ val libs = Seq(
   "org.scodec"     %% "scodec-cats"          % "1.0.0",
   "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
   "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
-  "dev.zio"        %% "zio"                  % "1.0.0-RC17"
+  "com.lihaoyi"    %% "pprint"               % "0.5.6"
 )

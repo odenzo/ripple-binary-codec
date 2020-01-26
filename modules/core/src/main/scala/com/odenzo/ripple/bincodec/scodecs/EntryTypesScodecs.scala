@@ -7,18 +7,15 @@ import scodec.bits._
 import scodec.codecs._
 import scodec._
 
-import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.ripple.bincodec.{BCLibErr, BinCodecLibError}
-import com.odenzo.ripple.bincodec.reference.MnemonicType
+trait EntryTypesScodecs {
+  // These will be precomputed so the codecs are just fetchers.
 
-trait EntryTypesScodecs extends CodecUtils {
-
-  def mapEnc(map: Map[String, MnemonicType]): String => Attempt[BitVector] =
-    (x: String) =>
-      dd.getTransactionTypeMnemonic(x).map(_.value) match {
-        case Left(err)    => Attempt.Failure(Err(err.msg))
-        case Right(value) => uint16.encode(value.toInt)
-      }
+//  def mapEnc(map: Map[String, Int]): String => Attempt[BitVector] =
+//    (x: String) =>
+//      dd.getTransactionTypeMnemonic(x).map(_.value) match {
+//        case Left(err)    => Attempt.Failure(Err(err.msg))
+//        case Right(value) => uint16.encode(value.toInt)
+//      }
 
 //  def mapDec(map: Map[String, MnemonicType]): BitVector => Attempt[String] = (y: BitVector) =>
 //        y.

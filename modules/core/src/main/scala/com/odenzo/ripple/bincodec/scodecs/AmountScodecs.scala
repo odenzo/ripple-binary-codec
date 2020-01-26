@@ -2,17 +2,10 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import cats._
 import cats.data._
-
-import com.odenzo.ripple.bincodec.{BCJsonErr, BCLibErr, BinCodecLibError}
-import com.odenzo.ripple.bincodec.encoding.CodecUtils
-import com.odenzo.scodec.spire._
 import cats.implicits._
-import io.circe.{Decoder, Json}
-import scodec.bits.{BitVector, ByteVector, _}
+import scodec.bits.{BitVector, _}
 import scodec._
 import scodec.codecs._
-import scodec.codecs.implicits._
-import spire.math.ULong
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math
@@ -22,7 +15,7 @@ import spire.math.ULong
   *  54-bit mantissa normalized to (10^15 ,10^16-1)
   *  8-bit exponent which is math exponent encoded +97 (uint)
   */
-trait AmountScodecs extends CodecUtils {
+trait AmountScodecs {
 
   final val maxXrp: Double = Math.pow(10, 17)
 
@@ -44,6 +37,10 @@ trait AmountScodecs extends CodecUtils {
   def currencycode: Codec[String] =
     constant(hex"00") ~> constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40))
 
+  // Make our own
+  //val xrpcurrency: Codec[Either[String, BitVector]] = either(bool(2), currencycode, currencycodeLegacy)
+  val xrpcurrency = currencycode
+
   /**
     * Used to check if ISO currency codes are ok.
     *
@@ -52,7 +49,6 @@ trait AmountScodecs extends CodecUtils {
     * @return true is valid
     */
   protected def isRippleAscii(s: String): Boolean = {
-    import com.odenzo.ripple.bincodec.reference.RippleConstants
     s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
   }
 
@@ -72,5 +68,8 @@ trait AmountScodecs extends CodecUtils {
     val success                         = Attempt.successful(answer)
     success
   }
-
+  //   Besides, he'd be better off using Math.getExponent()
+  //and Math.scalb().
 }
+
+object AmountScodecs extends AmountScodecs
