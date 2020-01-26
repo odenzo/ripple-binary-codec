@@ -38,30 +38,18 @@ object VL {
     }
   )
 
-  def enc2: GenCodec[Long, BitVector] = vlong.emap(encodeVL)
-
   /** Until I figure out the variable length combinator */
-  def encodeVL(len: Long): Attempt[BitVector] = {
+  def encodeVlAttempt(len: Int): Attempt[BitVector] = {
     len match {
       case len if len <= 0      => Attempt.failure(Err(s"$len was less than 0"))
-      case len if len <= 92     => smallVL.encode(len.toInt)
-      case len if len <= 12481  => mediumVL.encode(len.toInt)
-      case len if len <= 918744 => largeVL.encode(len.toInt)
+      case len if len <= 92     => smallVL.encode(len)
+      case len if len <= 12481  => mediumVL.encode(len)
+      case len if len <= 918744 => largeVL.encode(len)
       case _                    => Attempt.failure(Err(s"$len was > 918744"))
     }
   }
-//
-//  def decodeVLAttempt(bv: BitVector): Decoder[Nothing] = {
-//    peek(uint(8)).flatMap { x: Int =>
-//      x match {
-//        case l if l < 0    => Attempt.failure[Int](Err(s"$l was less than 0"))
-//        case l if l <= 192 => smallVL.decode(bv)
-//        case l if l <= 240 => mediumVL.decode(bv)
-//        case l if l <= 255 => largeVL.decode(bv)
-//        case l             => Attempt.failure[Int](Err(s"$l > 255"))
-//      }
-//    }
-//  }
+
+  val encodeVL: Encoder[Int] = Encoder[Int](encodeVlAttempt _)
 
   def decodeVL: Decoder[Int] = {
     peek(uint(8)).flatMap { x: Int =>
@@ -75,6 +63,7 @@ object VL {
     }
   }
 
-  /** This will return the VL encoding in length in bytes (not bits or hex nibble) */
-  val xrpvl = fail[Int](Err("xrpvl unified scodec not done yet"))
+  /** This will return the VL encoding in length in bytes (not bits or hex nibble)
+    * Make sure no duplicate VL at field and internal level */
+  val xrpvl = Codec[Int](encodeVL, decodeVL)
 }

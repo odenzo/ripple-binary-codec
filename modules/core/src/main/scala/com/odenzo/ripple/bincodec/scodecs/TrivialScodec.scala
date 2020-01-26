@@ -36,11 +36,15 @@ object TrivialScodec {
 
   def xrphash(bitLen: Int): Codec[String] = xrphex(bitLen / 4)
 
-  val xrphash128: Codec[String]       = xrphash(128)
-  val xrphash160: Codec[String]       = xrphash(160)
-  val xrphash256: Codec[String]       = xrphash(256)
+  val xrphash128: Codec[String] = xrphash(128)
+  val xrphash160: Codec[String] = xrphash(160)
+  val xrphash256: Codec[String] = xrphash(256)
+
+  // @todo Decode where VL Encoding goes, at field level or down here
   val xrpvectorhash256: Codec[String] = variableSizeBytes(VL.xrpvl, xrphash256)
-  val xrpblob: Codec[String]          = variableSizeBytes(VL.xrpvl, xrphexAll)
+
+  // @todo Decide where VL Encoding Goes, at field level or down here.
+  val xrpblob: Codec[String] = variableSizeBytes(VL.xrpvl, xrphexAll)
 
   val xrpuint8: Codec[Int]   = uint8
   val xrpuint16: Codec[Int]  = uint16
