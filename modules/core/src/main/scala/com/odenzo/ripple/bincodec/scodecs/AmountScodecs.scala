@@ -70,6 +70,8 @@ trait AmountScodecs {
   }
   //   Besides, he'd be better off using Math.getExponent()
   //and Math.scalb().
+
+  val xrpamount = fail[BigDecimal](Err("XRP Fiat and XRP combinator not done"))
 }
 
 object AmountScodecs extends AmountScodecs

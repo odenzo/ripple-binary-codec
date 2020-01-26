@@ -1,30 +1,32 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import _root_.scodec.codecs._
-import scodec.{Attempt, Codec, Err}
+import scodec.{Attempt, Codec, DecodeResult, Err}
 import scodec.bits._
 import scodec.bits.Bases.Alphabets
 import spire.math.{UInt, ULong}
 
 import com.odenzo.scodec.spire._
 
+// @todo Cleanup and mark eager vs fixes
 object TrivialScodec {
 
-  // s* stuff from Spire if needed, generally can work with BitVector and ByteVector now
-  val spireBuilt: Codec[UInt] = suint8
-
-  /** Encodes the hex including the Variable Length info
-    * This string must not be zero length string, or we maybe return a EmptyVal is it is.
-    * @todo xrpblob VLEncoding and Decoding */
-  //@todo xrpblob VLEncoding and Decoding
-  //val xrpblob = vl.flatZip() ~ ubyte()
-
   def hexStringToBits(hex: String): Attempt[BitVector] = {
-    BitVector.fromHexDescriptive(hex.toUpperCase, Alphabets.HexUppercase) match {
+    val dres: Attempt[BitVector] = BitVector.fromHexDescriptive(hex.toUpperCase, Alphabets.HexUppercase) match {
       case Left(err) => Attempt.failure(Err(err))
       case Right(v)  => Attempt.successful(v)
     }
+    dres
   }
+
+  def bitsToHexString(bv: BitVector): Attempt[DecodeResult[String]] = {
+    val dres = Attempt.successful(bv.toHex(Alphabets.HexUppercase))
+    dres.map(DecodeResult(_, BitVector.empty))
+  }
+
+  val aDec: BitVector => Attempt[DecodeResult[String]] = bitsToHexString
+  val b: String => Attempt[BitVector]                  = hexStringToBits
+  val xrphexAll                                        = Codec(b, aDec)
 
   def xrphex(lenInNibbles: Int): Codec[String] = {
     bitsStrict(lenInNibbles * 4).exmap[String](bitsToHex, hexStringToBits)
@@ -32,15 +34,13 @@ object TrivialScodec {
   // Might want to make sure the bits are divisiable by four, now padded
   def bitsToHex(bits: BitVector): Attempt[String] = { Attempt.successful(bits.toHex(Alphabets.HexUppercase)) }
 
-  def xrphash(byteLen: Int): Codec[String] = xrphex(byteLen * 2)
+  def xrphash(bitLen: Int): Codec[String] = xrphex(bitLen / 4)
 
-  val xrphash160: Codec[String] = xrphash(20)
-
-  val xrphash256: Codec[String] = xrphash(32)
-
-  // This is VL Encoded (256/8 * n elems)
-  // @todo VLEncoding of total length
-  val xrpvectorhash256 = vector(xrphash256)
+  val xrphash128: Codec[String]       = xrphash(128)
+  val xrphash160: Codec[String]       = xrphash(160)
+  val xrphash256: Codec[String]       = xrphash(256)
+  val xrpvectorhash256: Codec[String] = variableSizeBytes(VL.xrpvl, xrphash256)
+  val xrpblob: Codec[String]          = variableSizeBytes(VL.xrpvl, xrphexAll)
 
   val xrpuint8: Codec[Int]   = uint8
   val xrpuint16: Codec[Int]  = uint16
@@ -77,4 +77,6 @@ object TrivialScodec {
     else Attempt.failure(Err(s"Not a valid long, but maybe ulong in range $ul"))
   }
 
+  def xrpNIMP[T]: Codec[T]     = fail(Err("This isn't implemented yet"))
+  def xrpError[T](msg: String) = fail[T](Err(msg))
 }

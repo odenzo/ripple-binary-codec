@@ -1,4 +1,4 @@
-package com.odenzo.ripple.bincodec.reference
+package com.odenzo.ripple.bincodec.config
 
 import scala.util.Try
 

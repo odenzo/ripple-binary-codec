@@ -54,20 +54,22 @@ val scalaCheckVersion         = "1.14.3"
 val scodecV                   = "1.11.4"
 
 val libs = Seq(
-  "io.circe"       %% "circe-core"           % circeVersion,
-  "io.circe"       %% "circe-generic"        % circeVersion,
-  "io.circe"       %% "circe-generic-extras" % circeGenericExtrasVersion,
-  "io.circe"       %% "circe-parser"         % circeVersion,
-  "io.circe"       %% "circe-optics"         % circeOpticsVersion,
-  "io.circe"       %% "circe-literal"        % circeVersion % Test,
-  "org.typelevel"  %% "cats-core"            % catsVersion,
-  "org.typelevel"  %% "cats-effect"          % catsEffectVersion,
-  "org.typelevel"  %% "spire"                % spireVersion,
-  "com.outr"       %% "scribe"               % scribeVersion,
-  "org.scodec"     %% "scodec-core"          % scodecV,
-  "org.scodec"     %% "scodec-bits"          % "1.1.12",
-  "org.scodec"     %% "scodec-cats"          % "1.0.0",
-  "org.scalatest"  %% "scalatest"            % scalaTestVersion % Test,
-  "org.scalacheck" %% "scalacheck"           % scalaCheckVersion % Test,
-  "com.lihaoyi"    %% "pprint"               % "0.5.6"
+  "io.circe" %% "circe-core"           % circeVersion,
+  "io.circe" %% "circe-generic"        % circeVersion,
+  "io.circe" %% "circe-generic-extras" % circeGenericExtrasVersion,
+  "io.circe" %% "circe-parser"         % circeVersion,
+  "io.circe" %% "circe-optics"         % circeOpticsVersion,
+  "io.circe" %% "circe-literal"        % circeVersion,
+  "io.circe" %% "circe-scodec"         % circeVersion,
+  //  "io.circe"       %% "circe-spire"          % "0.1.0",   Meh, stuck at 2.12
+  "org.typelevel"  %% "cats-core"   % catsVersion,
+  "org.typelevel"  %% "cats-effect" % catsEffectVersion,
+  "org.typelevel"  %% "spire"       % spireVersion,
+  "com.outr"       %% "scribe"      % scribeVersion,
+  "org.scodec"     %% "scodec-core" % scodecV,
+  "org.scodec"     %% "scodec-bits" % "1.1.12",
+  "org.scodec"     %% "scodec-cats" % "1.0.0",
+  "org.scalatest"  %% "scalatest"   % scalaTestVersion % Test,
+  "org.scalacheck" %% "scalacheck"  % scalaCheckVersion % Test,
+  "com.lihaoyi"    %% "pprint"      % "0.5.8"
 )

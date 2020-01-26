@@ -12,51 +12,35 @@ import com.odenzo.scodec.spire._
 /** This is for using Scodec Properly, with an initial focus on Decoding */
 object FieldIdScodec {
 
-  // fType and fCode in that order make more sense
-  case class FieldId(fName: UInt, fType: UInt)
+  type TypeCode  = UInt
+  type FieldCode = UInt
 
-  val nameFirst = (name: UInt, tipe: UInt) => FieldId(name, tipe)
-  val typeFirst = (tipe: UInt, name: UInt) => FieldId(name, tipe)
+  val swapFromOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
-  val genResp: Aux[(Int, Int), Int :: Int :: HNil] = Generic[(Int, Int)]
+  // Techincally this should be reversed types I think, but now new type yet for type checking
+  val swapToOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
-  /** Decode Logic:
-    *  + ubyte(0) ~ ubyte ~ ubyte => typeCode,fieldCode
-    *  + x: bits(4) ~ y: bits(4) :
-    *      if x and y are non-zero => typeCode = x, fieldCode = y
-    *      if x and y are zero => ubyte ~ ubyte => typeCode, fieldCode
-    *
-    *      if x noneZero => typeCode =x  fieldCode = ubyte
-    *      else fieldCode = x :: y , typeCode = ubyte
-    * */
-  implicit val g = Generic[FieldId] //.xmap[(UInt, UInt)](v => v, v => v)
+  val typeAndField: Codec[(FieldCode, TypeCode)] = (constant(hex"00") ~> suint8 ~ suint8)
+    .xmap(swapFromOrder, swapFromOrder)
 
-  val typeAndName = (constant(hex"00") ~> suint8 ~ suint8)
-    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
+  val smallTypeAndField: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> suint4 ~ suint8)
+    .xmap(swapFromOrder, swapFromOrder)
 
-  val smallTypeAndName = (constant(bin"0000") ~> suint4 ~ suint8)
-    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
+  val smallFieldAndType: Codec[(FieldCode, TypeCode)] = ((suint4 <~ constant(bin"0000")) ~ suint8)
 
-  val smallNameAndType = ((suint4 <~ constant(bin"0000")) ~ suint8)
-    .xmap[FieldId](nameFirst.tupled, v => (v.fName, v.fType))
+  val smallTypeAndSmallField = (suint4 ~ suint4)
+    .xmap(swapFromOrder, swapFromOrder)
 
-  val smallTypeAndSmallName = (suint4 ~ suint4)
-    .xmap[FieldId](typeFirst.tupled, v => (v.fType, v.fName))
-
-  // Woops, for encoding we need to reverse the choice list. Maybe a peek for decoding is better and lets have a different encoder and
-  // decoder
-  val fieldid: Codec[FieldId] = {
-    val orderedChoice = List(typeAndName, smallTypeAndName, smallNameAndType, smallTypeAndSmallName)
-    Codec[FieldId](
+  // For encoding we need to reverse the choice list.
+  // Maybe a peek for decoding is better and  have a different encoder and decoder
+  // If typecode is > 10000. e.g. 10001 then its a Mnemonic thing, and data type is UINT16 but Json is a String
+  // So, we will look information if round-trip it here, FieldCode is 1, and other FieldCode 1 with UINT16 datatype
+  // WTF, actually FC 1 TC 1 is LedgerEntryType and there is a ledgerentry data type
+  val xrpfieldid: Codec[(FieldCode, TypeCode)] = {
+    val orderedChoice = List(typeAndField, smallTypeAndField, smallFieldAndType, smallTypeAndSmallField)
+    Codec[(FieldCode, TypeCode)](
       choice((orderedChoice.reverse): _*),
       choice(orderedChoice: _*)
     )
   }
-
-//  val fieldID: BitVector = FieldMetaData.encodeFieldID(nth.toInt, datatype.value.toInt)
-//  val sortKey: UInt      = UInt(datatype.value) << 16 | UInt(nth)
-
-  //  Try this approach: peak(1 byte) that can give us length and also code.   zero/zero = 3 0/not0 - 2, notz,0 -2 not/not = 1
-  //val foo = peekVariableSizeXXX()
-
 }

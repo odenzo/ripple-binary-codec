@@ -18,7 +18,7 @@ import scodec.codecs.implicits._
 import scodec.codecs.literals._
 
 /** These should fall under the delimited fields stuff */
-trait PathsetScodecs extends JsonUtils {
+trait PathSetScodecs extends JsonUtils {
 
   import com.odenzo.ripple.bincodec.scodecs.AccountScodecs.xrpaccount
   import com.odenzo.ripple.bincodec.scodecs.AmountScodecs.xrpcurrency
@@ -37,5 +37,7 @@ trait PathsetScodecs extends JsonUtils {
 ////    // TODO: Validate currency is not XRP , with special currency encoding TBC
 ////    // i.e. Should work with customer or psuedo-ISO (both are 160 bits)
 
-  val pathset: Codec[BitVector] = ???
+  val xrppathset: Codec[BitVector] = fail(Err("Pathset lots of work to do"))
 }
+
+object PathSetScodecs extends PathSetScodecs

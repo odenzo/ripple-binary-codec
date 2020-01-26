@@ -11,23 +11,23 @@ class FieldIdScodecTest extends OTestSpec {
   import com.odenzo.ripple.bincodec.scodecs.FieldIdScodec._
 
   test("SmallSmall Encoding") {
-    val codec   = smallTypeAndSmallName
-    val fName   = UInt(15)
-    val fType   = UInt(1)
-    val fieldId = FieldId(fName, fType)
-    codec.encode(FieldId(fName, fType)).map { bv =>
+    val codec = smallTypeAndSmallField
+    val fName = UInt(15)
+    val fType = UInt(1)
+
+    codec.encode((fName, fType)).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
-      smallTypeAndSmallName.decode(bv).map { decRes =>
+      smallTypeAndSmallField.decode(bv).map { decRes =>
         scribe.info(s"Decoded Res: $decRes")
       }
     }
   }
 
   test("SmallType Name Encoding") {
-    val codec   = smallTypeAndName
+    val codec   = smallTypeAndField
     val fName   = 255
     val fType   = 1
-    val fieldId = FieldId(UInt(fName), UInt(fType))
+    val fieldId = (UInt(fName), UInt(fType))
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -37,10 +37,10 @@ class FieldIdScodecTest extends OTestSpec {
   }
 
   test("Type Small Name Encoding") {
-    val codec   = smallNameAndType
+    val codec   = smallFieldAndType
     val fName   = 15
     val fType   = 255
-    val fieldId = FieldId(UInt(fName), UInt(fType))
+    val fieldId = (UInt(fName), UInt(fType))
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -50,10 +50,10 @@ class FieldIdScodecTest extends OTestSpec {
   }
 
   test("Type  Name Encoding") {
-    val codec   = typeAndName
+    val codec   = typeAndField
     val fName   = 255
     val fType   = 255
-    val fieldId = FieldId(UInt(fName), UInt(fType))
+    val fieldId = (UInt(fName), UInt(fType))
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -62,14 +62,14 @@ class FieldIdScodecTest extends OTestSpec {
     }
   }
 
-  def roundTripFieldId(fName: UInt, fType: UInt) = {
+  def roundTripFieldId(fName: UInt, fType: UInt): Unit = {
     val tup     = (fName.toInt, fType.toInt)
-    val fieldId = FieldId((fName), (fType))
+    val fieldId = ((fName), (fType))
 
     scribe.debug(s"Encoding Tuple $tup")
-    val bitv = fieldid.encode(fieldId).require
+    val bitv = xrpfieldid.encode(fieldId).require
     scribe.info(s"For $tup \t Size: ${bitv.bytes.size} Bits: ${bitv.toBin}")
-    val ans: DecodeResult[FieldId] = fieldid.decode(bitv).require
+    val ans: DecodeResult[(FieldCode, TypeCode)] = xrpfieldid.decode(bitv).require
     scribe.info(s"Ans: $ans")
   }
 

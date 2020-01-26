@@ -75,4 +75,6 @@ object VL {
     }
   }
 
+  /** This will return the VL encoding in length in bytes (not bits or hex nibble) */
+  val xrpvl = fail[Int](Err("xrpvl unified scodec not done yet"))
 }
