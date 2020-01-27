@@ -18,7 +18,7 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
     val xrpBack = longV.value
     xrpBack shouldEqual xrp
 
-    xrpAmountDec.encode(xrp).map(xrpAmountDec.decode).map(_.require.value shouldEqual xrp)
+    xrpXrpAmount.encode(xrp).map(xrpXrpAmount.decode).map(_.require.value shouldEqual xrp)
   }
 
 }

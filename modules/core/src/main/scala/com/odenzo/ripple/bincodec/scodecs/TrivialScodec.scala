@@ -47,7 +47,7 @@ object TrivialScodec {
   val xrpblob: Codec[String] = variableSizeBytes(VL.xrpvl, xrphexAll)
 
   val xrpuint8: Codec[Int]   = uint8
-  val xrpuint16: Codec[Int]  = uint16
+  val xrpuint16: Codec[Int]  = uint16 // For some reason this is consuming what?
   val xrpuint32: Codec[Long] = uint32
 
   // 64 in progress and for testing. If max at 63 bits we are ok.

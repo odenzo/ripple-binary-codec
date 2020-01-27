@@ -54,29 +54,30 @@ class VLTest extends OTestSpec {
       printBits(bv)
       bv.length shouldBe 24
       bv.bytes shouldEqual (hex"F1_00_00")
+      xrpvl.encode(12481).require.bytes shouldEqual (hex"F1_00_00")
     }
 
   }
 
   test("VL Decoding") {
 
-    val rs = encodeVL(100000).map { rs =>
+    val rs = xrpvl.encode(100000).map { rs =>
       val something                       = hex"0F3D0C7D2CFAB2EC8295451F0B3CA038E8E9CDCD".bits
       val res: Attempt[DecodeResult[Int]] = decodeVL.decode(something)
 
       //res shouldEqual "0f"
 
-      enc2.encode(15).map { bv: BitVector =>
+      xrpvl.encode(15).map { bv: BitVector =>
         bv.length shouldEqual 8
         bv shouldEqual hex"0F".bits
       }
 
-      enc2.encode(1000).map { bv: BitVector =>
+      xrpvl.encode(1000).map { bv: BitVector =>
         bv.length shouldEqual 16
         bv shouldEqual hex"0F".bits
       }
 
-      enc2.encode(1000).map { bv: BitVector =>
+      xrpvl.encode(1000).map { bv: BitVector =>
         bv.length shouldEqual 16
         bv shouldEqual hex"0F".bits
       }

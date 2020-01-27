@@ -17,19 +17,19 @@ object Setup {
   //<editor-fold desc="Data Modelling Zone that will Need to be Optimized">
   val config: RippleConfig = RippleConfig.loadFromDefaultFile().fold(e => throw e, identity)
 
-  scribe.info(s"Raw Data Types: ${pprint.apply(config.types)}")
+  scribe.trace(s"Raw Data Types: ${pprint.apply(config.types)}")
 
-  val dataTypes: Map[String, Int] = config.types.toList.filter(v => v._2 >= 0).toMap
-  val fields: List[FieldEntry]    = config.fields.filter(v => (v.metadata.nth > 0) && (v.metadata.nth < 256))
-
-  scribe.info(s"Data Types: ${pprint.apply(dataTypes)}")
+  val dataTypes: Map[String, Int]                                                              = config.types.toList.filter(v => v._2 >= 0).toMap
+  val fields: List[FieldEntry]                                                                 = config.fields.filter(v => (v.metadata.nth > 0) && (v.metadata.nth < 256))
+  val fieldsByFieldTypId: List[(FieldEntry, (BitVector, (FieldCode, FieldCode), Int, String))] = bindFieldIdToFields()
+  scribe.trace(s"Data Types: ${pprint.apply(dataTypes)}")
 
   val datatypeCode2datatypeNameMap: Map[Int, String] = dataTypes
     .toList
     .map(x => (x._2, x._1))
     .toMap
 
-  def bindFieldIdToFields(): Unit = {
+  def bindFieldIdToFields(): List[(FieldEntry, (BitVector, (FieldCode, FieldCode), Int, String))] = {
     import cats._
     import cats.data._
     import cats.implicits._
@@ -40,18 +40,22 @@ object Setup {
     scribe.trace(s"binding fieldids to fields")
 
     fields.fproduct { fe =>
-      scribe.info(s"binding field ${pprint.apply(fe)}")
-      val typename    = fe.metadata.typeName
-      val typecode    = dataTypes(typename)
-      val typecodeAdj = if (typecode > 1000) UInt(1) else UInt(typecode) // Transaction, LedgerEntry, etc.
-      val fieldcode   = UInt(fe.metadata.nth)
-      // scribe.info(s"FieldCode: $fieldcode  TypeCode: $typecodeAdj")
+      scribe.trace(s"binding field ${pprint.apply(fe)}")
+      val typename        = fe.metadata.typeName
+      val typecode        = dataTypes(typename)
+      val typecodeAdj     = if (typecode > 1000) UInt(1) else UInt(typecode) // Transaction, LedgerEntry, etc.
+      val fieldcode       = UInt(fe.metadata.nth)
       val encodedFielduid = FieldIdScodec.xrpfieldid.encode((fieldcode, typecodeAdj)).require
-      scribe.info(s"FieldCode: $fieldcode  TypeCode: $typecodeAdj \t Encoded: ${encodedFielduid.toHex(HexUppercase)}")
-      encodedFielduid
+      scribe.trace(s"FieldCode: $fieldcode  TypeCode: $typecodeAdj \t Encoded: ${encodedFielduid.toHex(HexUppercase)}")
+      (encodedFielduid, (fieldcode, typecodeAdj), typecode, typename)
     }
   }
 
+  def findFieldByFieldId(fieldtype: (FieldCode, TypeCode)) = {
+    fieldsByFieldTypId
+      .find(x => x._2._2 === fieldtype)
+      .getOrElse(throw new Exception(s"$fieldtype not found in " + s"field list"))
+  }
   //</editor-fold>
 
   /** What do I really want... since vals. I need a fieldMarker <-> scodec for sure */
@@ -77,9 +81,13 @@ object Setup {
 /** Top Level Decoding of a full message, expecting to be an STObject with no marker */
 object DecoderController {
 
-  def decode(hex: String) = {
+  def decode(hex: String): Attempt[DecodeResult[Vector[(Json, Json)]]] = {
     val binary: BitVector = BitVector.fromHex(hex).getOrElse(throw new Exception("Invalid Input Hex"))
-    scodec.codecs.vector(FieldScodec.xrpfield)
+    decode(binary)
   }
 
+  def decode(bv: BitVector): Attempt[DecodeResult[Vector[(Json, Json)]]] = {
+    scribe.debug(s"Decoding Top Vector of Fields from ${bv.size}")
+    scodec.codecs.vector(FieldScodec.xrpfield).decode(bv)
+  }
 }

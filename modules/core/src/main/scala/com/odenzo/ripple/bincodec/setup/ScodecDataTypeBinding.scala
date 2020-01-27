@@ -70,7 +70,7 @@ object ScodecDataTypeBinding {
       case "Hash128"     => xrphash(16).decode(bv).map(x => transform2Json(x))
       case "Blob"        => xrpblob.decode(bv).map(x => transform2Json(x)) // String
       case "Done"        => xrpError[Int]("DONE datatype not understood").decode(bv).map(x => transform2Json(x))
-      case "Amount"      => xrpamount.decode(bv).map(x => transform2Json(x)) // XRP or Fiat Amount
+      case "Amount"      => xrplAmount.decode(bv).map(x => transformAmount2Json(x)) // XRP or Fiat Amount
       case "Hash256"     => xrphash256.decode(bv).map(x => transform2Json(x)) // String
       case "Unknown"     => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
       case "Hash160"     => xrphash160.decode(bv).map(x => transform2Json(x)) // String
@@ -83,4 +83,24 @@ object ScodecDataTypeBinding {
     import io.circe.syntax._
     rs.map((x: T) => x.asJson)
   }
+
+  def transformEither2Json[T: Encoder, U: Encoder](rs: DecodeResult[Either[T, U]]): DecodeResult[Json] = {
+    import io.circe.syntax._
+    rs.map(v => v.fold(_.asJson, _.asJson))
+  }
+
+  type FullFiatAmount = ((BigDecimal, Either[String, BitVector]), String)
+
+  def transformAmount2Json(rs: DecodeResult[Either[Long, FullFiatAmount]]): DecodeResult[Json] = {
+    rs.map {
+      case Left(v) => v.asJson
+      case Right(v: ((BigDecimal, Either[String, BitVector]), String)) =>
+        JsonObject {
+          "currency" -> v._1._2.fold(_.asJson, _.toHex)
+          "issuer"   -> v._2.asJson
+          "value"    -> v._1._1.asJson // Will this wrap in a String automatically, it has to!
+        }.asJson
+    }
+  }
+
 }

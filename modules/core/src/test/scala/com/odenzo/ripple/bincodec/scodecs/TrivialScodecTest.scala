@@ -23,6 +23,8 @@ class TrivialScodecTest extends OTestSpec {
     shouldSucceed(xrpuint16.encode(UShort.MaxValue.toInt)) shouldEqual hex"FFFF".bits
     shouldFail(xrpuint16.encode(-1))
     shouldFail(xrpuint16.encode(UShort.MaxValue.toInt + 1))
+    shouldSucceed(xrpuint16.encode(20)) shouldEqual hex"0014".bits
+    shouldSucceed(xrpuint16.encode(20)) shouldEqual hex"0014".bits
   }
 
   test("UINT32") {

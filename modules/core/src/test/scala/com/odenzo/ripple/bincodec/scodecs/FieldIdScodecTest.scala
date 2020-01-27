@@ -1,6 +1,7 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.DecodeResult
+import scodec.bits.BitVector
 import spire.math.UInt
 
 import com.odenzo.ripple.bincodec.OTestSpec
@@ -62,18 +63,50 @@ class FieldIdScodecTest extends OTestSpec {
     }
   }
 
-  def roundTripFieldId(fName: UInt, fType: UInt): Unit = {
-    val tup     = (fName.toInt, fType.toInt)
+  def roundTripFieldId(fName: UInt, fType: UInt): BitVector = {
+
     val fieldId = ((fName), (fType))
 
-    scribe.debug(s"Encoding Tuple $tup")
     val bitv = xrpfieldid.encode(fieldId).require
-    scribe.info(s"For $tup \t Size: ${bitv.bytes.size} Bits: ${bitv.toBin}")
+    //scribe.info(s"For $fieldId \t Size: ${bitv.bytes.size} Bits: ${bitv.toBin}")
     val ans: DecodeResult[(FieldCode, TypeCode)] = xrpfieldid.decode(bitv).require
-    scribe.info(s"Ans: $ans")
+    ans.value shouldEqual fieldId
+    bitv
   }
 
   test("Round Small Small") {
-    roundTripFieldId(UInt(10), UInt(10))
+    for {
+      i <- 1 to 15
+      j <- 1 to 15
+      bits = roundTripFieldId(UInt(i), UInt(j))
+      _    = bits.size shouldEqual 8
+    } yield (i, j)
+  }
+
+  test("Round Small Medium") {
+    for {
+      i <- 1 to 15
+      j <- 16 to 255
+      bits = roundTripFieldId(UInt(i), UInt(j))
+      _    = bits.size shouldEqual 16
+    } yield (i, j)
+  }
+
+  test("Round Medium Small") {
+    for {
+      i <- 16 to 255
+      j <- 1 to 15
+      bits = roundTripFieldId(UInt(i), UInt(j))
+      _    = bits.size shouldEqual 16
+    } yield (i, j)
+  }
+
+  test("Round Big Big") {
+    for {
+      i <- 16 to 255
+      j <- 16 to 255
+      bits = roundTripFieldId(UInt(i), UInt(j))
+      _    = bits.size shouldEqual 24
+    } yield (i, j)
   }
 }

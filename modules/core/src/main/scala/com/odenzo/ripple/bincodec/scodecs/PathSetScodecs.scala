@@ -21,13 +21,13 @@ import scodec.codecs.literals._
 trait PathSetScodecs extends JsonUtils {
 
   import com.odenzo.ripple.bincodec.scodecs.AccountScodecs.xrpaccount
-  import com.odenzo.ripple.bincodec.scodecs.AmountScodecs.xrpcurrency
+  import com.odenzo.ripple.bincodec.scodecs.AmountScodecs.xrplCurrency
   // PathSteps are fixed length based on their prefix
 
   val pathstepAccountId      = hex"01" ~> xrpaccount
-  val pathstepCurrency       = hex"10" ~> xrpcurrency
+  val pathstepCurrency       = hex"10" ~> xrplCurrency
   val pathstepIssuer         = hex"20" ~> xrpaccount
-  val pathstepCurrencyIssuer = hex"30" ~> xrpcurrency ~ xrpaccount
+  val pathstepCurrencyIssuer = hex"30" ~> xrplCurrency ~ xrpaccount
 
 //  val pathstep: Codec[Serializable] = choice(pathstepAccountId, pathstepCurrency, pathstepIssuer, pathstepCurrencyIssuer)
 //  val path                          = pathstep // @todo  Repeat(1,6) // Now this is a list of too. Will input bitvector be fixed by pathset delimiteded? Yes.
