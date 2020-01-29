@@ -6,6 +6,7 @@ import cats.implicits._
 import scodec.bits.{BitVector, _}
 import scodec._
 import scodec.codecs._
+import spire.math.ULong
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math
@@ -51,10 +52,10 @@ trait AmountScodecs {
 
   /** @todo Should be checking the string is in the ripplecurrencyalphabet */
   def currencycode: Codec[String] =
-    (constant(bin"0000_0000") ~> constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40)))
+    (constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40)))
       .withContext("ISO Currnecy")
 
-  /** Handles Legacy and ISO Currency Codes. Either 3 ASCII Chard or 160 bits of Hex */
+  /** Handles Legacy and ISO Currency Codes. Either 3 ASCII Chard or 160 bits of Hex  either bool(8) DOES NOT consume */
   val xrplCurrency: Codec[Either[String, BitVector]] = either(bool(8), currencycode, currencycodeLegacy).withContext("Currency Sniffer")
 
   /**
@@ -68,27 +69,29 @@ trait AmountScodecs {
     s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
   }
 
-  //</editor-fold>
-  //<editor-fold desc="Fiat Amount">
-
   /** Gets JUST the amount for a Fiat Value, not the currency or issuer */
 
-  /** Starts after the XRP/Fiat discriminator with the Sign Bit */
+  /** Starts after the XRP/Fiat discriminator with the Sign Bit. Sign Bit, Exponent, Mantissa   The exponent is encoded +/- 73 or
+    * somethig too.
+    * Fixed Size of 63 */
   val fiatAmount: Codec[BigDecimal] =
-    (bool ~ uint8 ~ ulong(54))
+    (bool(1) ~ uint8 ~ ulong(54))
       .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
       .withContext("XRPL Fiat Amount")
 
   def unpackToBigDecimal(isPositive: Boolean, exponent: Int, mantissa: Long): Attempt[BigDecimal] = {
-    val answer: BigDecimal    = BigDecimal(BigInt(mantissa), exponent) // Bastard, exponent cannot be above Int Max Value s
+    scribe.debug(s"Unpacking to BigD $isPositive Raw Exponent $exponent Raw Mantissa: (Base ?) $mantissa")
+    // TODO: Adjust exponent correctly
+    val exponentAdj           = exponent - 97
+    val answer: BigDecimal    = BigDecimal(mantissa) * BigDecimal.exact(10).pow(exponentAdj)
     val signedAns: BigDecimal = if (isPositive) answer else (-answer)
-
+    scribe.debug(s"BigDecimal $signedAns")
     Attempt.successful(signedAns)
   }
 
   def packToBigDecimal(bd: BigDecimal): Attempt[((Boolean, Int), Long)] = {
     bd match {
-      case a if a === 0              => Attempt.successful((true, 0), 0L)
+      case a if a === 0              => Attempt.successful(((true, 0), 0))
       case a if a < minVal           => Attempt.failure(Err(s"fiat amount too small $a"))
       case a if a > maxVal           => Attempt.failure(Err(s"fiat amount too big $a"))
       case a if a.abs < minAbsAmount => Attempt.failure(Err(s"fiat amount too close to zero $a"))
@@ -100,16 +103,17 @@ trait AmountScodecs {
         val isPositive             = bd.signum =!= -1
         normalized.isWhole match {
           case false => Attempt.failure(Err(s"Unsure how to handle too much precision so error $bd"))
-          case true  => Attempt.successful((isPositive, trueExp), normalized.longValue)
+          case true  => Attempt.successful(((isPositive, trueExp), normalized.longValue))
         }
     }
   }
 
-  //</editor-fold>
   val xrpFiat: Codec[((BigDecimal, Either[String, BitVector]), String)] =
-    (fiatAmount ~ xrplCurrency ~ AccountScodecs.xrpaccount).withContext("XRPL Fiat ")
+    (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ fixedSizeBits(160, AccountScodecs.xrpaccount))
+      .withContext("XRPL Fiat ")
 
-  /** Either XRP Long or a FiatAmount of Amount, Either[StandardCurrency,VustomerCurrency], Issuer */
+  /** Either XRP Long or a FiatAmount of Amount, Either[StandardCurrency,VustomerCurrency], Issuer
+    * Xrp/NotXrp if 1 then Issued Currency For,at (xrpFiat) else XRP Amount Format (xrpXrpAmount)*/
   val xrplAmount: Codec[Either[Long, ((BigDecimal, Either[String, BitVector]), String)]] =
     either(bool, xrpXrpAmount, xrpFiat).withContext("XRPL Fiat or XRP Amount")
 }

@@ -12,6 +12,8 @@ import shapeless._
 import io.circe._
 import io.circe.syntax._
 import io.circe.generic.extras.semiauto._
+import _root_.scodec.codecs.variableSizeBytes
+import com.odenzo.ripple.bincodec.scodecs.VL
 //import io.circe.spire._
 import com.odenzo.circe.spire.SpireCodecs._
 import io.circe.scodec._
@@ -65,23 +67,28 @@ object ScodecDataTypeBinding {
       case "Vector256"   => xrpvectorhash256.decode(bv).map(x => transform2Json(x)) // String
       case "NotPresent"  => xrpError[Int]("NotPresent Data Type").decode(bv).map(x => transform2Json(x))
       case "AccountID"   => xrpaccount.decode(bv).map(x => transform2Json(x))
+      case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrpaccount).decode(bv).map(x => transform2Json(x))
       case "UInt8"       => xrpuint8.decode(bv).map(x => transform2Json(x))
       case "UInt32"      => xrpuint32.decode(bv).map(x => transform2Json(x))
       case "Hash128"     => xrphash(16).decode(bv).map(x => transform2Json(x))
       case "Blob"        => xrpblob.decode(bv).map(x => transform2Json(x)) // String
       case "Done"        => xrpError[Int]("DONE datatype not understood").decode(bv).map(x => transform2Json(x))
-      case "Amount"      => xrplAmount.decode(bv).map(x => transformAmount2Json(x)) // XRP or Fiat Amount
-      case "Hash256"     => xrphash256.decode(bv).map(x => transform2Json(x)) // String
-      case "Unknown"     => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
-      case "Hash160"     => xrphash160.decode(bv).map(x => transform2Json(x)) // String
-      case "UInt64"      => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
-      case "STObject"    => xrpError[JsonObject]("STOBject NIMP").decode(bv).map(x => transform2Json(x))
+      case "Amount"      => xrplAmount.decode(bv).map(x => transformAmount2Json(x)) // XRP or Fiat
+      // Amount
+      case "Hash256"  => xrphash256.decode(bv).map(x => transform2Json(x)) // String
+      case "Unknown"  => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
+      case "Hash160"  => xrphash160.decode(bv).map(x => transform2Json(x)) // String
+      case "UInt64"   => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
+      case "STObject" => xrpError[JsonObject]("STOBject NIMP").decode(bv).map(x => transform2Json(x))
     }
   }
 
   def transform2Json[T: Encoder](rs: DecodeResult[T]): DecodeResult[Json] = {
     import io.circe.syntax._
-    rs.map((x: T) => x.asJson)
+    rs.map { x: T =>
+      scribe.info(s"Decoded Model Value $x")
+      x.asJson
+    }
   }
 
   def transformEither2Json[T: Encoder, U: Encoder](rs: DecodeResult[Either[T, U]]): DecodeResult[Json] = {
@@ -95,11 +102,12 @@ object ScodecDataTypeBinding {
     rs.map {
       case Left(v) => v.asJson
       case Right(v: ((BigDecimal, Either[String, BitVector]), String)) =>
-        JsonObject {
-          "currency" -> v._1._2.fold(_.asJson, _.toHex)
-          "issuer"   -> v._2.asJson
+        scribe.info(s"Decoded Amount Model Value $v") // Consumed an extra bit
+        JsonObject(
+          "currency" -> v._1._2.fold(_.asJson, _.toHex.asJson),
+          "issuer"   -> v._2.asJson,
           "value"    -> v._1._1.asJson // Will this wrap in a String automatically, it has to!
-        }.asJson
+        ).asJson
     }
   }
 

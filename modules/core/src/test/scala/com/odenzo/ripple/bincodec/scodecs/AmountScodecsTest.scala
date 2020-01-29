@@ -21,4 +21,10 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
     xrpXrpAmount.encode(xrp).map(xrpXrpAmount.decode).map(_.require.value shouldEqual xrp)
   }
 
+  test("Currency") {
+    // Not sure this is exactly aligned  This should be fourty characters exactly, may be slidden by 1 byte
+    val nzd: ByteVector = hex"0000000000000000000000004e5a440000000000"
+    val res             = xrplCurrency.decode(nzd.bits).require
+    scribe.info(s"Result: $res")
+  }
 }

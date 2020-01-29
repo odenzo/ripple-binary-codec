@@ -53,13 +53,15 @@ object VL {
 
   def decodeVL: Decoder[Int] = {
     peek(uint(8)).flatMap { x: Int =>
-      x match {
+      val len = x match {
         case l if l < 0    => fail[Int](Err(s"Marker Bytes too Small $l"))
         case l if l <= 192 => smallVL
         case l if l <= 240 => mediumVL
         case l if l <= 255 => largeVL
         case l             => fail[Int](Err(s"First Byte   $l = 255  "))
       }
+
+      len
     }
   }
 

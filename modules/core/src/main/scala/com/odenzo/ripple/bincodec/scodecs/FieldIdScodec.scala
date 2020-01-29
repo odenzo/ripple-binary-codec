@@ -23,10 +23,10 @@ object FieldIdScodec {
   val typeAndField: Codec[(FieldCode, TypeCode)] = (constant(hex"00") ~> suint8 ~ suint8)
     .xmap(swapFromOrder, swapFromOrder)
 
-  val smallTypeAndField: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> suint4 ~ suint8)
-    .xmap(swapFromOrder, swapFromOrder)
+  val smallFieldAndType: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> suint4 ~ suint8)
 
-  val smallFieldAndType: Codec[(FieldCode, TypeCode)] = ((suint4 <~ constant(bin"0000")) ~ suint8)
+  val smallTypeAndField: Codec[(FieldCode, TypeCode)] = ((suint4 <~ constant(bin"0000")) ~ suint8)
+    .xmap(swapFromOrder, swapFromOrder)
 
   val smallTypeAndSmallField = (suint4 ~ suint4)
     .xmap(swapFromOrder, swapFromOrder)
