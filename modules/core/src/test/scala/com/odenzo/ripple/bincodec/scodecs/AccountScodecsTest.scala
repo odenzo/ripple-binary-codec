@@ -7,7 +7,7 @@ import scodec._
 import scodec.codecs._
 import scodec.codecs.implicits._
 
-class AccountScodecsTest extends OTestSpec with AccountScodecs {
+class AccountScodecsTest extends OTestSpec with STObjectScodec {
 
   import RippleBase58Scodec._
   val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
