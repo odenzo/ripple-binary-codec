@@ -13,8 +13,8 @@ import scodec.codecs.literals._
 /** These should fall under the delimited fields stuff */
 trait PathSetScodecs extends JsonUtils {
 
-  import com.odenzo.ripple.bincodec.scodecs.AccountScodecs.xrpaccount
-  import com.odenzo.ripple.bincodec.scodecs.AmountScodecs.xrplCurrency
+  import com.odenzo.ripple.bincodec.scodecs.AmountScodecs._
+  import com.odenzo.ripple.bincodec.scodecs.AccountScodecs._
   // PathSteps are fixed length based on their prefix
 
   val pathstepAccountId: Codec[XRPLPathStep] =
@@ -45,6 +45,7 @@ trait PathSetScodecs extends JsonUtils {
     .withContext("XRP Path")
 
   // t1:t2... ~ t(last) Limit of 1...6 paths (This is broken)
+  // @todo this is broken.
   val xrppathset: Codec[XRPLPathSet] =
     (vectorDelimited(hex"ff".bits, xrppath) ~ xrppath <~ constant(hex"00"))
       .xmap[XRPLPathSet](

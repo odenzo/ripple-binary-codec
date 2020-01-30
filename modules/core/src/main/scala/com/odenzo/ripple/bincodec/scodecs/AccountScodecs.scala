@@ -63,4 +63,4 @@ trait AccountScodecs {
   //endregion
 }
 
-object AccountScodecs extends STObjectScodec
+object AccountScodecs extends AccountScodecs
