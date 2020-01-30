@@ -18,13 +18,15 @@ import com.odenzo.ripple.bincodec.scodecs.VL
 import com.odenzo.circe.spire.SpireCodecs._
 import io.circe.scodec._
 
+import com.odenzo.ripple.bincodec.scodecs.ScodecJsonCodecs._
+
 /** All of the known XRPL data types, bound to some scodec */
 object ScodecDataTypeBinding {
   import com.odenzo.ripple.bincodec.scodecs.TrivialScodec._
   import com.odenzo.ripple.bincodec.scodecs.PathSetScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AccountScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AmountScodecs._
-
+  import com.odenzo.ripple.bincodec.scodecs.MnemonicScodecs._
 //
 //  // Going to need an HList I think
 //  def binding =
@@ -59,7 +61,7 @@ object ScodecDataTypeBinding {
 
     typename match {
       case "UInt16"      => xrpuint16.decode(bv).map(x => transform2Json(x)) // Int
-      case "Transaction" => xrpError[Int]("Transaction NIMP").decode(bv).map(x => transform2Json(x)) // Int
+      case "Transaction" => xrpltransactiontype.decode(bv).map(x => transform2Json(x)) // String/Int
       case "PathSet"     => xrppathset.decode(bv).map(x => transform2Json(x)) // BitVector!
       case "Validation"  => xrpError[Int]("Validation NIMP").decode(bv).map(x => transform2Json(x)) // Int
       case "LedgerEntry" => xrpError[Int]("LedgerEntry NIMP").decode(bv).map(x => transform2Json(x)) // Int
@@ -73,41 +75,22 @@ object ScodecDataTypeBinding {
       case "Hash128"     => xrphash(16).decode(bv).map(x => transform2Json(x))
       case "Blob"        => xrpblob.decode(bv).map(x => transform2Json(x)) // String
       case "Done"        => xrpError[Int]("DONE datatype not understood").decode(bv).map(x => transform2Json(x))
-      case "Amount"      => xrplAmount.decode(bv).map(x => transformAmount2Json(x)) // XRP or Fiat
-      // Amount
-      case "Hash256"  => xrphash256.decode(bv).map(x => transform2Json(x)) // String
-      case "Unknown"  => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
-      case "Hash160"  => xrphash160.decode(bv).map(x => transform2Json(x)) // String
-      case "UInt64"   => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
-      case "STObject" => xrpError[JsonObject]("STOBject NIMP").decode(bv).map(x => transform2Json(x))
+      case "Amount"      => xrplAmount.decode(bv).map(x => transform2Json(x)) // XRP or Fiat Amount
+      case "Hash256"     => xrphash256.decode(bv).map(x => transform2Json(x)) // String
+      case "Unknown"     => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
+      case "Hash160"     => xrphash160.decode(bv).map(x => transform2Json(x)) // String
+      case "UInt64"      => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
+      case "STObject"    => xrpError[JsonObject]("STOBject NIMP").decode(bv).map(x => transform2Json(x))
     }
   }
 
   def transform2Json[T: Encoder](rs: DecodeResult[T]): DecodeResult[Json] = {
+    import com.odenzo.ripple.bincodec.scodecs.ScodecJsonCodecs._
     import io.circe.syntax._
     rs.map { x: T =>
-      scribe.info(s"Decoded Model Value $x")
-      x.asJson
-    }
-  }
-
-  def transformEither2Json[T: Encoder, U: Encoder](rs: DecodeResult[Either[T, U]]): DecodeResult[Json] = {
-    import io.circe.syntax._
-    rs.map(v => v.fold(_.asJson, _.asJson))
-  }
-
-  type FullFiatAmount = ((BigDecimal, Either[String, BitVector]), String)
-
-  def transformAmount2Json(rs: DecodeResult[Either[Long, FullFiatAmount]]): DecodeResult[Json] = {
-    rs.map {
-      case Left(v) => v.asJson
-      case Right(v: ((BigDecimal, Either[String, BitVector]), String)) =>
-        scribe.info(s"Decoded Amount Model Value $v") // Consumed an extra bit
-        JsonObject(
-          "currency" -> v._1._2.fold(_.asJson, _.toHex.asJson),
-          "issuer"   -> v._2.asJson,
-          "value"    -> v._1._1.asJson // Will this wrap in a String automatically, it has to!
-        ).asJson
+      val j = x.asJson
+      scribe.info(s"Decoded Model Value $x as Json \n ${j.spaces4}")
+      j
     }
   }
 

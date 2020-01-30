@@ -13,8 +13,8 @@ class FieldIdScodecTest extends OTestSpec {
 
   test("SmallSmall Encoding") {
     val codec = smallTypeAndSmallField
-    val fName = UInt(15)
-    val fType = UInt(1)
+    val fName = 15
+    val fType = 1
 
     codec.encode((fName, fType)).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
@@ -28,7 +28,7 @@ class FieldIdScodecTest extends OTestSpec {
     val codec   = smallTypeAndField
     val fName   = 255
     val fType   = 1
-    val fieldId = (UInt(fName), UInt(fType))
+    val fieldId = (fName, fType)
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -41,7 +41,7 @@ class FieldIdScodecTest extends OTestSpec {
     val codec   = smallFieldAndType
     val fName   = 15
     val fType   = 255
-    val fieldId = (UInt(fName), UInt(fType))
+    val fieldId = (fName, fType)
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -54,7 +54,7 @@ class FieldIdScodecTest extends OTestSpec {
     val codec   = typeAndField
     val fName   = 255
     val fType   = 255
-    val fieldId = (UInt(fName), UInt(fType))
+    val fieldId = (fName, fType)
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -63,7 +63,7 @@ class FieldIdScodecTest extends OTestSpec {
     }
   }
 
-  def roundTripFieldId(fName: UInt, fType: UInt): BitVector = {
+  def roundTripFieldId(fName: Int, fType: Int): BitVector = {
 
     val fieldId = ((fName), (fType))
 
@@ -78,7 +78,7 @@ class FieldIdScodecTest extends OTestSpec {
     for {
       i <- 1 to 15
       j <- 1 to 15
-      bits = roundTripFieldId(UInt(i), UInt(j))
+      bits = roundTripFieldId(i, j)
       _    = bits.size shouldEqual 8
     } yield (i, j)
   }
@@ -87,7 +87,7 @@ class FieldIdScodecTest extends OTestSpec {
     for {
       i <- 1 to 15
       j <- 16 to 255
-      bits = roundTripFieldId(UInt(i), UInt(j))
+      bits = roundTripFieldId(i, j)
       _    = bits.size shouldEqual 16
     } yield (i, j)
   }
@@ -96,7 +96,7 @@ class FieldIdScodecTest extends OTestSpec {
     for {
       i <- 16 to 255
       j <- 1 to 15
-      bits = roundTripFieldId(UInt(i), UInt(j))
+      bits = roundTripFieldId(i, j)
       _    = bits.size shouldEqual 16
     } yield (i, j)
   }
@@ -105,7 +105,7 @@ class FieldIdScodecTest extends OTestSpec {
     for {
       i <- 16 to 255
       j <- 16 to 255
-      bits = roundTripFieldId(UInt(i), UInt(j))
+      bits = roundTripFieldId(i, j)
       _    = bits.size shouldEqual 24
     } yield (i, j)
   }

@@ -16,7 +16,6 @@ object Setup {
 
   //<editor-fold desc="Data Modelling Zone that will Need to be Optimized">
   val config: RippleConfig = RippleConfig.loadFromDefaultFile().fold(e => throw e, identity)
-
   scribe.trace(s"Raw Data Types: ${pprint.apply(config.types)}")
 
   val dataTypes: Map[String, Int]                                                              = config.types.toList.filter(v => v._2 >= 0).toMap
@@ -24,12 +23,14 @@ object Setup {
   val fieldsByFieldTypId: List[(FieldEntry, (BitVector, (FieldCode, FieldCode), Int, String))] = bindFieldIdToFields()
   scribe.trace(s"Data Types: ${pprint.apply(dataTypes)}")
 
+  val txntypeIMap: Map[Int, String] = config.transactionTypes.toList.map(_.swap).toMap
+
   val datatypeCode2datatypeNameMap: Map[Int, String] = dataTypes
     .toList
     .map(x => (x._2, x._1))
     .toMap
 
-  def bindFieldIdToFields(): List[(FieldEntry, (BitVector, (FieldCode, FieldCode), Int, String))] = {
+  def bindFieldIdToFields(): List[(FieldEntry, (BitVector, (FieldCode, Int), Int, String))] = {
     import cats._
     import cats.data._
     import cats.implicits._
@@ -43,11 +44,11 @@ object Setup {
       scribe.trace(s"binding field ${pprint.apply(fe)}")
       val typename        = fe.metadata.typeName
       val typecode        = dataTypes(typename)
-      val typecodeAdj     = if (typecode > 1000) UInt(1) else UInt(typecode) // Transaction, LedgerEntry, etc.
-      val fieldcode       = UInt(fe.metadata.nth)
+      val fieldcode       = fe.metadata.nth
+      val typecodeAdj     = if (typecode > 1000) 16 else typecode
       val encodedFielduid = FieldIdScodec.xrpfieldid.encode((fieldcode, typecodeAdj)).require
-      scribe.trace(s"FieldCode: $fieldcode  TypeCode: $typecodeAdj \t Encoded: ${encodedFielduid.toHex(HexUppercase)}")
-      (encodedFielduid, (fieldcode, typecodeAdj), typecode, typename)
+      scribe.trace(s"FieldCode: $fieldcode  TypeCode: $typecode \t Encoded: ${encodedFielduid.toHex(HexUppercase)}")
+      (encodedFielduid, (fieldcode, typecode), typecode, typename)
     }
   }
 
@@ -56,6 +57,10 @@ object Setup {
       .find(x => x._2._2 === fieldtype)
       .getOrElse(throw new Exception(s"$fieldtype not found in " + s"field list"))
   }
+
+  def getTransactionType(code: Int): String     = txntypeIMap(code)
+  def getTransactionTypeCode(name: String): Int = config.transactionTypes(name)
+
   //</editor-fold>
 
   /** What do I really want... since vals. I need a fieldMarker <-> scodec for sure */

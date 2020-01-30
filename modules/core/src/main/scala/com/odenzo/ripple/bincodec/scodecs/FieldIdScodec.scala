@@ -12,23 +12,23 @@ import com.odenzo.scodec.spire._
 /** This is for using Scodec Properly, with an initial focus on Decoding */
 object FieldIdScodec {
 
-  type TypeCode  = UInt
-  type FieldCode = UInt
+  type TypeCode  = Int
+  type FieldCode = Int
 
   val swapFromOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
   // Techincally this should be reversed types I think, but now new type yet for type checking
   val swapToOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
-  val typeAndField: Codec[(FieldCode, TypeCode)] = (constant(hex"00") ~> suint8 ~ suint8)
+  val typeAndField: Codec[(FieldCode, TypeCode)] = (constant(hex"00") ~> uint8 ~ uint8)
     .xmap(swapFromOrder, swapFromOrder)
 
-  val smallFieldAndType: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> suint4 ~ suint8)
+  val smallFieldAndType: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> uint4 ~ uint8)
 
-  val smallTypeAndField: Codec[(FieldCode, TypeCode)] = ((suint4 <~ constant(bin"0000")) ~ suint8)
+  val smallTypeAndField: Codec[(FieldCode, TypeCode)] = ((uint4 <~ constant(bin"0000")) ~ uint8)
     .xmap(swapFromOrder, swapFromOrder)
 
-  val smallTypeAndSmallField = (suint4 ~ suint4)
+  val smallTypeAndSmallField = (uint4 ~ uint4)
     .xmap(swapFromOrder, swapFromOrder)
 
   // For encoding we need to reverse the choice list.

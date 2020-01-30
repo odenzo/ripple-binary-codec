@@ -41,22 +41,35 @@ trait AmountScodecs {
   protected def xprAmountDecFn(bitv: BitVector) = xrpXrpAmount.decode(bitv)
 
   // We have consumed the first bit already
-  val xrpXrpAmount: Codec[Long] = (constant(bin"1") dropLeft ulong(62)).withContext("xrpXrpAmont")
+  val xrpXrpAmount: Codec[XRPLDrops] = (constant(bin"1") dropLeft ulong(62))
+    .xmap[XRPLDrops](XRPLDrops, _.amount)
+    .withContext("xrpXrpAmont")
 
   /* We also have the Ripple alphabet to verify the ASCII pseudo-ISO (ISO4127)
    Don't forget the legacy currency code which is removed from current XRPL docs
    This sure looks like a peek() or flatZip case
    This doesn't have to match the Ripple Alphabet
    */
-  def currencycodeLegacy: Codec[BitVector] = (constantLenient(bin"0000_0001") ~> bitsStrict(152)).withContext("Legacy Currency")
+  def currencycodeLegacy: Codec[CustomCurrency] =
+    (constantLenient(bin"0000_0001") ~> bitsStrict(152))
+      .xmap[CustomCurrency](x => CustomCurrency(x), y => y.custom)
+      .withContext("Legacy Currency")
 
   /** @todo Should be checking the string is in the ripplecurrencyalphabet */
-  def currencycode: Codec[String] =
+  def currencycode: Codec[ISOCurrency] =
     (constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40)))
+      .xmap[ISOCurrency](x => ISOCurrency(x), (y: ISOCurrency) => y.iso)
       .withContext("ISO Currnecy")
 
   /** Handles Legacy and ISO Currency Codes. Either 3 ASCII Chard or 160 bits of Hex  either bool(8) DOES NOT consume */
-  val xrplCurrency: Codec[Either[String, BitVector]] = either(bool(8), currencycode, currencycodeLegacy).withContext("Currency Sniffer")
+  val xrplCurrency: Codec[XRPLCurrency] =
+    either(bool(8), currencycode, currencycodeLegacy)
+      .xmap[XRPLCurrency](
+        x => x.fold(l => identity(l), r => identity(r)), {
+          case v: ISOCurrency    => Left(v)
+          case v: CustomCurrency => Right(v)
+        }
+      )
 
   /**
     * Used to check if ISO currency codes are ok.
@@ -108,14 +121,22 @@ trait AmountScodecs {
     }
   }
 
-  val xrpFiat: Codec[((BigDecimal, Either[String, BitVector]), String)] =
+  val xrpFiat: Codec[XRPLIssuedAmount] =
     (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ fixedSizeBits(160, AccountScodecs.xrpaccount))
+      .xmap[XRPLIssuedAmount](x => XRPLIssuedAmount(x._1._1, x._1._2, x._2), y => ((y.value, y.currency), y.issuer))
       .withContext("XRPL Fiat ")
 
   /** Either XRP Long or a FiatAmount of Amount, Either[StandardCurrency,VustomerCurrency], Issuer
     * Xrp/NotXrp if 1 then Issued Currency For,at (xrpFiat) else XRP Amount Format (xrpXrpAmount)*/
-  val xrplAmount: Codec[Either[Long, ((BigDecimal, Either[String, BitVector]), String)]] =
-    either(bool, xrpXrpAmount, xrpFiat).withContext("XRPL Fiat or XRP Amount")
+  val xrplAmount: Codec[XRPLAmount] =
+    either(bool, xrpXrpAmount, xrpFiat)
+      .xmap[XRPLAmount](
+        x => x.fold(identity, identity), {
+          case d: XRPLDrops          => Left(d)
+          case iou: XRPLIssuedAmount => Right(iou)
+        }
+      )
+      .withContext("XRPL Fiat or XRP Amount")
 }
 
 object AmountScodecs extends AmountScodecs

@@ -13,12 +13,12 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
     val xrp  = 12
     val bits = xprAmountEncFn(xrp).require
     scribe.info(s"Len: ${bits.size} -> ${bits.toHex}")
-    val longV: DecodeResult[Long] = xprAmountDecFn(bits).require
-    scribe.info(s"Decoding Result: $longV")
-    val xrpBack = longV.value
+    val drops = xprAmountDecFn(bits).require
+    scribe.info(s"Decoding Result: $drops")
+    val xrpBack = drops.value
     xrpBack shouldEqual xrp
 
-    xrpXrpAmount.encode(xrp).map(xrpXrpAmount.decode).map(_.require.value shouldEqual xrp)
+    xrpXrpAmount.encode(XRPLDrops(xrp)).map(xrpXrpAmount.decode).map(_.require.value shouldEqual xrp)
   }
 
   test("Currency") {
