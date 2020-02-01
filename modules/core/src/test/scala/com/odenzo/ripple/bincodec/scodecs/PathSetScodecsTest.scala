@@ -1,7 +1,6 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import com.odenzo.ripple.bincodec.OTestSpec
-
 import scodec.bits._
 
 class PathSetScodecsTest extends OTestSpec {

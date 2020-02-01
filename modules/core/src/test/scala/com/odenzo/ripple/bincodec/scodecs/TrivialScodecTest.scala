@@ -2,9 +2,8 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import com.odenzo.ripple.bincodec.OTestSpec
 import scodec.bits._
-import scodec.{Attempt, DecodeResult}
-import scodec.Attempt.Successful
-import spire.math.{UInt, ULong, UShort}
+import scodec.DecodeResult
+import spire.math.{ULong, UShort}
 
 class TrivialScodecTest extends OTestSpec {
 

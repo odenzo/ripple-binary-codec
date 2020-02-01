@@ -3,8 +3,7 @@ package com.odenzo.ripple.bincodec.scodecs
 import scala.annotation.tailrec
 
 import scodec.bits.{Bases, BitVector, ByteVector}
-import scodec.{Attempt, Codec, Err}
-import scodec.codecs._
+import scodec.{Attempt, Err}
 
 object RippleBase58Scodec {
 

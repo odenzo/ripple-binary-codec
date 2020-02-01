@@ -3,7 +3,6 @@ package com.odenzo.ripple.bincodec.scodecs
 import com.odenzo.ripple.bincodec.OTestSpec
 import cats.implicits._
 import scodec.bits._
-import scodec._
 
 class RippleBase58ScodecTest extends OTestSpec with STObjectScodec {
 

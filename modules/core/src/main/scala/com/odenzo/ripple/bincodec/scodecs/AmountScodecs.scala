@@ -6,7 +6,6 @@ import cats.implicits._
 import scodec.bits.{BitVector, _}
 import scodec._
 import scodec.codecs._
-import spire.math.ULong
 
 /**
   * https://xrpl.org/currency-formats.html#issued-currency-math

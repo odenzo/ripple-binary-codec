@@ -2,7 +2,6 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.DecodeResult
 import scodec.bits.BitVector
-import spire.math.UInt
 
 import com.odenzo.ripple.bincodec.OTestSpec
 

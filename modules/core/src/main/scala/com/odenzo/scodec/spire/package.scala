@@ -1,6 +1,6 @@
 package com.odenzo.scodec
 
-import _root_.spire.math.{Interval, UByte, UInt, UShort, ULong}
+import _root_.spire.math.{UByte, UInt, ULong, UShort}
 import _root_.scodec.codecs
 
 /**

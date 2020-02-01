@@ -1,9 +1,5 @@
 package com.odenzo.ripple.bincodec.config
 
-import scala.util.Try
-
-import io.circe
-
 import com.odenzo.ripple.bincodec.OTestSpec
 
 class RippleConfigTest extends OTestSpec {

@@ -1,8 +1,7 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.{Attempt, DecodeResult}
-import scodec.bits.BitVector
-import scodec.bits._
+import scodec.bits.{BitVector, _}
 
 import com.odenzo.ripple.bincodec.OTestSpec
 

@@ -3,9 +3,8 @@ package com.odenzo.ripple.bincodec.utils
 import cats._
 import cats.data._
 import cats.implicits._
-import scribe.{Priority, Logger, Level}
+import scribe.{Level, Logger, Priority}
 import scribe.filter._
-import scribe.Level.{Warn, Debug}
 
 /**
   *  Scribe has run-time configuration.

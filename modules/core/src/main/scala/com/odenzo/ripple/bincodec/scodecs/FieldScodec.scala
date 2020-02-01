@@ -50,8 +50,6 @@ trait FieldScodec {
       decRes: DecodeResult[(Json, Json)] = DecodeResult(field.name.asJson -> result.value, result.remainder)
       _                                  = scribe.info(s"Decoded Json: ${decRes.value.asJson.spaces4}")
     } yield decRes
-    // Careful about double VL encoding. xrp*
-    // scodecs should use combinators if not calling from top of a field
 
   }
 }

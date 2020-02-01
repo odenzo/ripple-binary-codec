@@ -1,10 +1,5 @@
 package com.odenzo.ripple.bincodec
 
-import io.circe.Json
-
-import com.odenzo.ripple.bincodec.encoding.TypeSerializers
-import com.odenzo.ripple.bincodec.utils.JsonUtils
-
 /**
   * This will fail on fields which have a null value.
   *

@@ -1,13 +1,8 @@
 package com.odenzo.ripple.bincodec.scodecs
 
-import spire.math.{UByte, UInt}
 import scodec.codecs._
-import scodec.Codec
-import scodec.bits._
-import scodec.bits.HexStringSyntax
-import scodec._
-
-import com.odenzo.scodec.spire._
+import scodec.bits.{HexStringSyntax, _}
+import scodec.{Codec, _}
 
 object VL {
 

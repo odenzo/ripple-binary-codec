@@ -1,13 +1,8 @@
 package com.odenzo.ripple.bincodec.scodecs
 
-import spire.math.UInt
 import scodec._
 import scodec.codecs._
 import scodec.bits._
-import shapeless._
-import shapeless.Generic.Aux
-
-import com.odenzo.scodec.spire._
 
 /** This is for using Scodec Properly, with an initial focus on Decoding */
 object FieldIdScodec {

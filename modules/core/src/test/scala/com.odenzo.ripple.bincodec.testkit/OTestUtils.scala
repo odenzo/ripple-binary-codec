@@ -1,18 +1,12 @@
 package com.odenzo.ripple.bincodec.testkit
 
-import com.odenzo.ripple.bincodec.BinCodecLibError
-import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
-import io.circe.ACursor
-import io.circe.Decoder
-import io.circe.Json
-import io.circe.JsonObject
+import io.circe.{ACursor, Decoder, Json, JsonObject, ParsingFailure}
 import java.net.URL
-import scala.io.BufferedSource
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 
-import com.odenzo.ripple.bincodec.utils.JsonUtils
+import io.circe
 
-trait OTestUtils extends JsonUtils {
+trait OTestUtils {
 
   /**
     * This will load from resources/test/fixtures/...
@@ -21,7 +15,7 @@ trait OTestUtils extends JsonUtils {
     * @param in  JSON File Name as input to a test fixture
     * @param out JSON File Name matching the desired result
     */
-  def loadFixture(in: String, out: String): ErrorOr[(Json, Json)] = {
+  def loadFixture(in: String, out: String): Either[ParsingFailure, (Json, Json)] = {
 
     for {
       inJson <- loadJsonResource(s"/test/fixtures/$in")
@@ -30,17 +24,17 @@ trait OTestUtils extends JsonUtils {
 
   }
 
-  def loadRequestResponseFixture(path: String): Either[BinCodecLibError, List[JsonReqRes]] = {
-    loadJsonResource(path).flatMap(json => decode(json, Decoder[List[JsonReqRes]]))
+  def loadRequestResponseFixture(path: String): Either[circe.Error, List[JsonReqRes]] = {
+    loadJsonResource(path).flatMap(json => Decoder[List[JsonReqRes]].decodeJson(json))
   }
 
-  def loadJsonResource(path: String): Either[BinCodecLibError, Json] = {
-    BinCodecLibError.handlingM(s"Getting Resource $path") {
-      val resource: URL          = getClass.getResource(path)
-      val source: BufferedSource = Source.fromURL(resource)
-      val data: String           = source.getLines().mkString("\n")
-      JsonUtils.parseAsJson(data)
-    }
+  def loadJsonResource(path: String): Either[ParsingFailure, Json] = {
+
+    val resource: URL          = getClass.getResource(path)
+    val source: BufferedSource = Source.fromURL(resource)
+    val data: String           = source.getLines().mkString("\n")
+    io.circe.parser.parse(data)
+
   }
 
   /** Usage {{{

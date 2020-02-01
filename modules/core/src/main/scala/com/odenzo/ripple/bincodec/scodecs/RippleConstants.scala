@@ -2,8 +2,6 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.codecs.utf8
 
-import com.odenzo.ripple.bincodec.BinCodecLibError
-
 object RippleConstants {
 
   import cats.Show
@@ -100,8 +98,7 @@ object HashPrefix {
   private def byteVector(str: String) = {
     str.toList match {
       case a :: b :: c :: Nil => fromCode(a, b, c)
-      case _ =>
-        throw BinCodecLibError("Could Not Initialize Hard Coded Transaction ID")
+      case _                  => throw new Exception("Could Not Initialize Hard Coded Transaction ID")
     }
   }
 

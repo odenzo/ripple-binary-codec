@@ -1,15 +1,8 @@
 package com.odenzo.ripple.bincodec.setup
 
-import scala.collection.immutable
-
 import com.odenzo.ripple.bincodec._
-import io.circe._
-import io.circe.syntax._
-import io.circe.generic.extras.semiauto._
 import io.circe.literal._
 import _root_.scodec.bits._
-
-import com.odenzo.ripple.bincodec.scodecs.AmountScodecs
 
 class DecoderControllerTest extends OTestSpec {
 

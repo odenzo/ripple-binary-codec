@@ -1,14 +1,11 @@
 package com.odenzo.ripple.bincodec.scodecs
 
-import com.odenzo.ripple.bincodec.BinCodecLibError
-
 /** These are all Four Bytes Long with bottom byte 00  */
 object HashPrefixScodecs {
 
   import scodec.Codec
   import scodec.bits._
   import scodec.codecs._
-  import spire.math.UInt
 
   val raw = hex"54584E00"
 
@@ -62,8 +59,7 @@ object HashPrefixScodecs {
   private def byteVector(str: String) = {
     str.toList match {
       case a :: b :: c :: Nil => fromCode(a, b, c)
-      case _ =>
-        throw BinCodecLibError("Could Not Initialize Hard Coded Transaction ID")
+      case _                  => throw new Exception("Could Not Initialize Hard Coded Transaction ID")
     }
   }
 

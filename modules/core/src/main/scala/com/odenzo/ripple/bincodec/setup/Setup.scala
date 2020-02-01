@@ -1,15 +1,13 @@
 package com.odenzo.ripple.bincodec.setup
 
-import io.circe.{Encoder, Json}
-import scodec.{Attempt, Codec, Decoder, DecodeResult}
+import io.circe.Json
+import scodec.{Attempt, DecodeResult}
 import scodec.bits.BitVector
-import spire.math._
 import spire.implicits._
 
 import com.odenzo.ripple.bincodec.config.{FieldEntry, RippleConfig}
-import com.odenzo.ripple.bincodec.scodecs.{FieldIdScodec, FieldScodec, TrivialScodec, VL}
+import com.odenzo.ripple.bincodec.scodecs.{FieldIdScodec, FieldScodec}
 import com.odenzo.ripple.bincodec.scodecs.FieldIdScodec.{FieldCode, TypeCode}
-import io.circe.syntax._
 import scodec.bits.Bases.Alphabets.HexUppercase
 
 object Setup {
@@ -23,7 +21,8 @@ object Setup {
   val fieldsByFieldTypId: List[(FieldEntry, (BitVector, (FieldCode, FieldCode), Int, String))] = bindFieldIdToFields()
   scribe.trace(s"Data Types: ${pprint.apply(dataTypes)}")
 
-  val txntypeIMap: Map[Int, String] = config.transactionTypes.toList.map(_.swap).toMap
+  val txntypeIMap: Map[Int, String]               = config.transactionTypes.toList.map(_.swap).toMap
+  val ledgerEntrytypeIMap: Map[FieldCode, String] = config.ledgerEntryTypes.toList.map(_.swap).toMap
 
   val datatypeCode2datatypeNameMap: Map[Int, String] = dataTypes
     .toList
@@ -31,9 +30,6 @@ object Setup {
     .toMap
 
   def bindFieldIdToFields(): List[(FieldEntry, (BitVector, (FieldCode, Int), Int, String))] = {
-    import cats._
-    import cats.data._
-    import cats.implicits._
     import cats._
     import cats.data._
     import cats.implicits._
@@ -60,6 +56,9 @@ object Setup {
 
   def getTransactionType(code: Int): String     = txntypeIMap(code)
   def getTransactionTypeCode(name: String): Int = config.transactionTypes(name)
+
+  def getLedgerEntryType(code: Int): String     = ledgerEntrytypeIMap(code)
+  def getLedgerEntryTypeCode(name: String): Int = config.ledgerEntryTypes(name)
 
   //</editor-fold>
 

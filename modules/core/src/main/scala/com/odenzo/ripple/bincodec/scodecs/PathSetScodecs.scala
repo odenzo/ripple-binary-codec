@@ -2,8 +2,6 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import cats._
 import cats.data.{NonEmptyList, _}
-
-import com.odenzo.ripple.bincodec.utils.JsonUtils
 import cats.implicits._
 import scodec.bits._
 import scodec._
@@ -11,7 +9,7 @@ import scodec.codecs._
 import scodec.codecs.literals._
 
 /** These should fall under the delimited fields stuff */
-trait PathSetScodecs extends JsonUtils {
+trait PathSetScodecs {
 
   import com.odenzo.ripple.bincodec.scodecs.AmountScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AccountScodecs._

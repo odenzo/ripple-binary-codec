@@ -3,11 +3,6 @@ package com.odenzo.ripple.bincodec.testkit
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.syntax._
-import io.circe.Json
-import scribe.Logging
-
-import com.odenzo.ripple.bincodec.BCJsonErr
 //
 //trait TestRegimes extends RippleTestUtils with Logging with CodecTestCreators {
 //

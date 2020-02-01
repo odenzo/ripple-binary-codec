@@ -4,12 +4,8 @@ import com.odenzo.ripple.bincodec.OTestSpec
 import cats.implicits._
 import scodec.bits._
 import scodec._
-import scodec.codecs._
-import scodec.codecs.implicits._
 
-class AccountScodecsTest extends OTestSpec with STObjectScodec {
-
-  import RippleBase58Scodec._
+class AccountScodecsTest extends OTestSpec with AccountScodecs {
   val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
 
   test("Address Encode") {

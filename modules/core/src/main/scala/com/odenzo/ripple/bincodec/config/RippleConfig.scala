@@ -1,7 +1,7 @@
 package com.odenzo.ripple.bincodec.config
 
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 import cats._
 import cats.data._

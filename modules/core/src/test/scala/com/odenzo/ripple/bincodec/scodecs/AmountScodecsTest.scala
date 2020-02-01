@@ -2,7 +2,6 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import cats.implicits._
 import scodec.bits._
-import scodec._
 
 import com.odenzo.ripple.bincodec.OTestSpec
 

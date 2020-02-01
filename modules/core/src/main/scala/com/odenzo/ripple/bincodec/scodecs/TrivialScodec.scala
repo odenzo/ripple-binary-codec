@@ -4,7 +4,7 @@ import _root_.scodec.codecs._
 import scodec.{Attempt, Codec, DecodeResult, Err}
 import scodec.bits._
 import scodec.bits.Bases.Alphabets
-import spire.math.{UInt, ULong}
+import spire.math.ULong
 
 import com.odenzo.scodec.spire._
 
@@ -54,10 +54,10 @@ object TrivialScodec {
   // So, this should accept long in given range (63 bits) but output/input 64 bits
   val xrpulong64: Codec[ULong] = suint64
 
-  ulong(63).econtramap[Long] { l: Long =>
-    if (l <= ULong.MaxValue.toLong) Attempt.successful(l)
-    else Attempt.failure(Err(s"$l was too big for ULong"))
-  }
+//  ulong(63).econtramap[Long] { l: Long =>
+//    if (l <= ULong.MaxValue.toLong) Attempt.successful(l)
+//    else Attempt.failure(Err(s"$l was too big for ULong"))
+//  }
 
   def bitv64ToULong(bv: BitVector) = {
     // There is no bytes to ULong so we must go via BigInt or a String

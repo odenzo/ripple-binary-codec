@@ -1,14 +1,8 @@
 package com.odenzo.ripple.bincodec.encoding
 
-import io.circe.syntax._
-import io.circe.Json
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.literal._
-import com.odenzo.ripple.bincodec.utils.JsonUtils
-import com.odenzo.ripple.bincodec.OTestSpec
-import com.odenzo.ripple.bincodec.RippleCodecAPI
 
 ///** This is a quick test to make sure we have the binary encoding correct for multi-signing messages
 //  * Signers is serialized but not for signing, that checks out ok.

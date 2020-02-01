@@ -2,21 +2,15 @@ package com.odenzo.ripple.bincodec
 
 import cats.data._
 import cats.implicits._
-import cats.Eval
-import cats._
-import io.circe.Decoder
-import io.circe.JsonObject
+import cats.{Eval, _}
+import io.circe.{Decoder, JsonObject}
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should
-import org.scalatest.EitherValues
-import org.scalatest.OptionValues
+import org.scalatest.{EitherValues, OptionValues}
 import scodec.Attempt
-import scribe.Level
-import scribe.Logging
+import scribe.{Level, Logging}
 
-import com.odenzo.ripple.bincodec.testkit.OTestUtils
-import com.odenzo.ripple.bincodec.testkit.RippleTestUtils
-import com.odenzo.ripple.bincodec.testkit.TestLoggingConfig
+import com.odenzo.ripple.bincodec.testkit.{OTestUtils, RippleTestUtils, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
 trait OTestSpec
@@ -29,8 +23,6 @@ trait OTestSpec
     with RippleTestUtils {
 
   import scodec.bits._
-
-  import com.odenzo.ripple.bincodec.ErrorOr.ErrorOr
 
   def smartprint(a: Any) = {
     pprint.apply(a)
@@ -45,11 +37,10 @@ trait OTestSpec
   def setLogDebug(): Unit = setTestLog(Level.Debug)
 
   def getOrLog[T](ee: Either[Throwable, T], msg: String = "Error: "): T = {
-    import com.odenzo.ripple.bincodec.BCException.showThrowables
     ee match {
       case Right(v) => v
       case Left(emsg) =>
-        scribe.error(s"$msg\t=> ${emsg.show} ")
+        scribe.error(s"$msg\t=> ${emsg} ")
         fail(emsg)
     }
   }
@@ -66,10 +57,10 @@ trait OTestSpec
     implicit val decoder: Decoder[TestFixData] = deriveDecoder[TestFixData]
   }
 
-  def expectSuccess[T](rs: ErrorOr[ByteVector])(fn: ByteVector => T): T = {
+  def expectSuccess[T](rs: Either[Exception, ByteVector])(fn: ByteVector => T): T = {
     rs match {
-      case Left(err: BinCodecLibError) =>
-        scribe.error(s"Unexpected Failure: ${err.show} ", err)
+      case Left(err) =>
+        scribe.error(s"Unexpected Failure: ${err} ", err)
         fail(err)
       case Right(v) =>
         scribe.debug(s"Result ${v.toHex}")
@@ -77,10 +68,10 @@ trait OTestSpec
     }
   }
 
-  def expectFailure(rs: ErrorOr[ByteVector])(fn: Throwable => Any): Any = {
+  def expectFailure(rs: Either[Exception, ByteVector])(fn: Throwable => Any): Any = {
     rs match {
       case Left(err: Throwable) =>
-        scribe.debug(s"Got Expceted Failure ${err.show}")
+        scribe.debug(s"Got Expceted Failure ${err}")
         fn(err)
       case Right(v) =>
         fail(s"Expected Failure But Got Result ${v.toHex}")

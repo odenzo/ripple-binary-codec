@@ -1,4 +1,4 @@
-package com.odenzo.ripple.bincodec.encoding
+package com.odenzo.ripple.bincodec.setup
 
 import cats.data._
 import cats.implicits._

@@ -3,7 +3,7 @@ package com.odenzo.ripple.bincodec.testkit
 import cats.Eval
 import scribe.Level
 
-import com.odenzo.ripple.bincodec.utils.JsonUtils
+import com.odenzo.ripple.bincodec.config.RippleConfig
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
 // This should be touched once to config the Scribe logging system prior to testing.
@@ -27,7 +27,7 @@ object TestLoggingConfig {
       )
       ScribeLoggingConfig.addModifiers(packagesToMute, Level.Trace)
 
-      val clz: List[Class[JsonUtils]] = List(classOf[JsonUtils])
+      val clz: List[Class[RippleConfig]] = List(classOf[RippleConfig])
 
       // Not added as a Modifier yet
       ScribeLoggingConfig.excludeByClass(clz, Level.Debug)
