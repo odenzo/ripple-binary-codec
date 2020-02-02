@@ -1,9 +1,12 @@
 package com.odenzo.ripple.bincodec.scodecs
 
+import cats._
+import cats.data._
+import cats.implicits._
 import cats.implicits._
 import io.circe.Json
 import scodec.bits._
-import scodec._
+import scodec.{cats, _}
 import scodec.codecs._
 
 /**
@@ -35,36 +38,47 @@ trait STObjectScodec {
   val xrpobjectEnc: Encoder[List[(Json, Json)]] = fail(Err("ST Object Encoder Not Done")).asEncoder
   val xrparrayEnc: Encoder[List[(Json, Json)]]  = fail(Err("ST Array Encoder Not Done")).asEncoder
 
-  val xrpstarray: Codec[List[(Json, Json)]]  = Codec(xrparrayEnc, xrparrayDec)
+  val xrpstarray: Codec[List[(Json, Json)]] = Codec(xrparrayEnc, xrparrayDec)
+
+  // This does an infinite loop on first field
   val xrpstobject: Codec[List[(Json, Json)]] = Codec(xrpobjectEnc, xrpobjectDec)
 
   /** This is for a List of A where the *entire* list is delimited but the individual A variable size/type.
     * Each A is decoded to a (Json,Json) tyuple to avoid type-dependant functions. */
-  def delimitedDynamicList(bv: BitVector, delimiter: scodec.Decoder[Unit]): Attempt[DecodeResult[List[(Json, Json)]]] = {
-    // This is really a loop of get  END OF ARRAY | field
+  // DecodeResult[A,BitVector]
 
-    // DecodeResult[A,BitVector]
+  def delimitedDynamicList(bv: BitVector, delimiter: scodec.Codec[Unit]): Attempt[DecodeResult[List[(Json, Json)]]] = {
+    // This is really a loop of get  END OF ARRAY | field
+    scribe.debug(s"Doing dynamic delimited list with delimeter ${delimiter.encode(())} ")
+
     val initialState: MyState = MyState(bv, List.empty)
-    val stateFn: State[MyState, Option[(Json, Json)]] = State[MyState, Option[(Json, Json)]](s =>
-      getNextField(delimiter)(s.bv) match {
-        case Left(remainder) => (s.copy(bv = remainder), None)
-        case Right(dcr)      => (MyState(dcr.remainder, dcr.value :: s.acc), dcr.value.some)
+    val stateFn: State[MyState, Option[(Json, Json)]] = State[MyState, Option[(Json, Json)]](state => {
+      scribe.debug(s"Current State => $state")
+      val (newState, out) = getNextField(delimiter)(state.bv) match {
+        case Left(remainder) => (state.copy(bv = remainder), None)
+        case Right(dcr)      => (MyState(dcr.remainder, dcr.value :: state.acc), dcr.value.some)
       }
-    )
-    val result: (MyState, Option[(Json, Json)]) =
-      stateFn.run(initialState).iterateWhile((a: (MyState, Option[(Json, Json)])) => a._2.isDefined).value
+      scribe.debug(s"New State $newState")
+      scribe.debug(s"New Out $out")
+      (newState, out)
+    })
+    val state0 = stateFn
+    scribe.debug(s"Initial State $state0")
+    val result: (MyState, Option[(Json, Json)]) = stateFn.iterateWhile(_.isDefined).run(initialState).value
 
     val finalState: MyState = result._1
     val ans                 = Attempt.successful(DecodeResult(finalState.acc, finalState.bv))
     ans
+
   }
 
   /** Returns the next field in the array or Left is the delimeter is found outside a field
     * To avoided dependant types the decoding is done to JSON This consumes the delimeter too. */
-  def getNextField[A](delimiter: Decoder[A])(bv: BitVector): Either[BitVector, DecodeResult[(Json, Json)]] = {
-    delimiter.decode(bv) match {
+  def getNextField[A](delimiter: Decoder[A])(fromBV: BitVector): Either[BitVector, DecodeResult[(Json, Json)]] = {
+    scribe.info(s"Getting Next Field in Delimeted Object, bv = ${fromBV.toHex}")
+    delimiter.decode(fromBV) match {
       case Attempt.Successful(res) => Left(res.remainder)
-      case Attempt.Failure(cause)  => xrpfield.decode(bv).require.asRight
+      case Attempt.Failure(cause)  => xrpfield.decode(fromBV).require.asRight
     }
 
   }
