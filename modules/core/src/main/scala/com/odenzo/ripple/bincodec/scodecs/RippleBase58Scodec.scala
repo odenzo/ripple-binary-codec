@@ -1,78 +1,70 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 import scodec.bits.{Bases, BitVector, ByteVector}
-import scodec.{Attempt, Err}
+import scodec.{Attempt, Codec, DecodeResult, Err}
 
-object RippleBase58Scodec {
+trait RippleBase58Scodec {
 
-  //def xrpb58(len:Int) = fixedSizeBytes(len, ascii)
+  /** Eager RippleBase58 scodec that will consume all the bytes */
+  val xrplBase58 = Codec(fromBase58(_, RippleBase58Alphabet), toBase58(_, RippleBase58Alphabet))
 
-  // A base 58 that will eagerly eat, use fixedSizeBytes
+  private final def toBase58(bitsv: BitVector, alphabet: Bases.Alphabet = RippleBase58Alphabet): Attempt[DecodeResult[String]] = {
+    val bv = bitsv.bytes
+    Attempt.fromTry {
+      Try {
+        val zeroChar = alphabet.toChar(0)
+        if (bv.isEmpty) {
+          DecodeResult("", BitVector.empty)
+        } else {
+          val ZERO  = BigInt(0)
+          val RADIX = BigInt(58L)
+          val ones  = List.fill(bv.takeWhile(_ == 0).length.toInt)(zeroChar)
 
-  val enc: String => Attempt[BitVector] = rippleB58Enc _
-//  val dec: BitVector => Attempt[String] = rippleB58Dec _
-//  val xrpbase58                         = scodec.Codec.apply(enc, dec)
+          @tailrec
+          def go(value: BigInt, chars: List[Char]): String = value match {
+            case ZERO => (ones ++ chars).mkString
+            case _ =>
+              val (div, rem) = value /% RADIX
+              go(div, alphabet.toChar(rem.toInt) +: chars)
+          }
 
-  def rippleB58Enc(str: String): Attempt[BitVector] = fromBase58Descriptive(str, RippleBase58Alphabet) match {
-    case Left(value)  => Attempt.failure(Err(value))
-    case Right(value) => Attempt.successful(value.bits)
-  }
+          val result = go(BigInt(1, bv.toArray), List.empty)
+          DecodeResult(result, BitVector.empty)
 
-  // Have to tell how greedy to be?
-  def rippleB58Dec(bv: BitVector): Attempt[String] = Attempt.successful(toBase58(bv.bytes))
-
-  private final def toBase58(bv: ByteVector, alphabet: Bases.Alphabet = RippleBase58Alphabet): String = {
-
-    val zeroChar = alphabet.toChar(0)
-    if (bv.isEmpty) {
-      ""
-    } else {
-      val ZERO  = BigInt(0)
-      val RADIX = BigInt(58L)
-      val ones  = List.fill(bv.takeWhile(_ == 0).length.toInt)(zeroChar)
-
-      @tailrec
-      def go(value: BigInt, chars: List[Char]): String = value match {
-        case ZERO => (ones ++ chars).mkString
-        case _ =>
-          val (div, rem) = value /% RADIX
-          go(div, alphabet.toChar(rem.toInt) +: chars)
+        }
       }
-
-      go(BigInt(1, bv.toArray), List.empty)
     }
 
   }
 
-  private def fromBase58Descriptive(str: String, alphabet: Bases.Alphabet = RippleBase58Alphabet): Either[String, ByteVector] = {
+  private def fromBase58(str: String, alphabet: Bases.Alphabet = RippleBase58Alphabet): Attempt[BitVector] = {
     val zeroChar   = alphabet.toChar(0)
     val zeroLength = str.takeWhile(_ == zeroChar).length
     val zeroes     = ByteVector.fill(zeroLength.toLong)(0)
     val trim       = str.splitAt(zeroLength)._2.toList
     val RADIX      = BigInt(58L)
-    try {
-      val decoded = trim.foldLeft(BigInt(0)) { (a, c) =>
-        try {
-          a * RADIX + BigInt(alphabet.toIndex(c))
-        } catch {
-          case e: IllegalArgumentException =>
-            val idx = trim.takeWhile(_ != c).length
-            throw new IllegalArgumentException(s"Invalid base 58 character '$c' at index $idx")
+    Attempt.fromTry {
+      Try {
+        val decoded = trim.foldLeft(BigInt(0)) { (a, c) =>
+          try {
+            a * RADIX + BigInt(alphabet.toIndex(c))
+          } catch {
+            case e: IllegalArgumentException =>
+              val idx = trim.takeWhile(_ != c).length
+              throw new IllegalArgumentException(s"Invalid base 58 character '$c' at index $idx")
+          }
         }
+        if (trim.isEmpty) zeroes.bits
+        else
+          (zeroes ++ ByteVector(decoded.toByteArray.dropWhile(_ == 0))).bits
+        //drop because toByteArray sometimes prepends a zero
       }
-      if (trim.isEmpty) Right(zeroes)
-      else
-        Right(
-          zeroes ++ ByteVector(
-            decoded
-              .toByteArray
-              .dropWhile(_ == 0)
-          )
-        ) //drop because toByteArray sometimes prepends a zero
-    } catch {
-      case e: IllegalArgumentException => Left(e.getMessage)
     }
+
   }
 }
+
+object RippleBase58Scodec extends RippleBase58Scodec

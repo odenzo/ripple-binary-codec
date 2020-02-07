@@ -14,9 +14,6 @@ trait AccountScodecs {
 
   import RippleBase58Scodec._
 
-  //region Implementation
-
-  val minNoMax = SizeBound.atMost(3)
   // Logic: First char is 'r' <-> first byte '0'
   // Checksum is last 4 bytes, not sure how many characters all the time
   // Sometimes binary encoding includes VL sometimes not.
@@ -44,23 +41,20 @@ trait AccountScodecs {
   }
 
   /** This decodes 160 bits, it does not deal with VL Encoding at all */
-  val xrpaccount: Codec[String] = Codec[String](accountEncoder, accountDecoder).withContext("xrpaccount")
+  val xrpaccount: Codec[String] = Codec[String](accountEncoder, accountDecoder).withContext("xrplAccount")
 
   /** Adds the leading 'r' and calculated 4 byte checksum, appending it to result */
   protected def checksumAddress(bitv: BitVector): BitVector = {
-    scribe.info(s"Checksum Address from BitV Len ${bitv.length}")
-    (bitv.length == 20 * 8)
-    val base = (hex"00" ++ bitv.bytes)
-    val res  = base ++ (sha256(sha256(base)).take(4))
-    res.bits
+    val base        = (hex"00" ++ bitv.bytes)
+    val withCheckum = base ++ (sha256(sha256(base)).take(4))
+    withCheckum.bits
   }
 
-  protected def sha256(vector: ByteVector) = {
+  private def sha256(vector: ByteVector) = {
     val sha256: Array[Byte] = java.security.MessageDigest.getInstance("SHA-256").digest(vector.toArray)
     ByteVector(sha256)
   }
 
-  //endregion
 }
 
 object AccountScodecs extends AccountScodecs

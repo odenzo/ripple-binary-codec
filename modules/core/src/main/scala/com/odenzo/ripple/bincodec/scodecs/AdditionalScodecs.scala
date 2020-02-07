@@ -5,7 +5,7 @@ import scodec.{Codec, _}
 import scodec.codecs._
 
 import com.odenzo.ripple.bincodec.setup.Setup
-import com.odenzo.ripple.bincodec.scodecs.TrivialScodec._
+import com.odenzo.ripple.bincodec.scodecs.BasicScodecs._
 
 trait AdditionalScodecs {
 
@@ -23,9 +23,9 @@ Vector256	19	Yes	This type does not appear in transaction instructions, but the 
 
    */
 
-  val xrpltransactiontype: Codec[String] = xrpuint16.xmap(num => Setup.getTransactionType(num), str => Setup.getTransactionTypeCode(str))
+  val xrplTransactionType: Codec[String] = xrpuint16.xmap(num => Setup.getTransactionType(num), str => Setup.getTransactionTypeCode(str))
 
-  val xrplledgerentry: Codec[String] = xrpuint16.xmap(
+  val xrplLedgerEntryType: Codec[String] = xrpuint16.xmap(
     num => Setup.getLedgerEntryType(num),
     str => Setup.getLedgerEntryTypeCode(str)
   )

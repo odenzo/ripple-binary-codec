@@ -17,27 +17,27 @@ import scodec.codecs._
   */
 trait AmountScodecs {
 
-  protected val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
-  protected val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
-  protected val minAbsAmount: BigDecimal = BigDecimal("1000000000000000E-96")
+  private[AmountScodecs] val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
+  private[AmountScodecs] val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
+  private[AmountScodecs] val minAbsAmount: BigDecimal = BigDecimal("1000000000000000E-96")
 
-  protected val maxPrecision: Int = 15
+  private[AmountScodecs] val maxPrecision: Int = 15
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
-  protected val minExponent: Int    = -96
-  protected val maxExponent: Int    = 80
-  protected val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
-  protected val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
+  private[AmountScodecs] val minExponent: Int    = -96
+  private[AmountScodecs] val maxExponent: Int    = 80
+  private[AmountScodecs] val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
+  private[AmountScodecs] val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
 
-  final val maxXrp: Double = Math.pow(10, 17)
+  private[AmountScodecs] final val maxXrp: Double = Math.pow(10, 17)
 
-  protected def xprAmountEncFn(xrp: Long) = {
+  private[AmountScodecs] def xprAmountEncFn(xrp: Long) = {
     if (xrp < 0) Attempt.failure(Err(s"XRP Amount$xrp < 0"))
     else if (xrp > maxXrp) Attempt.failure(Err(s"XRP Amount $xrp > $maxXrp"))
     else ulong(62).encode(xrp).map(bin"01" ++ _)
   }
 
-  protected def xprAmountDecFn(bitv: BitVector) = xrpXrpAmount.decode(bitv)
+  private[AmountScodecs] def xprAmountDecFn(bitv: BitVector) = xrpXrpAmount.decode(bitv)
 
   // We have consumed the first bit already
   val xrpXrpAmount: Codec[XRPLDrops] = (constant(bin"1") dropLeft ulong(62))
@@ -49,13 +49,13 @@ trait AmountScodecs {
    This sure looks like a peek() or flatZip case
    This doesn't have to match the Ripple Alphabet
    */
-  def currencycodeLegacy: Codec[CustomCurrency] =
+  private[AmountScodecs] def currencycodeLegacy: Codec[CustomCurrency] =
     (constantLenient(bin"0000_0001") ~> bitsStrict(152))
       .xmap[CustomCurrency](x => CustomCurrency(x), y => y.custom)
       .withContext("Legacy Currency")
 
   /** @todo Should be checking the string is in the ripplecurrencyalphabet */
-  def currencycode: Codec[ISOCurrency] =
+  private[AmountScodecs] def currencycode: Codec[ISOCurrency] =
     (constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40)))
       .xmap[ISOCurrency](x => ISOCurrency(x), (y: ISOCurrency) => y.iso)
       .withContext("ISO Currnecy")
@@ -77,21 +77,13 @@ trait AmountScodecs {
     *
     * @return true is valid
     */
-  protected def isRippleAscii(s: String): Boolean = {
+  private[AmountScodecs] def isRippleAscii(s: String): Boolean = {
     s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
   }
 
   /** Gets JUST the amount for a Fiat Value, not the currency or issuer */
 
-  /** Starts after the XRP/Fiat discriminator with the Sign Bit. Sign Bit, Exponent, Mantissa   The exponent is encoded +/- 73 or
-    * somethig too.
-    * Fixed Size of 63 */
-  val fiatAmount: Codec[BigDecimal] =
-    (bool(1) ~ uint8 ~ ulong(54))
-      .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
-      .withContext("XRPL Fiat Amount")
-
-  def unpackToBigDecimal(isPositive: Boolean, exponent: Int, mantissa: Long): Attempt[BigDecimal] = {
+  private[AmountScodecs] def unpackToBigDecimal(isPositive: Boolean, exponent: Int, mantissa: Long): Attempt[BigDecimal] = {
     scribe.debug(s"Unpacking to BigD $isPositive Raw Exponent $exponent Raw Mantissa: (Base ?) $mantissa")
     // TODO: Adjust exponent correctly
     val exponentAdj           = exponent - 97
@@ -101,7 +93,7 @@ trait AmountScodecs {
     Attempt.successful(signedAns)
   }
 
-  def packToBigDecimal(bd: BigDecimal): Attempt[((Boolean, Int), Long)] = {
+  private[AmountScodecs] def packToBigDecimal(bd: BigDecimal): Attempt[((Boolean, Int), Long)] = {
     bd match {
       case a if a === 0              => Attempt.successful(((true, 0), 0))
       case a if a < minVal           => Attempt.failure(Err(s"fiat amount too small $a"))
@@ -119,6 +111,14 @@ trait AmountScodecs {
         }
     }
   }
+
+  /** Starts after the XRP/Fiat discriminator with the Sign Bit. Sign Bit, Exponent, Mantissa   The exponent is encoded +/- 73 or
+    * somethig too.
+    * Fixed Size of 63 */
+  val fiatAmount: Codec[BigDecimal] =
+    (bool(1) ~ uint8 ~ ulong(54))
+      .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
+      .withContext("XRPL Fiat Amount")
 
   val xrpFiat: Codec[XRPLIssuedAmount] =
     (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ fixedSizeBits(160, AccountScodecs.xrpaccount))

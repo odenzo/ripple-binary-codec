@@ -1,22 +1,28 @@
 package com.odenzo.ripple.bincodec.scodecs
 
+import cats._
+import cats.data._
+import cats.implicits._
+
 import scodec._
 import scodec.codecs._
 import scodec.bits._
 
 /** This is for using Scodec Properly, with an initial focus on Decoding */
-object FieldIdScodec {
+trait FieldIdScodec {
 
   type TypeCode  = Int
   type FieldCode = Int
 
-  val swapFromOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
+  val x = ("Hello", 64L)
+
+  private val swapFromOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
   // Techincally this should be reversed types I think, but now new type yet for type checking
-  val swapToOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
+  private val swapToOrder = (typeCode: TypeCode, fieldCode: FieldCode) => (fieldCode, typeCode)
 
   val typeAndField: Codec[(FieldCode, TypeCode)] = (constant(hex"00") ~> uint8 ~ uint8)
-    .xmap(swapFromOrder, swapFromOrder)
+    .xmap(_.swap, _.swap)
 
   val smallFieldAndType: Codec[(FieldCode, TypeCode)] = (constant(bin"0000") ~> uint4 ~ uint8)
 
@@ -39,3 +45,5 @@ object FieldIdScodec {
     )
   }
 }
+
+object FieldIdScodec extends FieldIdScodec

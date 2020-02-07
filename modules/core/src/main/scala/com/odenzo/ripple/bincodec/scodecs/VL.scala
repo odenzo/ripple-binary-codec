@@ -4,13 +4,13 @@ import scodec.codecs._
 import scodec.bits.{HexStringSyntax, _}
 import scodec.{Codec, _}
 
-object VL {
+trait VL {
 
-  val smallMask = hex"F000"
+  private val smallMask = hex"F000"
 
-  val smallVL: Codec[Int] = uint8.withContext("Small VL")
+  protected val smallVL: Codec[Int] = uint8.withContext("Small VL")
 
-  val mediumVL: Codec[Int] = (uint8 ~ uint8)
+  protected val mediumVL: Codec[Int] = (uint8 ~ uint8)
     .xmap[Int](
       (bt: (Int, Int)) => 193 + ((bt._1 - 193) * 256) + bt._2,
       (i: Int) => {
@@ -22,7 +22,7 @@ object VL {
     )
     .withContext("Medium VL")
 
-  val largeVL: Codec[Int] = (uint8 ~ uint8 ~ uint8).xmap[Int](
+  protected val largeVL: Codec[Int] = (uint8 ~ uint8 ~ uint8).xmap[Int](
     (bt: ((Int, Int), Int)) => 241 + bt._1._1 + bt._1._2 + bt._2,
     (i: Int) => {
       val lenA: Int = i - 12481
@@ -34,7 +34,7 @@ object VL {
   )
 
   /** Until I figure out the variable length combinator */
-  def encodeVlAttempt(len: Int): Attempt[BitVector] = {
+  protected def encodeVlAttempt(len: Int): Attempt[BitVector] = {
     len match {
       case len if len <= 0      => Attempt.failure(Err(s"$len was less than 0"))
       case len if len <= 92     => smallVL.encode(len)
@@ -46,7 +46,7 @@ object VL {
 
   val encodeVL: Encoder[Int] = Encoder[Int](encodeVlAttempt _)
 
-  def decodeVL: Decoder[Int] = {
+  protected def decodeVL: Decoder[Int] = {
     peek(uint(8)).flatMap { x: Int =>
       val len = x match {
         case l if l < 0    => fail[Int](Err(s"Marker Bytes too Small $l"))
@@ -64,3 +64,5 @@ object VL {
     * Make sure no duplicate VL at field and internal level */
   val xrpvl = Codec[Int](encodeVL, decodeVL)
 }
+
+object VL extends VL

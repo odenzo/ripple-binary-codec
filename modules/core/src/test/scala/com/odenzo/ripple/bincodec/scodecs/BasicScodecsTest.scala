@@ -5,10 +5,10 @@ import scodec.bits._
 import scodec.DecodeResult
 import spire.math.{ULong, UShort}
 
-class TrivialScodecTest extends OTestSpec {
+class BasicScodecsTest extends OTestSpec with BasicScodecs {
 
   // Not much use testing the basic ones but lets see.
-  import com.odenzo.ripple.bincodec.scodecs.TrivialScodec._
+  import com.odenzo.ripple.bincodec.scodecs.BasicScodecs._
 
   test("UINT8") {
     shouldSucceed(xrpuint8.encode(0)) shouldEqual hex"00".bits

@@ -14,14 +14,24 @@ case class XRPLIssuedAmount(value: BigDecimal, currency: XRPLCurrency, issuer: S
 
 case class XRPLPathStep(
     setType: BitVector,
-    account: Option[String] = None,
+    account: Option[String]        = None,
     currency: Option[XRPLCurrency] = None,
-    issuer: Option[String] = None
+    issuer: Option[String]         = None
 )
 
-case class XRPLPath(steps: Vector[XRPLPathStep])
+case class XRPLPath(steps: List[XRPLPathStep]) {
+  def append(step: XRPLPathStep): XRPLPath = XRPLPath(this.steps.appended(step))
+}
+
+object XRPLPath {
+  val empty = XRPLPath(List.empty[XRPLPathStep])
+}
 
 case class XRPLPathSet(paths: Vector[XRPLPath])
+
+object XRPLPathSet {
+  val empty = XRPLPathSet(Vector.empty[XRPLPath])
+}
 
 object ScodecJsonCodecs {
   import io.circe._

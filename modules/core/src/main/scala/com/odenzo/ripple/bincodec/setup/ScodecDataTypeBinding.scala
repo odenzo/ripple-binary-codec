@@ -15,7 +15,7 @@ import com.odenzo.ripple.bincodec.scodecs.ScodecJsonCodecs._
 
 /** All of the known XRPL data types, bound to some scodec */
 object ScodecDataTypeBinding {
-  import com.odenzo.ripple.bincodec.scodecs.TrivialScodec._
+  import com.odenzo.ripple.bincodec.scodecs.BasicScodecs._
   import com.odenzo.ripple.bincodec.scodecs.PathSetScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AccountScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AmountScodecs._
@@ -55,14 +55,14 @@ object ScodecDataTypeBinding {
 
     typename match {
       case "UInt16"      => xrpuint16.decode(bv).map(x => transform2Json(x)) // Int
-      case "Transaction" => xrpltransactiontype.decode(bv).map(x => transform2Json(x)) // String/Int
+      case "Transaction" => xrplTransactionType.decode(bv).map(x => transform2Json(x)) // String/Int
       case "PathSet"     => xrppathset.decode(bv).map(x => transform2Json(x)) // BitVector!
       case "Vector256"   => xrpvectorhash256.decode(bv).map(x => transform2Json(x)) // String
       case "AccountID"   => xrpaccount.decode(bv).map(x => transform2Json(x))
       case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrpaccount).decode(bv).map(x => transform2Json(x))
       case "UInt8"       => xrpuint8.decode(bv).map(x => transform2Json(x))
       case "UInt32"      => xrpuint32.decode(bv).map(x => transform2Json(x))
-      case "Hash128"     => xrphash(16).decode(bv).map(x => transform2Json(x))
+      case "Hash128"     => xrphash128.decode(bv).map(x => transform2Json(x))
       case "Blob"        => xrpblob.decode(bv).map(x => transform2Json(x)) // String
       case "Amount"      => xrplAmount.decode(bv).map(x => transform2Json(x)) // XRP or Fiat Amount
       case "Hash256"     => xrphash256.decode(bv).map(x => transform2Json(x)) // String
