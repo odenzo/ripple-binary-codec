@@ -26,7 +26,7 @@ trait AccountScodecs {
       val len = str.length
       if (!(len >= 30 && len <= 35)) throw new Exception(s"Address length $len  not between 30 and 35 inclusive")
       if (!str.startsWith("r")) throw new Exception(s"Address Must Start With 'r' but got ${str}")
-      val fullbin: Attempt[BitVector] = rippleB58Enc(str)
+      val fullbin: Attempt[BitVector] = xrplBase58.encode(str)
       fullbin.map(_.drop(8).dropRight(32))
     }
   }.asEncoder
@@ -36,8 +36,8 @@ trait AccountScodecs {
       .codecs
       .bits(160)
       .asDecoder
-      .map((bv: BitVector) => checksumAddress(bv))
-      .emap[String](rippleB58Dec)
+      .map(checksumAddress)
+      .flatMap(_ => xrplBase58)
   }
 
   /** This decodes 160 bits, it does not deal with VL Encoding at all */

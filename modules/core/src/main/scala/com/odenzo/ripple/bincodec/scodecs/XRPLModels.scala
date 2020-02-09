@@ -1,7 +1,9 @@
 package com.odenzo.ripple.bincodec.scodecs
-
+import cats._
+import cats.data._
+import cats.implicits._
 import scodec.bits.BitVector
-
+import scodec.bits._
 /** Miminal Set of Models */
 trait XRPLCurrency
 case class CustomCurrency(custom: BitVector) extends XRPLCurrency
@@ -13,18 +15,27 @@ case class XRPLDrops(amount: Long)                                              
 case class XRPLIssuedAmount(value: BigDecimal, currency: XRPLCurrency, issuer: String) extends XRPLAmount
 
 case class XRPLPathStep(
-    setType: BitVector,
     account: Option[String]        = None,
     currency: Option[XRPLCurrency] = None,
     issuer: Option[String]         = None
-)
+) {
+
+  val code: ByteVector = (account,currency,issuer) match {
+    case (Some(a), None, None) => hex"01"
+    case (None, Some(c), None) => hex"10"
+    case (None, None, Some(i)) => hex"20"
+    case (None, Some(c), Some(i)) => hex"30"
+    case _ => throw new IllegalStateException("Invalid Pathstep")
+  }
+
+}
 
 case class XRPLPath(steps: List[XRPLPathStep]) {
   def append(step: XRPLPathStep): XRPLPath = XRPLPath(this.steps.appended(step))
 }
 
 object XRPLPath {
-  val empty = XRPLPath(List.empty[XRPLPathStep])
+  val empty: XRPLPath = XRPLPath(List.empty[XRPLPathStep])
 }
 
 case class XRPLPathSet(paths: Vector[XRPLPath])
