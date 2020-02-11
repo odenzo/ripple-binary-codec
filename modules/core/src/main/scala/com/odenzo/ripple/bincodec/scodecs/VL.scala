@@ -14,7 +14,7 @@ trait VL {
     .xmap[Int](
       (bt: (Int, Int)) => 193 + ((bt._1 - 193) * 256) + bt._2,
       (i: Int) => {
-        val l2      = i - 192
+        val l2      = i - 193
         val b1: Int = 193 + (l2 >>> 8)
         val b2: Int = l2 & 0xFF
         (b1, b2) // Only output 2 bytes
@@ -23,7 +23,7 @@ trait VL {
     .withContext("Medium VL")
 
   protected val largeVL: Codec[Int] = (uint8 ~ uint8 ~ uint8).xmap[Int](
-    (bt: ((Int, Int), Int)) => 241 + bt._1._1 + bt._1._2 + bt._2,
+    (bt: ((Int, Int), Int)) => 12481 + ((bt._1._1 - 241) * 65536) + ( bt._1._2 *256) + bt._2,
     (i: Int) => {
       val lenA: Int = i - 12481
       val b1        = 241 + (lenA >>> 16)
@@ -33,12 +33,12 @@ trait VL {
     }
   )
 
-  /** Until I figure out the variable length combinator */
+  /** This encodes 0 as valid length */
   protected def encodeVlAttempt(len: Int): Attempt[BitVector] = {
     len match {
-      case len if len <= 0      => Attempt.failure(Err(s"$len was less than 0"))
-      case len if len <= 92     => smallVL.encode(len)
-      case len if len <= 12481  => mediumVL.encode(len)
+      case len if len < 0      => Attempt.failure(Err(s"$len was less than 0"))
+      case len if len <= 192     => smallVL.encode(len)
+      case len if len <= 12480  => mediumVL.encode(len)
       case len if len <= 918744 => largeVL.encode(len)
       case _                    => Attempt.failure(Err(s"$len was > 918744"))
     }
@@ -48,6 +48,7 @@ trait VL {
 
   protected def decodeVL: Decoder[Int] = {
     peek(uint(8)).flatMap { x: Int =>
+      scribe.debug(s"DecodeVL on First Byte:  $x")
       val len = x match {
         case l if l < 0    => fail[Int](Err(s"Marker Bytes too Small $l"))
         case l if l <= 192 => smallVL
@@ -62,7 +63,7 @@ trait VL {
 
   /** This will return the VL encoding in length in bytes (not bits or hex nibble)
     * Make sure no duplicate VL at field and internal level */
-  val xrpvl = Codec[Int](encodeVL, decodeVL)
+  val xrpvl: Codec[Int] = Codec[Int](encodeVL, decodeVL)
 }
 
 object VL extends VL

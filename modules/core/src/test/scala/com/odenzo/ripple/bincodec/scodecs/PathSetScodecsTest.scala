@@ -2,10 +2,117 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import com.odenzo.ripple.bincodec.OTestSpec
 import scodec.bits._
-
+import io.circe.literal._
 class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
 
-  val srcJson = """    "Paths": [
+  private val problemPaths = json"""
+
+                       [
+                             [
+                               {
+                                 "currency" : "CNY",
+                                 "issuer" : "rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y"
+                               },
+                               {
+                                 "currency" : "CNY",
+                                 "issuer" : "razqQKzJRdB4UxFPWf5NEpEG3WMkmwgcXA"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ],
+                             [
+                               {
+                                 "currency" : "CNY",
+                                 "issuer" : "razqQKzJRdB4UxFPWf5NEpEG3WMkmwgcXA"
+                               },
+                               {
+                                 "currency" : "CNY",
+                                 "issuer" : "rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ],
+                             [
+                               {
+                                 "currency" : "USD",
+                                "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+                               },
+                               {
+                                 "currency" : "USD",
+                                 "issuer" : "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ],
+                             [
+                               {
+                                 "currency" : "USD",
+                                 "issuer" : "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq"
+                               },
+                               {
+                                 "currency" : "USD",
+                                 "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ],
+                             [
+                               {
+                                 "currency" : "EUR",
+                                 "issuer" : "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq"
+                               },
+                               {
+                                 "currency" : "USD",
+                                 "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ],
+                             [
+                               {
+                                 "currency" : "USD",
+                                 "issuer" : "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
+                               },
+                               {
+                                 "currency" : "EUR",
+                                 "issuer" : "rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq"
+                               },
+                               {
+                                 "currency" : "XRP"
+                               },
+                               {
+                                 "currency" : "XCN",
+                                 "issuer" : "r8HgVGenRTAiNSM5iqt9PX2D2EczFZhZr"
+                               }
+                             ]
+                           ]"""
+
+  val srcJson = json""" {   "Paths": [
             [
               {
                 "account": "rGrg8a65omKD6F4moDXRiS82XMXtpM996Z",
@@ -19,20 +126,22 @@ class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
                 "type_hex": "0000000000000030"
               }
             ]
-          ]"""
+          ]
+          }"""
 
-  val pathset =
+  private val pathset =
     hex"_0112_01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00"
 
-  val singlePath = hex"""
+  private  val singlePath = hex"""
   01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00""".bits
 
-  val pathstepA = hex"01_A4AB176547A22ED23E6D8C3138780526830081D2".bits
-  val pathstepB = hex"30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F".bits
+  private val pathstepA = hex"01_A4AB176547A22ED23E6D8C3138780526830081D2".bits
+  private val pathstepB = hex"30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F".bits
 
   test("Single PathSet") {
-    xrppathset.decode(pathset.bits).require
+    xrplPathSet.decode(pathset.bits).require
   }
+import PathStepScodecs.xrplPathStep
 
   test("Step 0x01") {
     val res = xrplPathStep.decode(pathstepA).require
@@ -44,8 +153,5 @@ class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
     scribe.debug(s"Result: $res")
   }
 
-  test("Single Path") {
-    val res = xrppath.decode(singlePath).require
-    scribe.debug(s"Result: $res")
-  }
+
 }

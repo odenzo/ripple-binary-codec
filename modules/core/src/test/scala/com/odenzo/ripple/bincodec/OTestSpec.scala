@@ -3,13 +3,12 @@ package com.odenzo.ripple.bincodec
 import cats.data._
 import cats.implicits._
 import cats.{Eval, _}
-import io.circe.{Decoder, JsonObject}
+import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.funsuite.AnyFunSuiteLike
 import org.scalatest.matchers.should
 import org.scalatest.{EitherValues, OptionValues}
-import scodec.Attempt
+import scodec.{Attempt, DecodeResult}
 import scribe.{Level, Logging}
-
 import com.odenzo.ripple.bincodec.testkit.{OTestUtils, RippleTestUtils, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
@@ -88,5 +87,28 @@ trait OTestSpec
   def shouldFail[T](a: Attempt[T]): Unit = a match {
     case Attempt.Failure(e)        => scribe.info(s"Expected Failure $e")
     case Attempt.Successful(value) => fail(s"Should have failed but got $value")
+  }
+
+  def decodeJson[T:Decoder](json:Json): T = {
+    Decoder[T].decodeJson(json) match {
+      case Left(value) => fail(s"Failed Decoding ${json.spaces2}: $value")
+      case Right(value) => value
+    }
+  }
+
+  /** Ensures all bits are exhausted on decoding back to value */
+  def roundTripFromEncode[T]( codec: scodec.Codec[T], v:T): BitVector = {
+    val bits = codec.encode(v).require
+    val back = codec.decode(bits).require
+    back.value shouldEqual v
+    back.remainder.isEmpty shouldBe true
+    bits
+  }
+
+  def roundTripFromDecode[T]( codec: scodec.Codec[T], v:BitVector): DecodeResult[T] = {
+    val decode: DecodeResult[T] = codec.decode(v).require
+    val encode = codec.encode(decode.value).require
+    encode shouldEqual v
+    decode
   }
 }

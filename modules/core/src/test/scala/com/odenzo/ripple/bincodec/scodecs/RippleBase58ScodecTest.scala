@@ -10,10 +10,7 @@ class RippleBase58ScodecTest extends OTestSpec with STObjectScodec {
   val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
 
   def roundtrip(in: String) = {
-    val env: BitVector = rippleB58Enc(in).require
-    val dec: String    = rippleB58Dec(env).require
-    scribe.debug(s"\nIN: $in \nENC: $env \nDEC: $dec")
-    in shouldEqual dec
+    val env: BitVector = roundTripFromEncode(xrplBase58,in)
   }
 
   test("Base58 to Hex") {

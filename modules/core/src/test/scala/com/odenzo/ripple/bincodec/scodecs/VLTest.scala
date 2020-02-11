@@ -12,14 +12,14 @@ class VLTest extends OTestSpec {
   def printBits(bv: BitVector): Unit = scribe.info(s"BV $bv =>  ${bv.toBin}")
 
   test("Small Zero") {
-    smallVL.encode(0).map { bv =>
+    VL.xrpvl.encode(0).map { bv =>
       bv.length shouldBe 8
       bv.bytes shouldEqual hex"00"
     }
   }
 
   test("Small Encoding") {
-    smallVL.encode(1).map { bv =>
+    VL.xrpvl.encode(1).map { bv =>
       bv.length shouldBe 8
       bv.bytes shouldEqual hex"01"
     }
@@ -27,21 +27,21 @@ class VLTest extends OTestSpec {
 
   test("Small 192 ") {
     // This is the max value of first byte is one byte encoding
-    smallVL.encode(192).map { bv =>
+    VL.xrpvl.encode(192).map { bv =>
       bv.length shouldBe 8
       bv.bytes shouldEqual hex"C0"
     }
   }
 
   test("Medium 193") {
-    mediumVL.encode(193).map { bv =>
+    VL.xrpvl.encode(193).map { bv =>
       printBits(bv)
       bv.length shouldBe 16
       bv.bytes shouldEqual (hex"C101")
     }
   }
   test("Medium 12480") {
-    mediumVL.encode(12480).map { bv =>
+    VL.xrpvl.encode(12480).map { bv =>
       printBits(bv)
       bv.length shouldBe 16
       bv.bytes shouldEqual (hex"F100")
@@ -49,7 +49,7 @@ class VLTest extends OTestSpec {
   }
 
   test("Large 12481") {
-    largeVL.encode(12481).map { bv =>
+    VL.xrpvl.encode(12481).map { bv =>
       printBits(bv)
       bv.length shouldBe 24
       bv.bytes shouldEqual (hex"F1_00_00")
@@ -58,29 +58,23 @@ class VLTest extends OTestSpec {
 
   }
 
-  test("VL Decoding") {
-
-    val rs = xrpvl.encode(100000).map { rs =>
-      val something                       = hex"0F3D0C7D2CFAB2EC8295451F0B3CA038E8E9CDCD".bits
-      val res: Attempt[DecodeResult[Int]] = decodeVL.decode(something)
-
-      //res shouldEqual "0f"
-
-      xrpvl.encode(15).map { bv: BitVector =>
-        bv.length shouldEqual 8
-        bv shouldEqual hex"0F".bits
-      }
-
-      xrpvl.encode(1000).map { bv: BitVector =>
-        bv.length shouldEqual 16
-        bv shouldEqual hex"0F".bits
-      }
-
-      xrpvl.encode(1000).map { bv: BitVector =>
-        bv.length shouldEqual 16
-        bv shouldEqual hex"0F".bits
-      }
-    }
+ test("Property") {
+   // @todo Property based test
+   (0 to 192).foreach(
+   roundTripFromEncode(xrpvl,_)
+   )
+ }
+  test("Property Mid") {
+    // @todo Property based test
+    (193 to 1024).foreach(
+      roundTripFromEncode(xrpvl, _)
+    )
   }
 
+  test("Property High") {
+    // @todo Property based test
+    (12481 to 13400).foreach(
+      roundTripFromEncode(xrpvl, _)
+    )
+  }
 }

@@ -3,6 +3,7 @@ package com.odenzo.ripple.bincodec.scodecs
 import cats._
 import cats.data._
 import cats.implicits._
+import com.odenzo.ripple.bincodec.models.{CustomCurrency, ISOCurrency, XRPLAmount, XRPLCurrency, XRPLDrops, XRPLIssuedAmount}
 import scodec.bits.{BitVector, _}
 import scodec._
 import scodec.codecs._
@@ -16,11 +17,10 @@ import scodec.codecs._
   *  8-bit exponent which is math exponent encoded +97 (uint)
   */
 trait AmountScodecs {
-
+       import AccountScodecs.xrpaccount
   private[AmountScodecs] val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
   private[AmountScodecs] val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
   private[AmountScodecs] val minAbsAmount: BigDecimal = BigDecimal("1000000000000000E-96")
-
   private[AmountScodecs] val maxPrecision: Int = 15
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
@@ -28,7 +28,6 @@ trait AmountScodecs {
   private[AmountScodecs] val maxExponent: Int    = 80
   private[AmountScodecs] val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
   private[AmountScodecs] val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
-
   private[AmountScodecs] final val maxXrp: Double = Math.pow(10, 17)
 
   private[AmountScodecs] def xprAmountEncFn(xrp: Long) = {
@@ -89,7 +88,7 @@ trait AmountScodecs {
     val exponentAdj           = exponent - 97
     val answer: BigDecimal    = BigDecimal(mantissa) * BigDecimal.exact(10).pow(exponentAdj)
     val signedAns: BigDecimal = if (isPositive) answer else (-answer)
-    scribe.debug(s"BigDecimal $signedAns")
+    scribe.debug(s"UnPacked BigDecimal $signedAns")
     Attempt.successful(signedAns)
   }
 
@@ -104,10 +103,13 @@ trait AmountScodecs {
         val shiftPlaces: Int       = 16 + (amt.scale - amt.precision)
         val normalized: BigDecimal = amt * BigDecimal.exact(10).pow(shiftPlaces)
         val trueExp                = -shiftPlaces
+        val exp = -shiftPlaces + 97
         val isPositive             = bd.signum =!= -1
         normalized.isWhole match {
           case false => Attempt.failure(Err(s"Unsure how to handle too much precision so error $bd"))
-          case true  => Attempt.successful(((isPositive, trueExp), normalized.longValue))
+          case true  =>
+            scribe.debug(s" $amt -> $isPositive $exp ${normalized.longValue}")
+            Attempt.successful(((isPositive, exp), normalized.longValue))
         }
     }
   }
@@ -118,12 +120,12 @@ trait AmountScodecs {
   val fiatAmount: Codec[BigDecimal] =
     (bool(1) ~ uint8 ~ ulong(54))
       .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
-      .withContext("XRPL Fiat Amount")
+      .withContext("Fiat Amount")
 
   val xrpFiat: Codec[XRPLIssuedAmount] =
-    (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ fixedSizeBits(160, AccountScodecs.xrpaccount))
+    (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ xrpaccount)
       .xmap[XRPLIssuedAmount](x => XRPLIssuedAmount(x._1._1, x._1._2, x._2), y => ((y.value, y.currency), y.issuer))
-      .withContext("XRPL Fiat ")
+      .withContext("Fiat")
 
   /** Either XRP Long or a FiatAmount of Amount, Either[StandardCurrency,VustomerCurrency], Issuer
     * Xrp/NotXrp if 1 then Issued Currency For,at (xrpFiat) else XRP Amount Format (xrpXrpAmount)*/
@@ -135,7 +137,7 @@ trait AmountScodecs {
           case iou: XRPLIssuedAmount => Right(iou)
         }
       )
-      .withContext("XRPL Fiat or XRP Amount")
+      .withContext("Fiat or Drops")
 }
 
 object AmountScodecs extends AmountScodecs

@@ -11,7 +11,7 @@ import _root_.scodec.codecs.variableSizeBytes
 import com.odenzo.ripple.bincodec.scodecs.VL
 //import io.circe.spire._
 import com.odenzo.circe.spire.SpireCodecs._
-import com.odenzo.ripple.bincodec.scodecs.ScodecJsonCodecs._
+
 
 /** All of the known XRPL data types, bound to some scodec */
 object ScodecDataTypeBinding {
@@ -56,7 +56,7 @@ object ScodecDataTypeBinding {
     typename match {
       case "UInt16"      => xrpuint16.decode(bv).map(x => transform2Json(x)) // Int
       case "Transaction" => xrplTransactionType.decode(bv).map(x => transform2Json(x)) // String/Int
-      case "PathSet"     => xrppathset.decode(bv).map(x => transform2Json(x)) // BitVector!
+      case "PathSet"     => xrplPathSet.decode(bv).map(x => transform2Json(x))
       case "Vector256"   => xrpvectorhash256.decode(bv).map(x => transform2Json(x)) // String
       case "AccountID"   => xrpaccount.decode(bv).map(x => transform2Json(x))
       case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrpaccount).decode(bv).map(x => transform2Json(x))

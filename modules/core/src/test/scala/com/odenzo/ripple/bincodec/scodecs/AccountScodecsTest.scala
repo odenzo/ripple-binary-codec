@@ -17,14 +17,15 @@ class AccountScodecsTest extends OTestSpec with AccountScodecs {
   // Note the checksum will not match
   test("Address Decoder") {
     val binary = hex"0x5e7b112523f68d2f5e879db4eac51c6698a69304".bits
-    val res    = xrpaccount.decode(binary)
+    val res = xrpaccount.decode(binary)
     scribe.info(s"Res $res")
   }
 
   test("RoundTrip") {
-    val x                         = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
-    val enc: BitVector            = xrpaccount.encode(x).require
+    val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
+    val enc: BitVector = xrpaccount.encode(x).require
     val dec: DecodeResult[String] = xrpaccount.decode(enc).require
     x shouldEqual dec.value
   }
+
 }
