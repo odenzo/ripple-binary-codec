@@ -9,16 +9,13 @@ class RippleBase58ScodecTest extends OTestSpec with STObjectScodec {
   import RippleBase58Scodec._
   val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
 
-  def roundtrip(in: String) = {
-    val env: BitVector = roundTripFromEncode(xrplBase58,in)
-  }
-
   test("Base58 to Hex") {
-    roundtrip(x)
+    val env: BitVector = roundTripFromEncode(xrplBase58, x)
   }
 
   test("Special") {
-    roundtrip("rrrrA")
+    val env: BitVector = roundTripFromEncode(xrplBase58, "rrrrA")
+
   }
 
 }

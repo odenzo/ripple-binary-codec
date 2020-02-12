@@ -13,29 +13,29 @@ object HashPrefixScodecs {
   // Unsigned Multisigned
   // Signed "54584E00 (both kinds I think)
   /** For after a signed (and? multisignd) txn is signed */
-  val transactionID = constant(hex"54584E00")
+  val transactionID: Codec[Unit] = constant(hex"54584E00")
   // For unsigned single signer txn
-  val transaction = constant(hex"534E4400")
+  val transaction: Codec[Unit] = constant(hex"534E4400")
   // account state
-  val accountStateEntry = constant(hex"4D4C4E00")
+  val accountStateEntry: Codec[Unit] = constant(hex"4D4C4E00")
   // inner node in tree
-  val innerNode = constant(hex"4D494E00")
+  val innerNode: Codec[Unit] = constant(hex"4D494E00")
   // ledger master data for signing
-  val ledgerHeader = constant(hex"4C575200")
+  val ledgerHeader: Codec[Unit] = constant(hex"4C575200")
 
   /** inner transaction to single signed, before signing */
-  val transactionSig = constant(hex"53545800")
+  val transactionSig: Codec[Unit] = constant(hex"53545800")
 
   // inner transaction to sign
-  val transactionMultiSig = constant(hex"534D5400")
+  val transactionMultiSig: Codec[Unit] = constant(hex"534D5400")
   // validation for signing
-  val validation = constant(hex"56414C00")
+  val validation: Codec[Unit] = constant(hex"56414C00")
   // proposal for signing
-  val proposal = constant(hex"50525000")
+  val proposal: Codec[Unit] = constant(hex"50525000")
   // payment channel claim
-  val paymentChannelClaim = constant(hex"434C4D00")
+  val paymentChannelClaim: Codec[Unit] = constant(hex"434C4D00")
 
-  val kTransactionID                   = byteVector("TXN")
+  val kTransactionID: ByteVector       = byteVector("TXN")
   val kTxNode: ByteVector              = byteVector("SND")
   val kLeafNode: ByteVector            = byteVector("MLN")
   val kInnerNode: ByteVector           = byteVector("MIN")

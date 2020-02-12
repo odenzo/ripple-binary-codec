@@ -33,22 +33,23 @@ trait STObjectScodec {
   val xrparrayDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"f1")))
 
   /** This decodes an object which is the contents of a field. Similar to array each entry is a field */
-  val xrpobjectDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"e1")))
+  private val xrpobjectDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"e1")))
 
-  val xrpobjectEnc: Encoder[List[(Json, Json)]] = fail(Err("ST Object Encoder Not Done")).asEncoder
-  val xrparrayEnc: Encoder[List[(Json, Json)]]  = fail(Err("ST Array Encoder Not Done")).asEncoder
+
+  private val xrplSTObjectEnc: Codec[List[(Json, Json)]] = list(xrpfield)
+
+
+  private val xrparrayEnc: Encoder[List[(Json, Json)]]  = fail(Err("ST Array Encoder Not Done")).asEncoder
 
   val xrpstarray: Codec[List[(Json, Json)]] = Codec(xrparrayEnc, xrparrayDec)
 
   // This does an infinite loop on first field
-  val xrpstobject: Codec[List[(Json, Json)]] = Codec(xrpobjectEnc, xrpobjectDec)
+  val xrpstobject: Codec[List[(Json, Json)]] = Codec(xrplSTObjectEnc, xrpobjectDec)
 
-  /** This is for a List of A where the *entire* list is delimited but the individual A variable size/type.
-    * Each A is decoded to a (Json,Json) tyuple to avoid type-dependant functions. */
-  // DecodeResult[A,BitVector]
+
 
   def delimitedDynamicList(bv: BitVector, delimiter: scodec.Codec[Unit]): Attempt[DecodeResult[List[(Json, Json)]]] = {
-    // This is really a loop of get  END OF ARRAY | field
+
     scribe.debug(s"Doing dynamic delimited list with delimeter ${delimiter.encode(())} ")
 
     val initialState: MyState = MyState(bv, List.empty)
