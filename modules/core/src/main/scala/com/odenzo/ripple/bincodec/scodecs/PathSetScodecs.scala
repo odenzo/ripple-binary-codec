@@ -23,7 +23,7 @@ trait PathStepScodecs {
   // PathSteps are fixed length based on their prefix. Will fail if applied past the end of a path step
 
   val pathstepAccountId: Codec[XRPLPathStep] =
-    (hex"01" ~> xrpaccount)
+    (hex"01" ~> xrplAccount)
       .xmap[XRPLPathStep](x => XRPLPathStep(account = x.some), y => y.account.get)
       .withContext("Issuer PathStep")
 
@@ -31,11 +31,11 @@ trait PathStepScodecs {
     .xmap[XRPLPathStep](x => XRPLPathStep(currency = x.some), y => y.currency.get)
     .withContext("Currency PathStep")
 
-  val pathstepIssuer: Codec[XRPLPathStep] = (hex"20" ~> xrpaccount)
+  val pathstepIssuer: Codec[XRPLPathStep] = (hex"20" ~> xrplAccount)
     .xmap[XRPLPathStep](x => XRPLPathStep(issuer = x.some), y => y.issuer.get)
     .withContext("Issuer PathStep")
 
-  val pathstepCurrencyIssuer: Codec[XRPLPathStep] = (hex"30" ~> xrplCurrency ~ xrpaccount)
+  val pathstepCurrencyIssuer: Codec[XRPLPathStep] = (hex"30" ~> xrplCurrency ~ xrplAccount)
     .xmap[XRPLPathStep](
       x => XRPLPathStep(currency = x._1.some, issuer = x._2.some),
       y => (y.currency.get, y.issuer.get)
@@ -50,9 +50,9 @@ trait PathStepScodecs {
       Try {
         val attempts: List[BitVector] = List(
           step.code.encode(()).require.some,
-          step.account.map(xrpaccount.encode(_).require),
+          step.account.map(xrplAccount.encode(_).require),
           step.currency.map(xrplCurrency.encode(_).require),
-          step.issuer.map(xrpaccount.encode(_).require)
+          step.issuer.map(xrplAccount.encode(_).require)
         ).flatten
 
         val bits = attempts.reduce(_ ++ _)
@@ -61,53 +61,53 @@ trait PathStepScodecs {
     }
   }
 }
-    object PathStepScodecs extends PathStepScodecs
+object PathStepScodecs extends PathStepScodecs
 
 trait PathSetScodecs {
 
-  val path : Codec[List[XRPLPathStep]] = list(PathStepScodecs.xrplPathStep) <~ constant(hex"ff")
+  val path: Codec[List[XRPLPathStep]]     = list(PathStepScodecs.xrplPathStep) <~ constant(hex"ff")
   val pathLast: Codec[List[XRPLPathStep]] = list(PathStepScodecs.xrplPathStep) <~ constant(hex"00")
 
-  val internalPathSet: Codec[(List[List[XRPLPathStep]], List[XRPLPathStep])] =  list(path) ~ pathLast
+  val internalPathSet: Codec[(List[List[XRPLPathStep]], List[XRPLPathStep])] = list(path) ~ pathLast
 
   def encoder(pathset: XRPLPathSet): Attempt[BitVector] = {
     // First path we encode differently
-    val paths = pathset.paths.toList
+    val paths    = pathset.paths.toList
     val numPaths = pathset.paths.size
-    require(numPaths > 0 && numPaths < 7 ,s"Found $numPaths but must be 1..6 Paths in Pathset")
+    require(numPaths > 0 && numPaths < 7, s"Found $numPaths but must be 1..6 Paths in Pathset")
 
-
-    val (notLast,last) = paths.splitAt(numPaths-1)
+    val (notLast, last) = paths.splitAt(numPaths - 1)
     require(last.length === 1, "Last Path Was Empty")
     notLast.foreach { path =>
       val steps = path.steps
-      val slen = steps.length
+      val slen  = steps.length
       require(slen > 0 && slen < 9, s"Found $slen PathSteps but must be between 1...8 steps in a path")
     }
 
-    val listed: (List[List[XRPLPathStep]], List[XRPLPathStep]) =   (notLast.map(_.steps),last.head.steps)
+    val listed: (List[List[XRPLPathStep]], List[XRPLPathStep]) = (notLast.map(_.steps), last.head.steps)
     internalPathSet.encode(listed)
 
   }
 
-  def decoder(bv:BitVector): Attempt[DecodeResult[XRPLPathSet]] = {
+  def decoder(bv: BitVector): Attempt[DecodeResult[XRPLPathSet]] = {
     Attempt.fromTry {
       Try {
-        val res = PathSetState.stateFn
+        val res = PathSetState
+          .stateFn
           .iterateWhile(_.isEmpty)
           .run(PathSetState.from(bv))
           .value
           ._1
 
-            DecodeResult(XRPLPathSet(res.paths.toVector),res.remaining)
+        DecodeResult(XRPLPathSet(res.paths.toVector), res.remaining)
       }
     }
   }
-  val xrplPathSet: Codec[XRPLPathSet] = Codec(  encoder _,decoder)
+  val xrplPathSet: Codec[XRPLPathSet] = Codec(encoder _, decoder)
 }
 
 /** Slightly different approach where the State captures values and the transition result
- * signals what is coming next (if anything */
+  * signals what is coming next (if anything */
 case class PathSetState(paths: List[XRPLPath], steps: List[XRPLPathStep], remaining: BitVector) {
 
   // The steps list is accumulated in reverse order, and then corrected when adding to a path.
@@ -125,26 +125,25 @@ case class PathSetState(paths: List[XRPLPath], steps: List[XRPLPathStep], remain
 }
 
 object PathSetState {
-  val empty: PathSetState = PathSetState(List.empty, List.empty, BitVector.empty)
+  val empty: PathSetState               = PathSetState(List.empty, List.empty, BitVector.empty)
   def from(bv: BitVector): PathSetState = empty.copy(remaining = bv)
 
-  private val endPath = hex"00"
+  private val endPath     = hex"00"
   private val anotherPath = hex"FF"
-
 
   val stateFn: State[PathSetState, Option[PathSetState]] = State[PathSetState, Option[PathSetState]](state => {
     scribe.debug(s"Current State => $state")
     val fieldId = state.remaining.take(16).bytes
 
     fieldId match {
-      case fi if fi === endPath     =>
+      case fi if fi === endPath =>
         // Ok, we are done. We do any cleanup and present the final answer. Also need the remaining bits
         val finalState: PathSetState = state.endPaths(state.remaining.drop(16))
-        (finalState,finalState.some)
+        (finalState, finalState.some)
       case fi if fi === anotherPath =>
         // Drop the delimieter and start accumulating a new list of pathsteps for another path
         (state.nextPath(state.remaining.drop(16)), None)
-      case other       =>
+      case other =>
         // Assume its a pathstep  delimeter, which will die if its not valid. Could actually call the appropriate
         // PathStep decoder and eliminate the choice
         val stepResult: DecodeResult[XRPLPathStep] = PathStepScodecs.xrplPathStep.decode(state.remaining).require

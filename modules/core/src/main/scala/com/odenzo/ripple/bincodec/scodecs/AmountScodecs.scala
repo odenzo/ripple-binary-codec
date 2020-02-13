@@ -17,17 +17,17 @@ import scodec.codecs._
   *  8-bit exponent which is math exponent encoded +97 (uint)
   */
 trait AmountScodecs {
-       import AccountScodecs.xrpaccount
+  import AccountScodecs.xrplAccount
   private[AmountScodecs] val minVal: BigDecimal       = BigDecimal("-9999999999999999E80")
   private[AmountScodecs] val maxVal: BigDecimal       = BigDecimal("9999999999999999E80")
   private[AmountScodecs] val minAbsAmount: BigDecimal = BigDecimal("1000000000000000E-96")
-  private[AmountScodecs] val maxPrecision: Int = 15
+  private[AmountScodecs] val maxPrecision: Int        = 15
 
   /* The range for the exponent when normalized (as signed Int, +97 gives range 1 to 177 unsigned) */
-  private[AmountScodecs] val minExponent: Int    = -96
-  private[AmountScodecs] val maxExponent: Int    = 80
-  private[AmountScodecs] val minMantissa: BigInt = BigDecimal("1e15").toBigInt // For normalizing not input
-  private[AmountScodecs] val maxMantissa: BigInt = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
+  private[AmountScodecs] val minExponent: Int     = -96
+  private[AmountScodecs] val maxExponent: Int     = 80
+  private[AmountScodecs] val minMantissa: BigInt  = BigDecimal("1e15").toBigInt // For normalizing not input
+  private[AmountScodecs] val maxMantissa: BigInt  = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
   private[AmountScodecs] final val maxXrp: Double = Math.pow(10, 17)
 
   private[AmountScodecs] def xprAmountEncFn(xrp: Long) = {
@@ -103,11 +103,11 @@ trait AmountScodecs {
         val shiftPlaces: Int       = 16 + (amt.scale - amt.precision)
         val normalized: BigDecimal = amt * BigDecimal.exact(10).pow(shiftPlaces)
         val trueExp                = -shiftPlaces
-        val exp = -shiftPlaces + 97
+        val exp                    = -shiftPlaces + 97
         val isPositive             = bd.signum =!= -1
         normalized.isWhole match {
           case false => Attempt.failure(Err(s"Unsure how to handle too much precision so error $bd"))
-          case true  =>
+          case true =>
             scribe.debug(s" $amt -> $isPositive $exp ${normalized.longValue}")
             Attempt.successful(((isPositive, exp), normalized.longValue))
         }
@@ -123,7 +123,7 @@ trait AmountScodecs {
       .withContext("Fiat Amount")
 
   val xrpFiat: Codec[XRPLIssuedAmount] =
-    (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ xrpaccount)
+    (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ xrplAccount)
       .xmap[XRPLIssuedAmount](x => XRPLIssuedAmount(x._1._1, x._1._2, x._2), y => ((y.value, y.currency), y.issuer))
       .withContext("Fiat")
 

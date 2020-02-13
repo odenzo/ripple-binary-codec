@@ -11,7 +11,11 @@ trait RippleBase58Scodec {
   /** Eager RippleBase58 scodec that will consume all the bytes */
   val xrplBase58 = Codec(fromBase58(_, RippleBase58Alphabet), toBase58(_, RippleBase58Alphabet))
 
-  private final def toBase58(bitsv: BitVector, alphabet: Bases.Alphabet = RippleBase58Alphabet): Attempt[DecodeResult[String]] = {
+  final def toRippleBase58(vector: BitVector): Attempt[String] = {
+    toBase58(vector, RippleBase58Alphabet).map(_.value) // Throw away remaining as it consumes all
+  }
+
+  final def toBase58(bitsv: BitVector, alphabet: Bases.Alphabet = RippleBase58Alphabet): Attempt[DecodeResult[String]] = {
     val bv = bitsv.bytes
     Attempt.fromTry {
       Try {

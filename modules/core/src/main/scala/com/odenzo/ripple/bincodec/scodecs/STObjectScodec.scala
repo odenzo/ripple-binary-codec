@@ -35,18 +35,16 @@ trait STObjectScodec {
   /** This decodes an object which is the contents of a field. Similar to array each entry is a field */
   private val xrpobjectDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"e1")))
 
-
   private val xrplSTObjectEnc: Codec[List[(Json, Json)]] = list(xrpfield)
 
-
-  private val xrparrayEnc: Encoder[List[(Json, Json)]]  = fail(Err("ST Array Encoder Not Done")).asEncoder
+  private val xrparrayEnc: Encoder[List[(Json, Json)]] = fail(Err("ST Array Encoder Not Done")).asEncoder
 
   val xrpstarray: Codec[List[(Json, Json)]] = Codec(xrparrayEnc, xrparrayDec)
 
   // This does an infinite loop on first field
+  /** Codec for an object with end delimeter. Won't work for top level object
+    */
   val xrpstobject: Codec[List[(Json, Json)]] = Codec(xrplSTObjectEnc, xrpobjectDec)
-
-
 
   def delimitedDynamicList(bv: BitVector, delimiter: scodec.Codec[Unit]): Attempt[DecodeResult[List[(Json, Json)]]] = {
 

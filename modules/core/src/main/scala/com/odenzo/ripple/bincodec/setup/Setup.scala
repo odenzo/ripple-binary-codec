@@ -81,17 +81,3 @@ object Setup {
 
   //def bindScodecs(types: Map[String, Int], binding: Map[String, Codec[Nothing]]) = {}
 }
-
-/** Top Level Decoding of a full message, expecting to be an STObject with no marker */
-object DecoderController {
-
-  def decode(hex: String): Attempt[DecodeResult[Vector[(Json, Json)]]] = {
-    val binary: BitVector = BitVector.fromHex(hex).getOrElse(throw new Exception("Invalid Input Hex"))
-    decode(binary)
-  }
-
-  def decode(bv: BitVector): Attempt[DecodeResult[Vector[(Json, Json)]]] = {
-    scribe.debug(s"Decoding Top Vector of Fields from ${bv.size}")
-    scodec.codecs.vector(FieldScodec.xrpfield).decode(bv)
-  }
-}

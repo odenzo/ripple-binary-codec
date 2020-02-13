@@ -89,15 +89,26 @@ trait OTestSpec
     case Attempt.Successful(value) => fail(s"Should have failed but got $value")
   }
 
-  def decodeJson[T:Decoder](json:Json): T = {
+  def decodeJson[T: Decoder](json: Json): T = {
     Decoder[T].decodeJson(json) match {
-      case Left(value) => fail(s"Failed Decoding ${json.spaces2}: $value")
+      case Left(value)  => fail(s"Failed Decoding ${json.spaces2}: $value")
       case Right(value) => value
     }
   }
 
+  def roundTripScodec[T](binary: BitVector, model: T, codec: scodec.Codec[T]): DecodeResult[T] = {
+    val encoded: BitVector            = codec.encode(model).require
+    val decoded: DecodeResult[T]      = codec.decode(binary).require
+    val roundDecoded: DecodeResult[T] = codec.decode(encoded).require
+
+    encoded shouldEqual binary
+    decoded.value shouldEqual model
+    roundDecoded.value shouldEqual decoded.value
+    decoded
+  }
+
   /** Ensures all bits are exhausted on decoding back to value */
-  def roundTripFromEncode[T]( codec: scodec.Codec[T], v:T): BitVector = {
+  def roundTripFromEncode[T](codec: scodec.Codec[T], v: T): BitVector = {
     val bits = codec.encode(v).require
     val back = codec.decode(bits).require
     back.value shouldEqual v
@@ -105,9 +116,9 @@ trait OTestSpec
     bits
   }
 
-  def roundTripFromDecode[T]( codec: scodec.Codec[T], v:BitVector): DecodeResult[T] = {
+  def roundTripFromDecode[T](codec: scodec.Codec[T], v: BitVector): DecodeResult[T] = {
     val decode: DecodeResult[T] = codec.decode(v).require
-    val encode = codec.encode(decode.value).require
+    val encode                  = codec.encode(decode.value).require
     encode shouldEqual v
     decode
   }

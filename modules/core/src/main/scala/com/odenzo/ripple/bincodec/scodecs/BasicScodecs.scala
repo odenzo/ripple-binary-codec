@@ -35,8 +35,13 @@ trait BasicScodecs {
 
   protected def xrphash(bitLen: Int): Codec[String] = xrphex(bitLen / 4)
 
+  /** Not VL Encoded */
   val xrphash128: Codec[String] = xrphash(128)
+
+  /** VL Encoded? */
   val xrphash160: Codec[String] = xrphash(160)
+
+  /** Not VL Encoded */
   val xrphash256: Codec[String] = xrphash(256)
 
   /** Vector256 is always VL endoded and handled here */
@@ -45,15 +50,20 @@ trait BasicScodecs {
   /** Blob which is always VL encoded, this handles VL */
   val xrpblob: Codec[String] = variableSizeBytes(VL.xrpvl, xrphexAll)
 
-  val xrpuint8: Codec[Int]   = uint8
-  val xrpuint16: Codec[Int]  = uint16
+  /**  */
+  val xrpuint8: Codec[Int] = uint8
+
+  /**  */
+  val xrpuint16: Codec[Int] = uint16
+
+  /**  */
   val xrpuint32: Codec[Long] = uint32
 
   /** Handles 64bit Unsigned Long, but max value in practice is 63 bits? */
   val xrpulong64: Codec[ULong] = suint64
 
-  def xrpNIMP[T]: Codec[T]     = fail(Err("This isn't implemented yet"))
-  def xrpError[T](msg: String) = fail[T](Err(msg))
+  def xrpNIMP[T]: Codec[T]               = fail(Err("This isn't implemented yet"))
+  def xrpError[T](msg: String): Codec[T] = fail[T](Err(msg))
 }
 
 object BasicScodecs extends BasicScodecs
