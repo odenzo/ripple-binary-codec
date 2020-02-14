@@ -121,11 +121,13 @@ trait AmountScodecs {
     (bool(1) ~ uint8 ~ ulong(54))
       .exmap[BigDecimal](liftF3ToNestedTupleF(unpackToBigDecimal), packToBigDecimal)
       .withContext("Fiat Amount")
+      .withToString("Fiat Amount")
 
   val xrpFiat: Codec[XRPLIssuedAmount] =
     (fixedSizeBits(63, fiatAmount) ~ fixedSizeBits(160, xrplCurrency) ~ xrplAccount)
       .xmap[XRPLIssuedAmount](x => XRPLIssuedAmount(x._1._1, x._1._2, x._2), y => ((y.value, y.currency), y.issuer))
       .withContext("Fiat")
+      .withToString("XRPL Fiat")
 
   /** Either XRP Long or a FiatAmount of Amount, Either[StandardCurrency,VustomerCurrency], Issuer
     * Xrp/NotXrp if 1 then Issued Currency For,at (xrpFiat) else XRP Amount Format (xrpXrpAmount)*/
@@ -138,6 +140,7 @@ trait AmountScodecs {
         }
       )
       .withContext("Fiat or Drops")
+      .withToString("XRPL Amount")
 }
 
 object AmountScodecs extends AmountScodecs

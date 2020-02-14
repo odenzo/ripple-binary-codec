@@ -53,10 +53,12 @@ class BasicScodecsTest extends OTestSpec with BasicScodecs {
   }
 
   test("XRP Hash160") {
-    // This has to be VL Encoded
+
     val hash160Str = "F".repeat(40)
 
-    shouldSucceed(xrphash160.encode(hash160Str)) shouldEqual hex"ff"
+    val bits: BitVector = xrphash160.encode(hash160Str).require
+    bits.size shouldBe 160
+    bits.toIndexedSeq.forall(_ == true) shouldBe true
   }
 
 }

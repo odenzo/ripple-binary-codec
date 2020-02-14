@@ -96,11 +96,25 @@ trait OTestSpec
     }
   }
 
-  def roundTripScodec[T](binary: BitVector, model: T, codec: scodec.Codec[T]): DecodeResult[T] = {
-    val encoded: BitVector            = codec.encode(model).require
+  def roundTripScodec[T](tp: TestParam[T], codec: scodec.Codec[T])(implicit log: Boolean): DecodeResult[T] = {
+    val decResult = roundTripScodec(tp.binary, tp.model, codec)
+    if (tp.consumesAll) decResult.remainder.isEmpty shouldBe true
+    decResult
+  }
+
+  def roundTripScodec[T](binary: BitVector, model: T, codec: scodec.Codec[T])(implicit log: Boolean): DecodeResult[T] = {
+    val encoded: BitVector = codec.encode(model).require
+    if (log) {
+      scribe.debug(s"Given:\n $binary \n And: $model \n Codec: $codec")
+      scribe.debug(s"Encoded: $encoded")
+
+    }
     val decoded: DecodeResult[T]      = codec.decode(binary).require
     val roundDecoded: DecodeResult[T] = codec.decode(encoded).require
 
+    if (log) {
+      scribe.debug(s"Decoded: $decoded")
+    }
     encoded shouldEqual binary
     decoded.value shouldEqual model
     roundDecoded.value shouldEqual decoded.value
@@ -108,18 +122,22 @@ trait OTestSpec
   }
 
   /** Ensures all bits are exhausted on decoding back to value */
-  def roundTripFromEncode[T](codec: scodec.Codec[T], v: T): BitVector = {
-    val bits = codec.encode(v).require
-    val back = codec.decode(bits).require
-    back.value shouldEqual v
+  def roundTripFromEncode[T](model: T, theCodec: scodec.Codec[T])(implicit log: Boolean): BitVector = {
+
+    val codec = theCodec
+    val bits  = codec.encode(model).require
+    val back  = codec.decode(bits).require
+    if (log) {
+      scribe.debug(s"Given:\n $model \n Codec: $codec")
+      scribe.debug(s"Encoded: $bits")
+      scribe.debug(s"Decoded: $back")
+
+    }
+    back.value shouldEqual model
     back.remainder.isEmpty shouldBe true
     bits
   }
 
-  def roundTripFromDecode[T](codec: scodec.Codec[T], v: BitVector): DecodeResult[T] = {
-    val decode: DecodeResult[T] = codec.decode(v).require
-    val encode                  = codec.encode(decode.value).require
-    encode shouldEqual v
-    decode
-  }
+  case class TestParam[T](binary: BitVector, model: T, consumesAll: Boolean = true)
+
 }

@@ -6,7 +6,7 @@ import scodec.bits._
 import scodec._
 
 class AccountScodecsTest extends OTestSpec with AccountScodecs {
-
+  implicit val log: Boolean = false
   test("Address Decoder") {
     val binary                          = hex"5e7b112523f68d2f5e879db4eac51c6698a69304"
     val model                           = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"

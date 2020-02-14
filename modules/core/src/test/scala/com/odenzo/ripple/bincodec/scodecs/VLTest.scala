@@ -8,10 +8,12 @@ import com.odenzo.ripple.bincodec.OTestSpec
 class VLTest extends OTestSpec {
 
   import VL._
+  implicit val log: Boolean = true
 
   def printBits(bv: BitVector): Unit = scribe.info(s"BV $bv =>  ${bv.toBin}")
 
   test("Small Zero") {
+
     VL.xrpvl.encode(0).map { bv =>
       bv.length shouldBe 8
       bv.bytes shouldEqual hex"00"
@@ -58,23 +60,23 @@ class VLTest extends OTestSpec {
 
   }
 
- test("Property") {
-   // @todo Property based test
-   (0 to 192).foreach(
-   roundTripFromEncode(xrpvl,_)
-   )
- }
+  test("Property") {
+    // @todo Property based test
+    (0 to 192).foreach(
+      roundTripFromEncode(_, xrpvl)
+    )
+  }
   test("Property Mid") {
     // @todo Property based test
     (193 to 1024).foreach(
-      roundTripFromEncode(xrpvl, _)
+      roundTripFromEncode(_, xrpvl)
     )
   }
 
   test("Property High") {
     // @todo Property based test
     (12481 to 13400).foreach(
-      roundTripFromEncode(xrpvl, _)
+      roundTripFromEncode(_, xrpvl)
     )
   }
 }

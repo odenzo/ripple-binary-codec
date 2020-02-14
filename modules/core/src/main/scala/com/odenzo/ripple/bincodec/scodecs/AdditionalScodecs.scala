@@ -23,12 +23,18 @@ Vector256	19	Yes	This type does not appear in transaction instructions, but the 
 
    */
 
-  val xrplTransactionType: Codec[String] = xrpuint16.xmap(num => Setup.getTransactionType(num), str => Setup.getTransactionTypeCode(str))
+  val xrplTransactionType: Codec[String] = xrpuint16
+    .xmap(num => Setup.getTransactionType(num), str => Setup.getTransactionTypeCode(str))
+    .withContext("TransactionType")
+    .withToString("TransactionType")
 
-  val xrplLedgerEntryType: Codec[String] = xrpuint16.xmap(
-    num => Setup.getLedgerEntryType(num),
-    str => Setup.getLedgerEntryTypeCode(str)
-  )
+  val xrplLedgerEntryType: Codec[String] = xrpuint16
+    .xmap(
+      num => Setup.getLedgerEntryType(num),
+      str => Setup.getLedgerEntryTypeCode(str)
+    )
+    .withContext("LedgerEntryType")
+    .withToString("LedgerEntryType")
 
   val xrplValidation: Codec[JsonObject] = fail(Err(s"Validation Special Code Is Only for special cases :-)"))
 }

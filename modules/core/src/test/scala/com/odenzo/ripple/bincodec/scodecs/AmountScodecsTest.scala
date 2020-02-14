@@ -9,17 +9,21 @@ import org.scalatest.Assertion
 import spire.math.ULong
 import io.circe.literal._
 import scodec.DecodeResult
+
 class AmountScodecsTest extends OTestSpec with AmountScodecs {
+
+  implicit val log = true
+
   val x = "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"
 
-  test("XRP Encode") {
-   roundTripFromEncode(xrplAmount, XRPLDrops(12))
-  }
+//  test("XRP Encode") {
+//    roundTripScodec(xrplAmount, XRPLDrops(12))
+//  }
 
   test("Currency") {
     // Not sure this is exactly aligned  This should be fourty characters exactly, may be slidden by 1 byte
     val nzd: ByteVector = hex"0000000000000000000000004e5a440000000000"
-    val res = xrplCurrency.decode(nzd.bits).require
+    val res             = xrplCurrency.decode(nzd.bits).require
     scribe.info(s"Result: $res")
   }
 
@@ -33,7 +37,6 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
       "0000.12345",
       "0000.123450000"
     )
-
 
   }
 
@@ -50,14 +53,14 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
     // Need to make a decent conformance test set
     //
     val fixture =
-    """
-      |[
-      | {"bin":"94838D7EA4C68000" ,"mant": "00038D7EA4C68000" , "exp": -15, "value": "-1.0" },
-      |
-      | {"bin":"8000000000000000" ,"mant": "0000000000000000" , "exp": -15, "value": "0.0" },
-      |
-      | {"bin":"D4C3F28CB71571C7" ,"mant": "0003F28CB71571C7" , "exp": -14, "value": "11.11111111111111" }
-      |]
+      """
+        |[
+        | {"bin":"94838D7EA4C68000" ,"mant": "00038D7EA4C68000" , "exp": -15, "value": "-1.0" },
+        |
+        | {"bin":"8000000000000000" ,"mant": "0000000000000000" , "exp": -15, "value": "0.0" },
+        |
+        | {"bin":"D4C3F28CB71571C7" ,"mant": "0003F28CB71571C7" , "exp": -14, "value": "11.11111111111111" }
+        |]
       """.stripMargin
 
   }
@@ -99,7 +102,6 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
           }
     """
 
-
   test("NZ Amount") {
     val iou = decodeJson[XRPLAmount](nzAmount)
     scribe.debug(s"XPLAmount: $iou")
@@ -112,21 +114,18 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
   test("Fiat Package") {
 
     val issuerStr = "rMYBVwiY95QyUnCeuBQA1D47kXA9zuoBui"
-    val i2Str = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys"
+    val i2Str     = "rMBzp8CgpE441cp5PVyA9rpVV7oT8hP3ys"
     val expected = "67" +
       "D4C38D7EA4C68000" +
       "0000000000000000000000005553440000000000" + // Currency
-      "E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
+      "E14829DB4C6419A8EFCAC1EC21D891A1A4339871"   // Issuer with no VL Encoding
 
     val fieldExpected: ByteVector = hex"67"
-    val amountExpected = hex"D4C38D7EA4C68000"
-    val currencyExpected = hex"0000000000000000000000005553440000000000"
-    val issuerExpected = hex"E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
+    val amountExpected            = hex"D4C38D7EA4C68000"
+    val currencyExpected          = hex"0000000000000000000000005553440000000000"
+    val issuerExpected            = hex"E14829DB4C6419A8EFCAC1EC21D891A1A4339871" // Issuer with no VL Encoding
 
-
-    val res: BitVector = roundTripFromEncode(xrplCurrency, ISOCurrency("USD"))
-    res.bytes shouldEqual currencyExpected
-
+    roundTripScodec(currencyExpected.bits, ISOCurrency("USD"), xrplCurrency)(true)
 //
 //    val amount: String = ("10")
 //    val amountBytes = roundTripFromEncode(IssuedAmountCodec.encodeFiatValue(amount))
@@ -142,29 +141,25 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
   }
 
   test("XRP") {
-
+    // XRP Binary needs to have the 64th bit set no matter what
     val min: ULong = ULong(0)
     val max: ULong = ULong.fromBigInt(spire.math.pow(BigInt(10), BigInt(17)))
     scribe.info(s"Min - Max $min $max")
-
 
     t(max)
     t(max - ULong(1))
     t(ULong(370000000))
 
-    def t(v: ULong): String = {
-      val drops = XRPLDrops(v.toLong)
+    def t(v: ULong) = {
+      val drops         = XRPLDrops(v.toLong)
       val jsonV: String = v.toString()
-      val json: Json = Json.fromString(jsonV)
+      val json: Json    = Json.fromString(jsonV)
       scribe.info(s"From $v Sending JSON: ${json.noSpaces}")
-      val res: BitVector = roundTripFromEncode(xrplAmount, drops)
+      roundTripFromEncode(drops, xrplAmount)(true)
 
-      scribe.debug(s"$v  => ${res}")
-      res.toHex
     }
 
   }
-
 
   test("Currency Encoding") {
 
@@ -174,22 +169,24 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
       ("FOO", true),
       ("BARR", false),
       ("~~~", false), // Not a ripple ASCII char
-      ("[^]", true),
+      ("[^]", true)
 //      ("AA".padTo(20, 'F'), false),
 //      ("00".padTo(20, 'F'), true),
 //      ("01".padTo(20, 'F'), true) // Legacy case
     )
 
-    passFail.foreach { case (v, exp) => encode(v, exp) }
+    passFail.foreach {
+      case (v, exp) =>
+        scribe.debug(s"Testing Currency: $v which should be $exp")
+        encode(v, exp)
+    }
 
     def encode(v: String, expectedOK: Boolean): Assertion = {
       val curr = ISOCurrency(v)
-      val res = xrplCurrency.encode(curr)
-     res.isSuccessful shouldEqual expectedOK
+      val res  = xrplCurrency.encode(curr)
+      res.isSuccessful shouldEqual expectedOK
     }
 
   }
 
-
 }
-

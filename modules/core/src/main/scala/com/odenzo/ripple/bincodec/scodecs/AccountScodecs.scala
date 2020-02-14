@@ -45,6 +45,7 @@ trait AccountScodecs {
   /** This decodes 160 bits, it does not deal with VL Encoding at all */
   val xrplAccount: Codec[String] = Codec[String](accountEncoder, accountDecoder)
     .withContext("xrplAccount")
+    .withToString("xrplAccount")
 
   /** Adds the leading 'r' and calculated 4 byte checksum, appending it to result */
   protected def checksumAddress(bitv: BitVector): BitVector = {
