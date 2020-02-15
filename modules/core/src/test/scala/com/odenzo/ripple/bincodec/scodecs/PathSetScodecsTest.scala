@@ -1,8 +1,10 @@
 package com.odenzo.ripple.bincodec.scodecs
 
 import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.models.XRPLPathSet
 import scodec.bits._
 import io.circe.literal._
+import scodec.DecodeResult
 
 class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
 
@@ -131,16 +133,21 @@ class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
           }"""
 
   private val pathset =
+    // 0112 is field id. Need to reverse the resulting PathSet members
     hex"_0112_01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00"
 
   private val singlePath = hex"""
-  01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00""".bits
+  01_A4AB176547A22ED23E6D8C3138780526830081D2_
+  30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F
+  _00""".bits
 
+  // 01 says its account only then no VL account
   private val pathstepA = hex"01_A4AB176547A22ED23E6D8C3138780526830081D2".bits
   private val pathstepB = hex"30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F".bits
 
   test("Single PathSet") {
-    xrplPathSet.decode(pathset.bits).require
+    val res: DecodeResult[XRPLPathSet] = xrplPathSet.decode(pathset.drop(2).bits).require
+    scribe.debug(s"PathSet: ${pprint.apply(res.value)}")
   }
 
   import PathStepScodecs.xrplPathStep

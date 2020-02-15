@@ -5,6 +5,7 @@ import scodec.bits.{HexStringSyntax, _}
 import scodec.{Codec, _}
 import spire.math.UInt
 
+/** @todo VL Medium Encoding Appears to be broken -- need some valid test cases */
 trait VL {
 
   private val smallMask = hex"F000"

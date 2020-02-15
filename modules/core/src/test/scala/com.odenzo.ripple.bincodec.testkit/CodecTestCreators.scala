@@ -10,15 +10,7 @@ trait CodecTestCreators extends Logging with RippleTestUtils {
 //  def checkTxBlob(reply: Json) = {
 //    import scodec.bits.ByteVector
 //
-//    import com.odenzo.ripple.bincodec.RippleCodecAPI
-//
-//    for {
-//      txjson        <- findTxJsonInReply(reply)
-//      kTxBlob       <- findTxBlobInReply(reply)
-//      txBlobEncoded <- RippleCodecAPI.serializedTxBlob(txjson.asJson)
-//      txBlobHex = ByteVector(txBlobEncoded).toHex
-//    } yield (kTxBlob, txBlobEncoded)
-//  }
+
 //  def checkHash(jobj: Json): Either[BinCodecLibError, Json] = {
 //
 //    for {
