@@ -32,9 +32,4 @@ object RippleConstants {
   /** Standard XRP encoding, like an ISO **/
   val xrpHex: ByteVector = hex"0158415500000000C1F76FF6ECB0BAC600000000"
 
-  /** Valid currency characters */
-  val rippleCurrencyAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-    "0123456789" +
-    "<>(){}[]|?!@#$%^&*"
-
 }

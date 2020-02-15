@@ -4,8 +4,9 @@ import cats._
 import cats.data._
 import cats.implicits._
 import com.odenzo.ripple.bincodec.models.{CustomCurrency, ISOCurrency, XRPLAmount, XRPLCurrency, XRPLDrops, XRPLIssuedAmount}
+import scodec.Attempt.Successful
 import scodec.bits.{BitVector, _}
-import scodec._
+import scodec.{Attempt, _}
 import scodec.codecs._
 
 /**
@@ -30,6 +31,11 @@ trait AmountScodecs {
   private[AmountScodecs] val maxMantissa: BigInt  = BigDecimal("10e16").toBigInt - 1 // For normalizing not input
   private[AmountScodecs] final val maxXrp: Double = Math.pow(10, 17)
 
+  /** Valid currency characters */
+  private val rippleCurrencyAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+    "0123456789" +
+    "<>(){}[]|?!@#$%^&*"
+
   private[AmountScodecs] def xprAmountEncFn(xrp: Long) = {
     if (xrp < 0) Attempt.failure(Err(s"XRP Amount$xrp < 0"))
     else if (xrp > maxXrp) Attempt.failure(Err(s"XRP Amount $xrp > $maxXrp"))
@@ -43,6 +49,12 @@ trait AmountScodecs {
     .xmap[XRPLDrops](XRPLDrops, _.amount)
     .withContext("xrpXrpAmont")
 
+  val xrplCurrencyAscii: Codec[String] = ascii.exmap[String](validateChars, validateChars)
+
+  def validateChars(str: String): Attempt[String] =
+    if (isValidRippleAscii(str)) Attempt.successful(str)
+    else Attempt.failure(Err("Not Valid Ripple Currency"))
+
   /* We also have the Ripple alphabet to verify the ASCII pseudo-ISO (ISO4127)
    Don't forget the legacy currency code which is removed from current XRPL docs
    This sure looks like a peek() or flatZip case
@@ -55,9 +67,9 @@ trait AmountScodecs {
 
   /** @todo Should be checking the string is in the ripplecurrencyalphabet */
   private[AmountScodecs] def currencycode: Codec[ISOCurrency] =
-    (constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, ascii) <~ constantLenient(bin"0".padTo(40)))
+    (constantLenient(bin"0".padTo(88)) ~> fixedSizeBits(24, xrplCurrencyAscii) <~ constantLenient(bin"0".padTo(40)))
       .xmap[ISOCurrency](x => ISOCurrency(x), (y: ISOCurrency) => y.iso)
-      .withContext("ISO Currnecy")
+      .withContext("ISO Currnency")
 
   /** Handles Legacy and ISO Currency Codes. Either 3 ASCII Chard or 160 bits of Hex  either bool(8) DOES NOT consume */
   val xrplCurrency: Codec[XRPLCurrency] =
@@ -69,15 +81,9 @@ trait AmountScodecs {
         }
       )
 
-  /**
-    * Used to check if ISO currency codes are ok.
-    *
-    * @param s
-    *
-    * @return true is valid
-    */
-  private[AmountScodecs] def isRippleAscii(s: String): Boolean = {
-    s.forall(c => RippleConstants.rippleCurrencyAlphabet.contains(c))
+  /** Used to check if ISO currency codes contain valid characters only   */
+  private[AmountScodecs] def isValidRippleAscii(s: String): Boolean = {
+    s.forall(c => rippleCurrencyAlphabet.contains(c))
   }
 
   /** Gets JUST the amount for a Fiat Value, not the currency or issuer */
