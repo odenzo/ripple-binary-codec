@@ -163,7 +163,7 @@ class AmountScodecsTest extends OTestSpec with AmountScodecs {
 
   test("Currency Encoding") {
 
-    // Not sure that 1 or 2 character codes are acceptable
+    // @todo Not sure that 1 or 2 character codes are acceptable
     val passFail = List(
       ("XRP", true), // This is special case
       ("mew", true),

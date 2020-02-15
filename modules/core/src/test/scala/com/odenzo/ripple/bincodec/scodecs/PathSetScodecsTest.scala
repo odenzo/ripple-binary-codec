@@ -3,6 +3,7 @@ package com.odenzo.ripple.bincodec.scodecs
 import com.odenzo.ripple.bincodec.OTestSpec
 import scodec.bits._
 import io.circe.literal._
+
 class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
 
   private val problemPaths = json"""
@@ -132,7 +133,7 @@ class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
   private val pathset =
     hex"_0112_01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00"
 
-  private  val singlePath = hex"""
+  private val singlePath = hex"""
   01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00""".bits
 
   private val pathstepA = hex"01_A4AB176547A22ED23E6D8C3138780526830081D2".bits
@@ -141,7 +142,8 @@ class PathSetScodecsTest extends OTestSpec with PathSetScodecs {
   test("Single PathSet") {
     xrplPathSet.decode(pathset.bits).require
   }
-import PathStepScodecs.xrplPathStep
+
+  import PathStepScodecs.xrplPathStep
 
   test("Step 0x01") {
     val res = xrplPathStep.decode(pathstepA).require
@@ -152,6 +154,5 @@ import PathStepScodecs.xrplPathStep
     val res = xrplPathStep.decode(pathstepB).require
     scribe.debug(s"Result: $res")
   }
-
 
 }

@@ -123,16 +123,15 @@ trait OTestSpec
 
   /** Ensures all bits are exhausted on decoding back to value */
   def roundTripFromEncode[T](model: T, theCodec: scodec.Codec[T])(implicit log: Boolean): BitVector = {
-
     val codec = theCodec
-    val bits  = codec.encode(model).require
-    val back  = codec.decode(bits).require
-    if (log) {
-      scribe.debug(s"Given:\n $model \n Codec: $codec")
-      scribe.debug(s"Encoded: $bits")
-      scribe.debug(s"Decoded: $back")
+    if (log) scribe.debug(s"Given:\n $model \n Codec: $codec")
 
-    }
+    val bits = codec.encode(model).require
+    if (log) scribe.debug(s"Encoded: $bits")
+
+    val back = codec.decode(bits).require
+    if (log) scribe.debug(s"Decoded: $back")
+
     back.value shouldEqual model
     back.remainder.isEmpty shouldBe true
     bits

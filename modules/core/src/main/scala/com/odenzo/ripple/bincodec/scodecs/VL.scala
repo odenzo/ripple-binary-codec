@@ -3,6 +3,7 @@ package com.odenzo.ripple.bincodec.scodecs
 import scodec.codecs._
 import scodec.bits.{HexStringSyntax, _}
 import scodec.{Codec, _}
+import spire.math.UInt
 
 trait VL {
 
@@ -14,30 +15,32 @@ trait VL {
     .xmap[Int](
       (bt: (Int, Int)) => 193 + ((bt._1 - 193) * 256) + bt._2,
       (i: Int) => {
-        val l2      = i - 193
-        val b1: Int = 193 + (l2 >>> 8)
-        val b2: Int = l2 & 0xFF
-        (b1, b2) // Only output 2 bytes
+        val l2: UInt = UInt(i - 193)
+        val b1: UInt = UInt(193) + (l2 >>> 8)
+        val b2: UInt = l2 & UInt(0xff)
+        (b1.toInt, b2.toInt)
       }
     )
     .withContext("Medium VL")
 
-  protected val largeVL: Codec[Int] = (uint8 ~ uint8 ~ uint8).xmap[Int](
-    (bt: ((Int, Int), Int)) => 12481 + ((bt._1._1 - 241) * 65536) + ( bt._1._2 *256) + bt._2,
-    (i: Int) => {
-      val lenA: Int = i - 12481
-      val b1        = 241 + (lenA >>> 16)
-      val b2        = (lenA >> 8) & 0xFF
-      val b3        = lenA & 0xFF
-      ((b1, b2), b3)
-    }
-  )
+  protected val largeVL: Codec[Int] = (uint8 ~ uint8 ~ uint8)
+    .xmap[Int](
+      (bt: ((Int, Int), Int)) => 12481 + ((bt._1._1 - 241) * 65536) + (bt._1._2 * 256) + bt._2,
+      (i: Int) => {
+        val lenA: Int = i - 12481
+        val b1        = 241 + (lenA >>> 16)
+        val b2        = (lenA >> 8) & 0xFF
+        val b3        = lenA & 0xFF
+        ((b1, b2), b3)
+      }
+    )
+    .withContext("Large VL")
 
   /** This encodes 0 as valid length */
   protected def encodeVlAttempt(len: Int): Attempt[BitVector] = {
     len match {
-      case len if len < 0      => Attempt.failure(Err(s"$len was less than 0"))
-      case len if len <= 192     => smallVL.encode(len)
+      case len if len < 0       => Attempt.failure(Err(s"$len was less than 0"))
+      case len if len <= 192    => smallVL.encode(len)
       case len if len <= 12480  => mediumVL.encode(len)
       case len if len <= 918744 => largeVL.encode(len)
       case _                    => Attempt.failure(Err(s"$len was > 918744"))
