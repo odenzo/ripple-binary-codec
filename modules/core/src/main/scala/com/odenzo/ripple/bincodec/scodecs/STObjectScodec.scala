@@ -4,7 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import cats.implicits._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import scodec.bits._
 import scodec.{cats, _}
 import scodec.codecs._
@@ -25,33 +25,30 @@ trait STObjectScodec {
   // Not sure what variableSizeDelimited or vectorDelimited()
   // The vector may have veriable sized members. Read the source code.
 
-  case class MyState(bv: BitVector, acc: List[(Json, Json)])
+  case class MyState(bv: BitVector, acc: List[(String, Json)])
   // /I think we have to make a
 
   /** The arrays are not delimeted, the contents are just fieldId ~ fieldValue. The Fields may contain the delimeter of end or array
     * field */
-  val xrparrayDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"f1")))
+  //val xrparrayDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"f1")))
+  private val xrparrayEnc: Encoder[List[(Json, Json)]] = fail(Err("ST Array Encoder Not Done")).asEncoder
+  val xrpstarray: Codec[List[(Json, Json)]]            = fail(Err("ST Array Encoder Not Done"))
 
   /** This decodes an object which is the contents of a field. Similar to array each entry is a field */
-  private val xrpobjectDec = Decoder[List[(Json, Json)]](delimitedDynamicList(_, constant(hex"e1")))
-
-  private val xrplSTObjectEnc: Codec[List[(Json, Json)]] = list(xrpfield)
-
-  private val xrparrayEnc: Encoder[List[(Json, Json)]] = fail(Err("ST Array Encoder Not Done")).asEncoder
-
-  val xrpstarray: Codec[List[(Json, Json)]] = Codec(xrparrayEnc, xrparrayDec)
+  private val xrpobjectDec                         = Decoder[JsonObject](delimitedDynamicList(_, constant(hex"e1")))
+  private val xrplSTObjectEnc: Encoder[JsonObject] = list(xrpfield).asEncoder.contramap[JsonObject](_.toList)
 
   // This does an infinite loop on first field
   /** Codec for an object with end delimeter. Won't work for top level object
     */
-  val xrpstobject: Codec[List[(Json, Json)]] = Codec(xrplSTObjectEnc, xrpobjectDec)
+  val xrpstobject: Codec[JsonObject] = Codec(xrplSTObjectEnc, xrpobjectDec)
 
-  def delimitedDynamicList(bv: BitVector, delimiter: scodec.Codec[Unit]): Attempt[DecodeResult[List[(Json, Json)]]] = {
+  def delimitedDynamicList(bv: BitVector, delimiter: scodec.Codec[Unit]): Attempt[DecodeResult[JsonObject]] = {
 
     scribe.debug(s"Doing dynamic delimited list with delimeter ${delimiter.encode(())} ")
 
     val initialState: MyState = MyState(bv, List.empty)
-    val stateFn: State[MyState, Option[(Json, Json)]] = State[MyState, Option[(Json, Json)]](state => {
+    val stateFn: State[MyState, Option[(String, Json)]] = State[MyState, Option[(String, Json)]](state => {
       scribe.debug(s"Current State => $state")
       val (newState, out) = getNextField(delimiter)(state.bv) match {
         case Left(remainder) => (state.copy(bv = remainder), None)
@@ -63,17 +60,16 @@ trait STObjectScodec {
     })
     val state0 = stateFn
     scribe.debug(s"Initial State $state0")
-    val result: (MyState, Option[(Json, Json)]) = stateFn.iterateWhile(_.isDefined).run(initialState).value
-
-    val finalState: MyState = result._1
-    val ans                 = Attempt.successful(DecodeResult(finalState.acc, finalState.bv))
+    val result: (MyState, Option[(String, Json)]) = stateFn.iterateWhile(_.isDefined).run(initialState).value
+    val finalState: JsonObject                    = JsonObject.fromIterable(result._1.acc)
+    val ans                                       = Attempt.successful(DecodeResult(finalState, result._1.bv))
     ans
 
   }
 
   /** Returns the next field in the array or Left is the delimeter is found outside a field
     * To avoided dependant types the decoding is done to JSON This consumes the delimeter too. */
-  def getNextField[A](delimiter: Decoder[A])(fromBV: BitVector): Either[BitVector, DecodeResult[(Json, Json)]] = {
+  def getNextField[A](delimiter: Decoder[A])(fromBV: BitVector): Either[BitVector, DecodeResult[(String, Json)]] = {
     scribe.info(s"Getting Next Field in Delimeted Object, bv = ${fromBV.toHex}")
     delimiter.decode(fromBV) match {
       case Attempt.Successful(res) => Left(res.remainder)

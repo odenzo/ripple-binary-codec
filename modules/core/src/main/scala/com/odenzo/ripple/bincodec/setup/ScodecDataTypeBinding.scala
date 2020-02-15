@@ -3,12 +3,14 @@ package com.odenzo.ripple.bincodec.setup
 import cats._
 import cats.data._
 import cats.implicits._
-import io.circe.{Encoder, Json}
+import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonObject}
 import scodec.{Attempt, DecodeResult}
 import scodec.bits.BitVector
 import _root_.scodec.codecs.variableSizeBytes
-
+import com.odenzo.ripple.bincodec.models.{XRPLAmount, XRPLPathSet}
 import com.odenzo.ripple.bincodec.scodecs.VL
+import shapeless.HMap
+import spire.math.ULong
 //import io.circe.spire._
 import com.odenzo.circe.spire.SpireCodecs._
 
@@ -20,22 +22,23 @@ object ScodecDataTypeBinding {
   import com.odenzo.ripple.bincodec.scodecs.AmountScodecs._
   import com.odenzo.ripple.bincodec.scodecs.AdditionalScodecs._
   import com.odenzo.ripple.bincodec.scodecs.STObjectScodec._
+
 //
 //  // Going to need an HList I think
 //  def binding =
-//    HList(
+//    HMap(
 //      "UInt16"      -> xrpuint16,
 //      "Transaction" -> xrpError("Transaction NIMP"),
-//      "PathSet"     -> xrppathset,
+//      "PathSet"     -> xrplPathSet,
 //      "Validation"  -> xrpError("Validation NIMP"),
 //      "LedgerEntry" -> xrpError("LedgerEntry NIMP"),
 //      "STArray"     -> xrpError("LedgerEntry NIMP"),
 //      "Vector256"   -> xrpvectorhash256,
 //      "NotPresent"  -> xrpError("NotPresent Data Type"),
-//      "AccountID"   -> xrpaccount,
+//      "AccountID"   -> xrplAccount,
 //      "UInt8"       -> xrpuint8,
 //      "UInt32"      -> xrpuint32,
-//      "Hash128"     -> xrphash(16),
+//      "Hash128"     -> xrphash128,
 //      "Blob"        -> xrpblob,
 //      "Done"        -> xrpError("DONE datatype not understood"),
 //      "Amount"      -> xrpamount, // XRP or Fiat Amount
@@ -78,6 +81,37 @@ object ScodecDataTypeBinding {
 
     }
   }
+
+  def dynamicEncode(json: Json, typename: String): Attempt[Serializable] = {
+
+    typename match {
+      case "UInt16"      => xrpuint16.encode(fromJson[Int](json))
+      case "Transaction" => xrplTransactionType.encode(fromJson[String](json))
+      case "PathSet"     => xrplPathSet.encode(fromJson[XRPLPathSet](json))
+      case "Vector256"   => xrpvectorhash256.encode(fromJson[String](json)) // String
+      case "AccountID"   => xrplAccount.encode(fromJson[String](json))
+      case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrplAccount).encode(fromJson[String](json))
+      case "UInt8"       => xrpuint8.encode(fromJson[Int](json))
+      case "UInt32"      => xrpuint32.encode(fromJson[Int](json))
+      case "Hash128"     => xrphash128.encode(fromJson[String](json))
+      case "Blob"        => xrpblob.encode(fromJson[String](json)) // String
+      case "Amount"      => xrplAmount.encode(fromJson[XRPLAmount](json)) // XRP or Fiat Amount
+      case "Hash256"     => xrphash256.encode(fromJson[String](json)) // String
+      case "Hash160"     => xrphash160.encode(fromJson[String](json)) // String
+      case "UInt64"      => xrpulong64.encode(fromJson[ULong](json)) // ULong
+      case "STObject"    => xrpstobject.encode(fromJson[JsonObject](json)) // List(Json->Json) not JSonObjectYet
+      // case "STArray"     => xrpstarray.encode(fromJson[Int](json)) // List (Json->Json)
+
+      // case "Validation"  => xrpError[Int]("Validation NIMP").encode(json2(json)) // Int
+      // case "LedgerEntry" => xrpError[Int]("LedgerEntry NIMP").encode(json2(json)) // Int
+      //  case "Done"        => xrpError[Int]("DONE datatype not understood").encode(json2(json))
+
+      case other => throw new IllegalArgumentException(s"Encoding Type [$other] not known.")
+
+    }
+  }
+
+  def fromJson[T: Decoder](json: Json): T = { json.as[T].fold(throw _, identity) }
 
   def transform2Json[T: Encoder](rs: DecodeResult[T]): DecodeResult[Json] = {
     import io.circe.syntax._

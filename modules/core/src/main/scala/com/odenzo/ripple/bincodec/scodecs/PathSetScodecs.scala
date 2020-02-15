@@ -92,13 +92,14 @@ trait PathSetScodecs {
   def decoder(bv: BitVector): Attempt[DecodeResult[XRPLPathSet]] = {
     Attempt.fromTry {
       Try {
-        val res = PathSetState
+        val res: PathSetState = PathSetState
           .stateFn
           .iterateWhile(_.isEmpty)
           .run(PathSetState.from(bv))
           .value
           ._1
 
+        scribe.info(s"Calculated Result: $res")
         DecodeResult(XRPLPathSet(res.paths.toVector), res.remaining)
       }
     }
@@ -120,8 +121,13 @@ case class PathSetState(paths: List[XRPLPath], steps: List[XRPLPathStep], remain
   // Final state where steps should be empty and the paths list ordered as found
   def endPaths(left: BitVector): PathSetState = {
     val closeSteps = nextPath(left)
-    closeSteps.copy(paths = paths.reverse)
+    scribe.debug(s"Closing Paths: $closeSteps")
+    closeSteps.copy(paths = closeSteps.paths.reverse)
   }
+
+  override def toString(): String =
+    s"\n BV Length ${remaining.size}  # Paths: ${paths.length}  # Steps ${steps.length} \n Paths: \n " + paths.mkString("\n") + "\n  Steps: " + steps
+      .mkString("\n")
 }
 
 object PathSetState {
@@ -142,10 +148,12 @@ object PathSetState {
         (finalState, finalState.some)
       case fi if fi === anotherPath =>
         // Drop the delimieter and start accumulating a new list of pathsteps for another path
+        scribe.trace("Found Another Path")
         (state.nextPath(state.remaining.drop(16)), None)
       case other =>
         // Assume its a pathstep  delimeter, which will die if its not valid. Could actually call the appropriate
         // PathStep decoder and eliminate the choice
+        scribe.trace(s"Found Another Step $other")
         val stepResult: DecodeResult[XRPLPathStep] = PathStepScodecs.xrplPathStep.decode(state.remaining).require
         (state.addStep(stepResult.value, stepResult.remainder), None)
 

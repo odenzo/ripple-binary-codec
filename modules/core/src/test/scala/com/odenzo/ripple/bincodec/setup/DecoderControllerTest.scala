@@ -3,6 +3,8 @@ package com.odenzo.ripple.bincodec.setup
 import com.odenzo.ripple.bincodec._
 import io.circe.literal._
 import _root_.scodec.bits._
+import io.circe.{Json, JsonObject}
+import scodec.DecodeResult
 
 class DecoderControllerTest extends OTestSpec {
 
@@ -51,7 +53,10 @@ class DecoderControllerTest extends OTestSpec {
       hex"_0112_01_A4AB176547A22ED23E6D8C3138780526830081D2_30_0000000000000000000000004E5A440000000000_1A255086B5137A6E57079B1B4FFF4F75C61B4F7F_00"
 
   test("Decoding") {
-    val foo = Setup.config.fields.length
-    DecoderController.decode(txblox.bits).require
+    import io.circe.syntax._
+    val foo    = Setup.config.fields.length
+    val result = DecoderController.decode(txblox.bits)
+    scribe.info(s"Result Object: ${result.value.asJson.spaces4}")
+    scribe.info(s"Remaining Bytes: ${result.remainder}")
   }
 }
