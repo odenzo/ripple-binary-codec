@@ -4,6 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import cats.implicits._
+import com.odenzo.ripple.bincodec.setup.Setup
 import io.circe.{Json, JsonObject}
 import scodec.bits._
 import scodec.{cats, _}
@@ -35,8 +36,17 @@ trait STObjectScodec {
   val xrpstarray: Codec[List[(Json, Json)]]            = fail(Err("ST Array Encoder Not Done"))
 
   /** This decodes an object which is the contents of a field. Similar to array each entry is a field */
-  private val xrpobjectDec                         = Decoder[JsonObject](delimitedDynamicList(_, constant(hex"e1")))
-  private val xrplSTObjectEnc: Encoder[JsonObject] = list(xrpfield).asEncoder.contramap[JsonObject](_.toList)
+  private val xrpobjectDec = Decoder[JsonObject](delimitedDynamicList(_, constant(hex"e1")))
+
+  // This is a little trickier, because we need to sort on field id.  Bit of duplicate work with xrpfield.
+  private val xrplSTObjectEnc: Encoder[JsonObject] = list(xrpfield).asEncoder.contramap[JsonObject] { jo =>
+    // Somewhere we need to filter too, for Signing or plain serialization
+    // Might as well do in xrpfield for now, more to pre-processing entire JSON later?
+    // This is for encoding only, so mainly for working with transactions
+    jo.toList.sortBy { // FieldID
+      case (fname, _) => Setup.findFieldByName(fname)._2.orderKey
+    }
+  }
 
   // This does an infinite loop on first field
   /** Codec for an object with end delimeter. Won't work for top level object

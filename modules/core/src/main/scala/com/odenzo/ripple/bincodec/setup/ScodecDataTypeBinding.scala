@@ -56,22 +56,22 @@ object ScodecDataTypeBinding {
   def dynamicDecode(bv: BitVector, typename: String): Attempt[DecodeResult[Json]] = {
 
     typename match {
-      case "UInt16"      => xrpuint16.decode(bv).map(x => transform2Json(x)) // Int
-      case "Transaction" => xrplTransactionType.decode(bv).map(x => transform2Json(x)) // String/Int
-      case "PathSet"     => xrplPathSet.decode(bv).map(x => transform2Json(x))
-      case "Vector256"   => xrpvectorhash256.decode(bv).map(x => transform2Json(x)) // String
-      case "AccountID"   => xrplAccount.decode(bv).map(x => transform2Json(x))
-      case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrplAccount).decode(bv).map(x => transform2Json(x))
-      case "UInt8"       => xrpuint8.decode(bv).map(x => transform2Json(x))
-      case "UInt32"      => xrpuint32.decode(bv).map(x => transform2Json(x))
-      case "Hash128"     => xrphash128.decode(bv).map(x => transform2Json(x))
-      case "Blob"        => xrpblob.decode(bv).map(x => transform2Json(x)) // String
-      case "Amount"      => xrplAmount.decode(bv).map(x => transform2Json(x)) // XRP or Fiat Amount
-      case "Hash256"     => xrphash256.decode(bv).map(x => transform2Json(x)) // String
-      case "Hash160"     => xrphash160.decode(bv).map(x => transform2Json(x)) // String
-      case "UInt64"      => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
-      case "STObject"    => xrpstobject.decode(bv).map(x => transform2Json(x)) // List(Json->Json) not JSonObjectYet
-      case "STArray"     => xrpstarray.decode(bv).map(x => transform2Json(x)) // List (Json->Json)
+      case "UInt16"        => xrpuint16.decode(bv).map(x => transform2Json(x)) // Int
+      case "Transaction"   => xrplTransactionType.decode(bv).map(x => transform2Json(x)) // String/Int
+      case "PathSet"       => xrplPathSet.decode(bv).map(x => transform2Json(x))
+      case "Vector256"     => xrpvectorhash256.decode(bv).map(x => transform2Json(x)) // String
+      case "AccountIdNoVL" => xrplAccount.decode(bv).map(x => transform2Json(x))
+      case "AccountIdVL"   => variableSizeBytes(VL.xrpvl, xrplAccount).decode(bv).map(x => transform2Json(x))
+      case "UInt8"         => xrpuint8.decode(bv).map(x => transform2Json(x))
+      case "UInt32"        => xrpuint32.decode(bv).map(x => transform2Json(x))
+      case "Hash128"       => xrphash128.decode(bv).map(x => transform2Json(x))
+      case "Blob"          => xrpblob.decode(bv).map(x => transform2Json(x)) // String
+      case "Amount"        => xrplAmount.decode(bv).map(x => transform2Json(x)) // XRP or Fiat Amount
+      case "Hash256"       => xrphash256.decode(bv).map(x => transform2Json(x)) // String
+      case "Hash160"       => xrphash160.decode(bv).map(x => transform2Json(x)) // String
+      case "UInt64"        => xrpulong64.decode(bv).map(x => transform2Json(x)) // ULong
+      case "STObject"      => xrpstobject.decode(bv).map(x => transform2Json(x)) // List(Json->Json) not JSonObjectYet
+      case "STArray"       => xrpstarray.decode(bv).map(x => transform2Json(x)) // List (Json->Json)
 
       case "Unknown"     => xrpError[Int]("Unknown Data Type").decode(bv).map(x => transform2Json(x)) // Dummy
       case "Validation"  => xrpError[Int]("Validation NIMP").decode(bv).map(x => transform2Json(x)) // Int
@@ -82,24 +82,24 @@ object ScodecDataTypeBinding {
     }
   }
 
-  def dynamicEncode(json: Json, typename: String): Attempt[Serializable] = {
+  def dynamicEncode(json: Json, typename: String): Attempt[BitVector] = {
 
     typename match {
-      case "UInt16"      => xrpuint16.encode(fromJson[Int](json))
-      case "Transaction" => xrplTransactionType.encode(fromJson[String](json))
-      case "PathSet"     => xrplPathSet.encode(fromJson[XRPLPathSet](json))
-      case "Vector256"   => xrpvectorhash256.encode(fromJson[String](json)) // String
-      case "AccountID"   => xrplAccount.encode(fromJson[String](json))
-      case "AccountIDVL" => variableSizeBytes(VL.xrpvl, xrplAccount).encode(fromJson[String](json))
-      case "UInt8"       => xrpuint8.encode(fromJson[Int](json))
-      case "UInt32"      => xrpuint32.encode(fromJson[Int](json))
-      case "Hash128"     => xrphash128.encode(fromJson[String](json))
-      case "Blob"        => xrpblob.encode(fromJson[String](json)) // String
-      case "Amount"      => xrplAmount.encode(fromJson[XRPLAmount](json)) // XRP or Fiat Amount
-      case "Hash256"     => xrphash256.encode(fromJson[String](json)) // String
-      case "Hash160"     => xrphash160.encode(fromJson[String](json)) // String
-      case "UInt64"      => xrpulong64.encode(fromJson[ULong](json)) // ULong
-      case "STObject"    => xrpstobject.encode(fromJson[JsonObject](json)) // List(Json->Json) not JSonObjectYet
+      case "UInt16"        => xrpuint16.encode(fromJson[Int](json))
+      case "Transaction"   => xrplTransactionType.encode(fromJson[String](json))
+      case "PathSet"       => xrplPathSet.encode(fromJson[XRPLPathSet](json))
+      case "Vector256"     => xrpvectorhash256.encode(fromJson[String](json)) // String
+      case "AccountIdNoVL" => xrplAccount.encode(fromJson[String](json))
+      case "AccountIdVL"   => variableSizeBytes(VL.xrpvl, xrplAccount).encode(fromJson[String](json))
+      case "UInt8"         => xrpuint8.encode(fromJson[Int](json))
+      case "UInt32"        => xrpuint32.encode(fromJson[Int](json))
+      case "Hash128"       => xrphash128.encode(fromJson[String](json))
+      case "Blob"          => xrpblob.encode(fromJson[String](json)) // String
+      case "Amount"        => xrplAmount.encode(fromJson[XRPLAmount](json)) // XRP or Fiat Amount
+      case "Hash256"       => xrphash256.encode(fromJson[String](json)) // String
+      case "Hash160"       => xrphash160.encode(fromJson[String](json)) // String
+      case "UInt64"        => xrpulong64.encode(fromJson[ULong](json)) // ULong
+      case "STObject"      => xrpstobject.encode(fromJson[JsonObject](json)) // List(Json->Json) not JSonObjectYet
       // case "STArray"     => xrpstarray.encode(fromJson[Int](json)) // List (Json->Json)
 
       // case "Validation"  => xrpError[Int]("Validation NIMP").encode(json2(json)) // Int
@@ -111,7 +111,12 @@ object ScodecDataTypeBinding {
     }
   }
 
-  def fromJson[T: Decoder](json: Json): T = { json.as[T].fold(throw _, identity) }
+  def fromJson[T: Decoder](json: Json): T = json.as[T] match {
+    case Right(v) => v
+    case Left(err) =>
+      scribe.error(s"Could not decode JSON ${json.spaces4}", err)
+      throw new Exception(s"Decoding $json ", err)
+  }
 
   def transform2Json[T: Encoder](rs: DecodeResult[T]): DecodeResult[Json] = {
     import io.circe.syntax._

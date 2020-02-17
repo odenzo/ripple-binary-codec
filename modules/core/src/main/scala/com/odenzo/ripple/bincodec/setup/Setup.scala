@@ -1,12 +1,7 @@
 package com.odenzo.ripple.bincodec.setup
 
 import com.odenzo.ripple.bincodec.config.{FieldEntry, RippleConfig}
-import com.odenzo.ripple.bincodec.scodecs.FieldIdScodec
-import com.odenzo.ripple.bincodec.scodecs.FieldIdScodec.{FieldCode, TypeCode}
-import scodec.bits.BitVector
-import spire.implicits._
-
-case class FieldIdInfo(bv: BitVector, typeCode: Int, fieldCode: Int, typeName: String)
+import com.odenzo.ripple.bincodec.models.FieldId
 
 /** Datastructures and lookups optimized after functionality working... */
 object Setup {
@@ -15,42 +10,46 @@ object Setup {
   val config: RippleConfig = RippleConfig.loadFromDefaultFile().fold(e => throw e, identity)
   scribe.trace(s"Raw Data Types: ${pprint.apply(config.types)}")
 
-  val dataTypes: Map[String, Int]                         = config.types.toList.filter(v => v._2 >= 0).toMap
-  val fields: List[FieldEntry]                            = config.fields.filter(v => (v.metadata.nth > 0) && (v.metadata.nth < 256))
-  val fieldsByFieldTypId: List[(FieldEntry, FieldIdInfo)] = bindFieldIdToFields()
+  val dataTypes: Map[String, Int] = config.types.toList.filter(v => v._2 >= 0).toMap
+
+  val fields: List[FieldEntry] = config.fields.filter(v => (v.metadata.nth > 0) && (v.metadata.nth < 256))
+
+  val fieldsByFieldTypId: List[(FieldEntry, FieldId)] = bindFieldIdToFields()
+
   scribe.trace(s"Data Types: ${pprint.apply(dataTypes)}")
 
-  val txntypeIMap: Map[Int, String]               = config.transactionTypes.toList.map(_.swap).toMap
-  val ledgerEntrytypeIMap: Map[FieldCode, String] = config.ledgerEntryTypes.toList.map(_.swap).toMap
+  val txntypeIMap: Map[Int, String]         = config.transactionTypes.toList.map(_.swap).toMap
+  val ledgerEntrytypeIMap: Map[Int, String] = config.ledgerEntryTypes.toList.map(_.swap).toMap
 
   val datatypeCode2datatypeNameMap: Map[Int, String] = dataTypes
     .toList
     .map(x => (x._2, x._1))
     .toMap
 
-  def bindFieldIdToFields(): List[(FieldEntry, FieldIdInfo)] = {
+  def bindFieldIdToFields(): List[(FieldEntry, FieldId)] = {
     import cats.implicits._
 
     scribe.trace(s"binding fieldids to fields")
 
     fields.fproduct { fe =>
       scribe.trace(s"binding field ${pprint.apply(fe)}")
-      val typename        = fe.metadata.typeName
-      val typecode        = dataTypes(typename)
-      val fieldcode       = fe.metadata.nth
-      val typecodeAdj     = if (typecode > 1000) 16 else typecode
-      val encodedFielduid = FieldIdScodec.xrpfieldid.encode((fieldcode, typecodeAdj)).require
-      FieldIdInfo(encodedFielduid, typecode, fieldcode, typename)
+      val typename    = fe.metadata.typeName
+      val typecode    = dataTypes(typename)
+      val fieldcode   = fe.metadata.nth
+      val typecodeAdj = if (typecode > 1000) 16 else typecode
+
+      FieldId(typeCode = typecode, fieldCode = fieldcode)
     }
   }
 
-  def findFieldByFieldId(fieldtype: (FieldCode, TypeCode)): (FieldEntry, FieldIdInfo) = {
+  def findFieldByFieldId(fieldId: FieldId): (FieldEntry, FieldId) = {
+
     fieldsByFieldTypId
-      .find(x => x._2.fieldCode === fieldtype._1 && x._2.typeCode == fieldtype._2)
-      .getOrElse(throw new Exception(s"$fieldtype not found in " + s"field list"))
+      .find(x => x._2.fieldCode == fieldId.fieldCode && x._2.typeCode == fieldId.typeCode)
+      .getOrElse(throw new Exception(s"$fieldId not found in " + s"field list"))
   }
 
-  def findFieldByName(fieldName: String): (FieldEntry, FieldIdInfo) = {
+  def findFieldByName(fieldName: String): (FieldEntry, FieldId) = {
     fieldsByFieldTypId.find(_._1.name == fieldName) match {
       case None    => throw new IllegalArgumentException(s"Field Name [$fieldName] not found.")
       case Some(v) => v

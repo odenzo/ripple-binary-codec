@@ -2,8 +2,8 @@ package com.odenzo.ripple.bincodec.scodecs
 
 import scodec.DecodeResult
 import scodec.bits.BitVector
-
 import com.odenzo.ripple.bincodec.OTestSpec
+import com.odenzo.ripple.bincodec.models.FieldId
 
 /** Inidivudual Codecs Work, need a Combinator */
 class FieldIdScodecTest extends OTestSpec {
@@ -14,8 +14,8 @@ class FieldIdScodecTest extends OTestSpec {
     val codec = smallTypeAndSmallField
     val fName = 15
     val fType = 1
-
-    codec.encode((fName, fType)).map { bv =>
+    val id    = FieldId(fType, fName)
+    codec.encode(id).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       smallTypeAndSmallField.decode(bv).map { decRes =>
         scribe.info(s"Decoded Res: $decRes")
@@ -24,11 +24,11 @@ class FieldIdScodecTest extends OTestSpec {
   }
 
   test("SmallType Name Encoding") {
-    val codec   = smallTypeAndField
-    val fName   = 255
-    val fType   = 1
-    val fieldId = (fName, fType)
-    codec.encode(fieldId).map { bv =>
+    val codec = smallTypeAndField
+    val fName = 255
+    val fType = 1
+    val id    = FieldId(fType, fName)
+    codec.encode(id).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
         scribe.info(s"Decoded Res: $decRes")
@@ -37,11 +37,11 @@ class FieldIdScodecTest extends OTestSpec {
   }
 
   test("Type Small Name Encoding") {
-    val codec   = smallFieldAndType
-    val fName   = 15
-    val fType   = 255
-    val fieldId = (fName, fType)
-    codec.encode(fieldId).map { bv =>
+    val codec = smallFieldAndType
+    val fName = 15
+    val fType = 255
+    val id    = FieldId(fType, fName)
+    codec.encode(id).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
         scribe.info(s"Decoded Res: $decRes")
@@ -53,7 +53,7 @@ class FieldIdScodecTest extends OTestSpec {
     val codec   = typeAndField
     val fName   = 255
     val fType   = 255
-    val fieldId = (fName, fType)
+    val fieldId = FieldId(fType, fName)
     codec.encode(fieldId).map { bv =>
       scribe.info(s"BV = ${bv.toBin}")
       codec.decode(bv).map { decRes =>
@@ -64,11 +64,11 @@ class FieldIdScodecTest extends OTestSpec {
 
   def roundTripFieldId(fName: Int, fType: Int): BitVector = {
 
-    val fieldId = ((fName), (fType))
+    val fieldId = (FieldId(fType, fName))
 
     val bitv = xrpfieldid.encode(fieldId).require
     //scribe.info(s"For $fieldId \t Size: ${bitv.bytes.size} Bits: ${bitv.toBin}")
-    val ans: DecodeResult[(FieldCode, TypeCode)] = xrpfieldid.decode(bitv).require
+    val ans: DecodeResult[FieldId] = xrpfieldid.decode(bitv).require
     ans.value shouldEqual fieldId
     bitv
   }

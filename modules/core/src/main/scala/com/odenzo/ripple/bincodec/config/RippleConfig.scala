@@ -43,6 +43,9 @@ object FieldMeta {
   implicit val codec: Codec.AsObject[FieldMeta] = deriveConfiguredCodec[FieldMeta]
 }
 
+/** This is a mirrror representation of the configuration file with no data modifications or structural changes.
+  * Simple JSON parsing. Pre-Processing is all done in Setup.
+ **/
 case class RippleConfig(
     types: Map[String, Int],
     fields: List[FieldEntry],
@@ -55,7 +58,7 @@ object RippleConfig {
 
   def loadFromDefaultFile(): Either[Throwable, RippleConfig] = {
     val resourcePath = "definitions.json"
-    scribe.warn(s"Loading from Path: $resourcePath")
+    scribe.warn(s"Loading XRPL Definitions from Path: $resourcePath")
     Try {
       Source.fromResource(resourcePath)
     }.adaptErr {
