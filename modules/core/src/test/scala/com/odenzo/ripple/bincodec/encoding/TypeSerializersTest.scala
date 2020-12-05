@@ -11,7 +11,7 @@ class TypeSerializersTest extends OTestSpec {
 
   import scodec.bits.ByteVector
 
-  val _ = Setup.config
+  val rconfig = Setup.config
 
   val inorder = json"""
                   {

@@ -9,6 +9,8 @@ import org.scalatest.matchers.should
 import org.scalatest.{EitherValues, OptionValues}
 import scodec.{Attempt, DecodeResult}
 import scribe.{Level, Logging}
+
+import com.odenzo.ripple.bincodec.setup.Setup
 import com.odenzo.ripple.bincodec.testkit.{OTestUtils, RippleTestUtils, TestLoggingConfig}
 import com.odenzo.ripple.bincodec.utils.ScribeLoggingConfig
 
@@ -139,4 +141,5 @@ trait OTestSpec
 
   case class TestParam[T](binary: BitVector, model: T, consumesAll: Boolean = true)
 
+  Setup.init()
 }

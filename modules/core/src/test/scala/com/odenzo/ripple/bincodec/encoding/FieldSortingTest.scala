@@ -10,8 +10,6 @@ import io.circe.syntax._
 
 class FieldSortingTest extends OTestSpec {
 
-  val _ = Setup.config
-
   /** Correct ordering, or matches the binary at least. */
   val inorder = json"""
                   {

@@ -13,7 +13,7 @@ object MyCompileOptions {
       "-language:implicitConversions", // Allow definition of implicit functions called views
       "-unchecked",                    // Enable additional warnings where generated code depends on assumptions.
       "-Xcheckinit",                   // Wrap field accessors to throw an exception on uninitialized access.
-      "-Xsource:2.13",
+
       //   "-Xfatal-warnings", // Fail the compilation if there are any warnings.
       //   "-Xfuture", // Turn on future language features.
       "-Yno-adapted-args", // Do not adapt an argument list (either by inserting () or creating a tuple) to match
@@ -33,8 +33,8 @@ object MyCompileOptions {
       "-language:higherKinds",         // Allow higher-kinded types
       "-language:implicitConversions", // Allow definition of implicit functions called views
       "-unchecked",                    // Enable additional warnings where generated code depends on assumptions.
-      "-Xcheckinit",                   // Wrap field accessors to throw an exception on uninitialized access.
-      "-Xsource:2.14"
+      "-Xcheckinit"                    // Wrap field accessors to throw an exception on uninitialized access.
+
       // "-Xfatal-warnings", // Fail the compilation if there are any warnings.
       //   "-Xfuture", // Turn on future language features.
     )
@@ -74,6 +74,7 @@ object MyCompileOptions {
       //  "-Ywarn-unused:privates", // Warn if a private member is unused.
       //  "-Ywarn-value-discard" // Warn when non-Unit expression results are unused.
     )
+
   val lintersV12: Seq[String] =
     Seq(
       "-Xlint:adapted-args", // Warn if an argument list is modified to match the receiver.

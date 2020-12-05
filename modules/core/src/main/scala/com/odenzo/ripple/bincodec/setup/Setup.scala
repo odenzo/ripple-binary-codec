@@ -6,6 +6,7 @@ import com.odenzo.ripple.bincodec.models.FieldId
 /** Datastructures and lookups optimized after functionality working... */
 object Setup {
 
+  def init() = ()
   //<editor-fold desc="Data Modelling Zone that will Need to be Optimized">
   val config: RippleConfig = RippleConfig.loadFromDefaultFile().fold(e => throw e, identity)
   scribe.trace(s"Raw Data Types: ${pprint.apply(config.types)}")

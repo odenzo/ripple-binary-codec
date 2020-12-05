@@ -8,7 +8,7 @@ import scodec.bits.BitVector
 /** Top Level Decoding of a full message, expecting to be an STObject with no marker */
 object DecoderController {
 
-  val _ = Setup.config // Just to trigger all the logger
+  Setup.init() // Just to trigger all the logger
 
   def decode(hex: String): DecodeResult[JsonObject] = {
     val binary: BitVector = BitVector.fromHex(hex).getOrElse(throw new Exception("Invalid Input Hex"))

@@ -1,6 +1,6 @@
 import MyCompileOptions._
 
-lazy val supportedScalaVersions = List("2.13.1")
+lazy val supportedScalaVersions = List("2.13.3")
 
 ThisBuild / organization := "com.odenzo"
 ThisBuild / name         := "ripple-binary-codec"
@@ -42,16 +42,16 @@ lazy val commonSettings = Seq(
   )
 )
 
-val circeVersion              = "0.12.3"
-val circeGenericExtrasVersion = "0.12.2"
-val circeOpticsVersion        = "0.12.0"
-val catsVersion               = "2.1.0"
-val catsEffectVersion         = "2.1.0"
-val spireVersion              = "0.17.0-M1"
-val scribeVersion             = "2.7.10"
-val scalaTestVersion          = "3.1.0"
-val scalaCheckVersion         = "1.14.3"
-val scodecV                   = "1.11.4"
+val circeVersion              = "0.13.0"
+val circeGenericExtrasVersion = "0.13.0"
+val circeOpticsVersion        = "0.13.0"
+val catsVersion               = "2.3.0"
+val catsEffectVersion         = "2.3.0"
+val spireVersion              = "0.17.0"
+val scribeVersion             = "3.1.7"
+val scalaTestVersion          = "3.2.3"
+val scalaCheckVersion         = "1.15.1"
+val scodecV                   = "1.11.7"
 
 val libs = Seq(
   "io.circe" %% "circe-core"           % circeVersion,
@@ -67,9 +67,9 @@ val libs = Seq(
   "org.typelevel"  %% "spire"       % spireVersion,
   "com.outr"       %% "scribe"      % scribeVersion,
   "org.scodec"     %% "scodec-core" % scodecV,
-  "org.scodec"     %% "scodec-bits" % "1.1.13",
+  "org.scodec"     %% "scodec-bits" % "1.1.22",
   "org.scodec"     %% "scodec-cats" % "1.0.0",
   "org.scalatest"  %% "scalatest"   % scalaTestVersion % Test,
   "org.scalacheck" %% "scalacheck"  % scalaCheckVersion % Test,
-  "com.lihaoyi"    %% "pprint"      % "0.5.8"
+  "com.lihaoyi"    %% "pprint"      % "0.6.0"
 )
